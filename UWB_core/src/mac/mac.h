@@ -1,10 +1,12 @@
 #ifndef _MAC_H
 #define _MAC_H
-#include "prot_const.h"
+#include "logs.h"
 #include "transceiver.h"
-#include "mac_const.h"
-#include "mac_settings.h"
-#include "mac_port.h"
+#include "prot/prot_const.h"
+
+#include "mac/mac_const.h"
+#include "mac/mac_settings.h"
+#include "mac/mac_port.h"
 
 typedef struct
 {
@@ -12,9 +14,11 @@ typedef struct
         unsigned char buf[MAC_BUF_LEN];
         struct _packed
         {
+            unsigned char control;
             unsigned char seq_num;
-            addr_t src;
-            addr_t dst;
+            pan_dev_addr_t pan;
+            dev_addr_t src;
+            dev_addr_t dst;
             //unsigned int time;
             unsigned char data[64];
         } frame;
@@ -27,22 +31,32 @@ typedef struct
 
 typedef struct
 {
-    addr_t addr;
+    dev_addr_t addr;
     mac_buf_t buf[MAC_BUF_CNT];
     short buf_get_ind;
+    unsigned int sync_offset;
 } mac_instance_t;
 
 // should be called at the beginning of your time slot
 void mac_transmit_buffers();
 
 // should be called from the frame transmitted isr
-int mac_transmitted_isr()
+// @param is last frame tx timestamp in dw unit time
+int mac_transmitted_isr(uint64_t tx_timestamp);
 
-    // reserve buffer
-    mac_buf_t *mac_buffer();
+// should be called at the beginning of your slot time
+void mac_your_slot_isr();
+
+// release buffer waiting for this ack
+void mac_ack_frame_isr(mac_buf_t *buffer);
+
+// reserve buffer
+mac_buf_t *mac_buffer();
 
 // reserve buffer and fill mac protocol fields
-mac_buf_t *mac_buffer_prepare(addr_t target, bool can_append);
+// @param address to target device in range of radio - without hops
+// @param true if it can be appended to some other packet to this target
+mac_buf_t *mac_buffer_prepare(dev_addr_t target, bool can_append);
 
 // free buffer
 void mac_free(mac_buf_t *);

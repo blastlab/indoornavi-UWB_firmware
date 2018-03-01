@@ -1,6 +1,9 @@
 #ifndef _TRANSCEIVER_SETTINGS_H
 #define _TRANSCEIVER_SETTINGS_H
 
+#include "iassert.h"
+#define TRANSCEIVER_ASSERT(expr) IASSERT(expr)
+
 typedef struct
 {
     unsigned short ant_dly_rx, ant_dly_tx;

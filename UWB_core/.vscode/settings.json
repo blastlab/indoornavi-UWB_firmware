@@ -2,6 +2,10 @@
     "editor.formatOnSave": true,
     "files.associations": {
         "settings.h": "c",
-        "carry_settings.h": "c"
+        "carry_settings.h": "c",
+        "mac.h": "c",
+        "mac_port.h": "c",
+        "carry.h": "c",
+        "unity.h": "c"
     }
 }

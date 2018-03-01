@@ -4,31 +4,87 @@
 // global mac instance
 mac_instance_t mac;
 
-void mac_transmit_buffers()
+mac_buf_t *mac_buf_get_oldest_to_tx();
+void _mac_buffer_reset(mac_buf_t *buf);
+int _mac_get_frame_len(mac_buf_t *buf);
+int _mac_get_slot_time();
+
+// get time from start of super frame in mac_get_port_sync_time units
+uint64_t mac_to_slots_time(uint64_t sync_time_raw)
 {
-    mac_buf_t *buf = mac_buf_get_oldest_to_tx();
-    if (buf != 0)
+    int super_time = (sync_time_raw - mac.sync_offset) % settings.mac.slots_sum_time;
+    return super_time;
+}
+
+// return frame len in bytes
+int _mac_get_frame_len(mac_buf_t *buf)
+{
+    MAC_ASSERT(buf != 0);
+    MAC_ASSERT((unsigned int)buf < (unsigned int)buf->dPtr);
+    int len = (int)(buf->dPtr - (unsigned char *)buf);
+    MAC_ASSERT(len > 0);
+    return len;
+}
+
+void mac_your_slot_isr()
+{
+    uint64_t time = transceiver_get_sync_time();
+    mac_transmitted_isr(time);
+}
+
+void mac_transmitted_frame_isr(uint64_t tx_timestamp)
+{
+    mac_try_transmited_frame_in_slot(tx_timestamp);
+}
+
+void mac_try_transmited_frame_in_slot(uint64_t time)
+{
+    // calc time from begining of yours slot
+    uint64_t slot_time = mac_to_slots_time(time);
+    slot_time -= settings.mac.slot_number * settings.mac.slot_time;
+    slot_time -= settings.mac.slot_guard_time;
+    if (slot_time > settings.mac.slot_time)
     {
-        int len = (int)(buf->dPtr - buf->buf);
-        int ret = transcceiver_send(buf->buf, len);
-        if (ret == 0)
+        return;
+    }
+
+    mac_buf_t *buf = mac_buf_get_oldest_to_tx();
+    if (buf == 0)
+    {
+        return;
+    }
+    int len = _mac_get_frame_len(buf);
+    unsigned int tx_est_time = transceiver_estimate_tx_time_us(len);
+    if (slot_time + tx_est_time > settings.mac.slot_time)
+    {
+        return;
+    }
+
+    // when you have enouth time to send next message, then do it
+    int ret = transceiver_send(buf->buf, len);
+    if (ret == 0)
+    {
+        buf->state = buf->state == WAIT_FOR_TX_ACK ? WAIT_FOR_ACK : FREE;
+    }
+    else
+    {
+        ++buf->retransmit_fail_cnt;
+        if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt)
         {
             buf->state = FREE;
-        }
-        else
-        {
-            MAC_LOG_ERR("Buf Tx Fail");
         }
     }
 }
 
-void mac_transmited_frame_isr(unsigned int time)
+void mac_ack_frame_isr(mac_buf_t *buffer)
 {
-    int current_time = mac_port_get_sync_time();
-    int slot_time = (current_time - 0) % settings.mac.slots_sum_time;
-    slot_time -= settings.mac.slot_number * settings.mac.slot_time;
-    if (slot_time + settings.mac.slot_guard_time < settings.mac.slot_time)
+    char seq_num = buffer->frame.seq_num;
+    for (int i = 0; i < MAC_BUF_CNT; ++i)
     {
+        if (mac.buf[i].state == WAIT_FOR_ACK)
+        {
+            mac.buf[i].state = FREE;
+        }
     }
 }
 
@@ -106,7 +162,7 @@ mac_buf_t *mac_buffer()
     return 0;
 }
 
-void mac_fill_frame_to(mac_buf_t *buf, addr_t target)
+void mac_fill_frame_to(mac_buf_t *buf, dev_addr_t target)
 {
     MAC_ASSERT(buf != 0);
     buf->frame.src = mac.addr;
@@ -114,7 +170,7 @@ void mac_fill_frame_to(mac_buf_t *buf, addr_t target)
     buf->dPtr = &buf->frame->data[0];
 }
 
-mac_buf_t *mac_buffer_prepare(addr_t target, bool can_append)
+mac_buf_t *mac_buffer_prepare(dev_addr_t target, bool can_append)
 {
     mac_buf_t *buf;
     // search buffer to this target
@@ -137,7 +193,6 @@ mac_buf_t *mac_buffer_prepare(addr_t target, bool can_append)
     if (buf != 0)
     {
         mac_fill_frame_to(buf, target);
-        return buf;
     }
     return buf;
 }
@@ -154,6 +209,7 @@ void mac_free(mac_buf_t *buff);
 // add frame to the transmit queue
 void mac_send(mac_buf_t *buf, bool ack_require)
 {
+    MAC_ASSERT(buf != 0);
     if (ack_require)
     {
         buf.state = WAIT_FOR_TX_ACK;
