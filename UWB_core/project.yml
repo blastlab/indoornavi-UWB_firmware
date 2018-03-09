@@ -8,13 +8,14 @@
 :project:
   :use_exceptions: FALSE
   :use_test_preprocessor: TRUE
+  :use_deep_dependencies: TRUE
   :use_auxiliary_dependencies: TRUE
   :build_root: build
 #  :release_build: TRUE
   :test_file_prefix: test_
   :which_ceedling: vendor/ceedling
   :default_tasks:
-    - test:all
+     - test:delta
 
 #:release_build:
 #  :output: MyApp.out
@@ -61,12 +62,49 @@
     bool:     UINT8
 
 :gcov:
-    :html_report_type: basic
+    :html_report_type: detailed
 
 #:tools:
 # Ceedling defaults to using gcc for compiling, linking, etc.
 # As [:tools] is blank, gcc will be used (so long as it's in your system path)
 # See documentation to configure a given toolchain for use
+:tools:
+  :test_compiler:
+     :executable: gcc              #exists in system search path
+     :name: 'gcc test compiler'
+     :arguments:
+        - -I"$": COLLECTION_PATHS_TEST_TOOLCHAIN_INCLUDE               #expands to -I search paths
+        - -I"$": COLLECTION_PATHS_TEST_SUPPORT_SOURCE_INCLUDE_VENDOR   #expands to -I search paths
+        - -D$: COLLECTION_DEFINES_TEST_AND_VENDOR  #expands to all -D defined symbols
+        - -c ${1}                       #source code input file (Ruby method call param list sub)
+        - -o ${2}                       #object file output (Ruby method call param list sub)
+  :test_linker:
+     :executable: gcc    #absolute file path
+     :name: 'gcc test linker'
+     :arguments:
+        - ${1}               #list of object files to link (Ruby method call param list sub)
+        - -o ${2}            #executable file output (Ruby method call param list sub)
+        - -lm
+  :gcov_compiler:
+    :executable: gcc
+    :arguments:
+      - -g
+      - -fprofile-arcs
+      - -ftest-coverage
+      - -I"$": COLLECTION_PATHS_TEST_SUPPORT_SOURCE_INCLUDE_VENDOR
+      - -I"$": COLLECTION_PATHS_TEST_TOOLCHAIN_INCLUDE
+      - -D$: COLLECTION_DEFINES_TEST_AND_VENDOR
+      - -DGCOV_COMPILER
+      - -c "${1}"
+      - -o "${2}"
+  :gcov_linker:
+    :executable: gcc
+    :arguments:
+      - -fprofile-arcs
+      - -ftest-coverage
+      - ${1}
+      - -o ${2}
+      - -lm
 
 # LIBRARIES
 # These libraries are automatically injected into the build process. Those specified as
@@ -85,9 +123,13 @@
   :load_paths:
     - vendor/ceedling/plugins
   :enabled:
-    - stdout_pretty_tests_report
-    - module_generator
-#    - fake_function_framework
-    - gcov
+#    - stdout_pretty_tests_report
     - junit_tests_report
+#    - stdout_ide_tests_report
+#    - teamcity_tests_report
+#    - stdout_gtestlike_tests_report
+#    - xml_tests_report
+    - module_generator
+    - fake_function_framework
+    - gcov
 ...

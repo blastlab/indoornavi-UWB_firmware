@@ -30,7 +30,7 @@ typedef struct
     int pass_cnt;
     int fail_cnt;
     int cost;
-    mac_time_t last_update_time;
+    mac_buff_time_t last_update_time;
 } carry_trace_t;
 
 // save data about target
@@ -38,7 +38,7 @@ typedef struct
 {
     dev_addr_t addr;
     carry_trace_t trace[CARRY_MAX_TRACE];
-    mac_time_t last_update_time;
+    mac_buff_time_t last_update_time;
 } carry_target_t;
 
 // global singleton

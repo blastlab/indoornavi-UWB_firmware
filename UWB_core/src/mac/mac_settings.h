@@ -9,6 +9,7 @@
 typedef struct
 {
     dev_addr_t addr;
+    pan_dev_addr_t pan;
     int slot_time;
     int slot_guard_time;
     int slot_number;
@@ -19,6 +20,7 @@ typedef struct
 #define MAC_SETTINGS_DEF         \
     {                            \
         .addr = ADDR_BROADCAST,  \
+        .pan = 0xDECA,           \
         .slot_time = 123,        \
         .slot_guard_time = 10,   \
         .slot_number = 15,       \

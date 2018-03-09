@@ -32,6 +32,7 @@ typedef struct
 typedef struct
 {
     dev_addr_t addr;
+    pan_dev_addr_t pan;
     mac_buf_t buf[MAC_BUF_CNT];
     short buf_get_ind;
     unsigned int sync_offset;
@@ -48,7 +49,7 @@ int mac_transmitted_isr(uint64_t tx_timestamp);
 void mac_your_slot_isr();
 
 // release buffer waiting for this ack
-void mac_ack_frame_isr(mac_buf_t *buffer);
+void mac_ack_frame_isr(uint8_t seq_num);
 
 // reserve buffer
 mac_buf_t *mac_buffer();
@@ -59,10 +60,11 @@ mac_buf_t *mac_buffer();
 mac_buf_t *mac_buffer_prepare(dev_addr_t target, bool can_append);
 
 // free buffer
-void mac_free(mac_buf_t *);
+// @param pointer to mac_but_t
+void mac_free(mac_buf_t *buf);
 
 // add frame to the transmit queue, buf will be released after transmission
-void mac_send(const mac_buf_t *buf);
+void mac_send(mac_buf_t *buf, bool ack_require);
 
 unsigned char mac_read8(mac_buf_t *frame);
 void mac_write8(mac_buf_t *frame, unsigned char value);

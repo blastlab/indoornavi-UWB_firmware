@@ -1,11 +1,13 @@
 {
     "editor.formatOnSave": true,
+    "editor.rulers": [
+        80,
+        120
+    ],
     "files.associations": {
-        "settings.h": "c",
-        "carry_settings.h": "c",
-        "mac.h": "c",
-        "mac_port.h": "c",
-        "carry.h": "c",
-        "unity.h": "c"
+        "transceiver.h": "c",
+        "port.h": "c",
+        "prot_parser.h": "c",
+        "mock_port.h": "c"
     }
 }

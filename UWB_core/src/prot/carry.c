@@ -34,7 +34,7 @@ carry_trace_t *_carry_find_trace(carry_target_t *ptarget)
     {
         if (ptarget->trace[i].fail_cnt < settings.carry.max_fail_counter)
         {
-            mac_time_t delta = mac_port_get_time() - ptarget->trace[i].last_update_time;
+            mac_buff_time_t delta = mac_port_buff_time() - ptarget->trace[i].last_update_time;
             if (delta < settings.carry.max_inactive_time)
             {
                 return &ptarget->trace[i];

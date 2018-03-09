@@ -12,5 +12,10 @@ typedef struct
     carry_settings_t carry;
 } settings_t;
 
+#define DEF_SETTINGS                         \
+    .transceiver = TRANSCEIVER_SETTINGS_DEF, \
+    .mac = MAC_SETTINGS_DEF,                 \
+    .carry = CARRY_SETTINGS_DEF,
+
 extern settings_t settings;
 #endif
