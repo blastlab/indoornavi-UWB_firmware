@@ -23,9 +23,19 @@ void mac_init()
 
 void mac_tx_cb(const dwt_cb_data_t *data)
 {
+    const mac_buf_t *buf = mac.buf_under_tx;
     uint64_t tx_ts = transceiver_get_tx_timestamp();
-    // try ranging
+
+    // zero means that no next frame has been send as
+    // a ranging frame in a called callback
     int ret = 0;
+
+    if (buf->isRangingFrame)
+    {
+        // try ranging callback
+    }
+
+    // try send next data frame
     if (ret == 0)
     {
         mac_try_transmit_frame_in_slot(tx_ts);
@@ -34,6 +44,13 @@ void mac_tx_cb(const dwt_cb_data_t *data)
 
 void mac_rx_cb(const dwt_cb_data_t *data)
 {
+    int ret = 0;
+
+    //dwt_readrxdata((uint8_t *)&mac.rx_buf, data->datalength, 0);
+    if (data->rx_flags & DWT_CB_DATA_RX_FLAG_RNG)
+    {
+        // process ranging
+    }
 }
 
 void mac_rx_to_cb(const dwt_cb_data_t *data)
@@ -51,16 +68,6 @@ uint64_t mac_to_slots_time(uint64_t sync_time_raw)
 {
     int super_time = (sync_time_raw - mac.sync_offset) % settings.mac.slots_sum_time;
     return super_time;
-}
-
-// return frame len in bytes
-int _mac_get_frame_len(mac_buf_t *buf)
-{
-    MAC_ASSERT(buf != 0);
-    MAC_ASSERT((unsigned int)buf < (unsigned int)buf->dPtr);
-    int len = (int)(buf->dPtr - (unsigned char *)buf);
-    MAC_ASSERT(len > 0);
-    return len;
 }
 
 void mac_your_slot_isr()
@@ -86,7 +93,7 @@ void mac_try_transmit_frame_in_slot(uint64_t time)
     {
         return;
     }
-    int len = _mac_get_frame_len(buf);
+    int len = mac_buf_len(buf);
     unsigned int tx_est_time = transceiver_estimate_tx_time_us(len);
     if (slot_time + tx_est_time > settings.mac.slot_time)
     {
@@ -94,18 +101,33 @@ void mac_try_transmit_frame_in_slot(uint64_t time)
     }
 
     // when you have enouth time to send next message, then do it
-    int ret = transceiver_send(buf->buf, len);
+    mac.buf_under_tx = buf;
+    int ret;
+    if (buf->isRangingFrame)
+    {
+        const uint8_t flags = DWT_START_RX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
+        ret = transceiver_send_ranging(buf->buf, len, flags);
+    }
+    else
+    {
+        ret = transceiver_send(buf->buf, len);
+    }
+    // check result
     if (ret == 0)
     {
+        buf->last_update_time = mac_port_buff_time();
         buf->state = buf->state == WAIT_FOR_TX_ACK ? WAIT_FOR_ACK : FREE;
     }
     else
     {
+        buf->last_update_time = mac_port_buff_time();
         ++buf->retransmit_fail_cnt;
         if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt)
         {
             buf->state = FREE;
         }
+        // try send next frame
+        mac_try_transmit_frame_in_slot(transceiver_get_time());
     }
 }
 
@@ -170,10 +192,11 @@ mac_buf_t *mac_buffer()
         _mac_buffer_reset(buf);
         return buf;
     }
-
+    printf("search\n");
     // else search for empty buffer
     for (int i = 0; i < MAC_BUF_CNT; ++i)
     {
+        printf("i");
         int buff_age = current_time - mac.buf[i].last_update_time;
         if (mac.buf[i].state == FREE)
         {
@@ -201,7 +224,7 @@ mac_buf_t *mac_buffer()
 void mac_fill_frame_to(mac_buf_t *buf, dev_addr_t target)
 {
     MAC_ASSERT(buf != 0);
-    buf->frame.src = mac.addr;
+    buf->frame.src = settings.mac.addr;
     buf->frame.dst = target;
     buf->dPtr = &buf->frame.data[0];
 }
@@ -233,10 +256,17 @@ mac_buf_t *mac_buffer_prepare(dev_addr_t target, bool can_append)
     return buf;
 }
 
+int mac_buf_len(const mac_buf_t *buf)
+{
+    MAC_ASSERT(buf != 0);
+    MAC_ASSERT(buf->dPtr >= buf->buf);
+    return (int)(buf->dPtr - (uint8_t *)(buf));
+}
+
 // free buffer
 void mac_free(mac_buf_t *buff)
 {
-    MAC_ASSERT((unsigned int)buf > (unsigned int)mac.buf);
+    MAC_ASSERT((uint8_t *)buff >= (uint8_t *)mac.buf);
     int i = ((char *)buff - (char *)mac.buf) / sizeof(*buff);
     MAC_ASSERT(i < MAC_BUF_CNT);
     mac.buf[i].state = FREE;
@@ -257,17 +287,30 @@ void mac_send(mac_buf_t *buf, bool ack_require)
     buf->last_update_time = mac_port_buff_time();
 }
 
+// add frame to the transmit queue
+int mac_send_ranging_resp(mac_buf_t *buf, uint8_t transceiver_flags)
+{
+    MAC_ASSERT(buf != 0);
+    int len = mac_buf_len(buf);
+    buf->isRangingFrame = true;
+    buf->frame.dst = buf->frame.src;
+    buf->frame.src = settings.mac.addr;
+    int ret = transceiver_send_ranging(buf->buf, len, transceiver_flags);
+    buf->state = FREE;
+    return ret;
+}
+
 unsigned char mac_read8(mac_buf_t *frame)
 {
     MAC_ASSERT(frame != 0);
-    MAC_ASSERT((int)frame->dPtr > (int)&frame);
+    MAC_ASSERT(frame->dPtr >= (uint8_t *)frame);
     return *frame->dPtr++;
 }
 
 void mac_write8(mac_buf_t *frame, unsigned char value)
 {
     MAC_ASSERT(frame != 0);
-    MAC_ASSERT((int)frame->dPtr > (int)&frame);
+    MAC_ASSERT(frame->dPtr >= (uint8_t *)frame);
     *frame->dPtr = value;
     ++frame->dPtr;
 }
@@ -275,7 +318,7 @@ void mac_write8(mac_buf_t *frame, unsigned char value)
 void mac_read(mac_buf_t *frame, void *destination, unsigned int len)
 {
     MAC_ASSERT(frame != 0);
-    MAC_ASSERT((int)frame->dPtr > (int)&frame);
+    MAC_ASSERT(frame->dPtr >= (uint8_t *)frame);
     MAC_ASSERT(destination != 0);
     MAC_ASSERT(0 <= len && len < MAC_BUF_LEN);
     uint8_t *dst = (uint8_t *)destination;
@@ -284,20 +327,22 @@ void mac_read(mac_buf_t *frame, void *destination, unsigned int len)
         *dst = *frame->dPtr;
         ++dst;
         ++frame->dPtr;
+        --len;
     }
 }
 
 void mac_write(mac_buf_t *frame, const void *source, unsigned int len)
 {
     MAC_ASSERT(frame != 0);
-    MAC_ASSERT((int)frame->dPtr > (int)&frame);
-    MAC_ASSERT(src != 0);
+    MAC_ASSERT(frame->dPtr >= (uint8_t *)frame);
+    MAC_ASSERT(source != 0);
     MAC_ASSERT(0 <= len && len < MAC_BUF_LEN);
-    uint8_t *src = (uint8_t *)src;
+    const uint8_t *src = (uint8_t *)source;
     while (len > 0)
     {
         *frame->dPtr = *src;
         ++frame->dPtr;
         ++src;
+        --len;
     }
 }

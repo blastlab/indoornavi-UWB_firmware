@@ -6,6 +6,15 @@
 #define MAC_BUF_CNT 2
 #define MAC_BUF_LEN 128
 
+#define MAC_SYNC_MAX_AN_CNT 4
+
+typedef struct
+{
+    int fin_dly;
+    int resp_dly[MAC_SYNC_MAX_AN_CNT];
+    int guard_time;
+} toa_settings_t;
+
 typedef struct
 {
     dev_addr_t addr;
@@ -15,6 +24,7 @@ typedef struct
     int slot_number;
     int slots_sum_time;
     int max_frame_fail_cnt;
+    toa_settings_t sync_dly;
 } mac_settings_t;
 
 #define MAC_SETTINGS_DEF         \

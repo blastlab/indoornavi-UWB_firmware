@@ -90,6 +90,12 @@ void transceiver_set_cb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb, dwt_cb
 
 void transceiver_default_rx()
 {
+    if (settings.transceiver.low_power_mode)
+    {
+    }
+    else
+    {
+    }
 }
 
 uint32_t transceiver_getUsFromRec()
@@ -141,12 +147,22 @@ uint64_t transceiver_get_time()
 
 int transceiver_send(const void *buf, unsigned int len)
 {
+    TRANSCEIVER_ASSERT(buf != 0);
     const bool ranging_frame = false;
     dwt_forcetrxoff();
     dwt_writetxdata(len + 2, (uint8_t *)buf, 0);
     dwt_writetxfctrl(len + 2, 0, ranging_frame);
-    dwt_starttx(DWT_START_TX_IMMEDIATE);
-    return 0;
+    return dwt_starttx(DWT_START_TX_IMMEDIATE);
+}
+
+int transceiver_send_ranging(const void *buf, unsigned int len, uint8_t flags)
+{
+    TRANSCEIVER_ASSERT(buf != 0);
+    const bool ranging_frame = true;
+    dwt_forcetrxoff();
+    dwt_writetxdata(len + 2, (uint8_t *)buf, 0);
+    dwt_writetxfctrl(len + 2, 0, ranging_frame);
+    return dwt_starttx(flags);
 }
 
 int transceiver_estimate_tx_time_us(unsigned int len)

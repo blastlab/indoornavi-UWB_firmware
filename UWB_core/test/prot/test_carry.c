@@ -1,6 +1,10 @@
 #include "unity.h"
-#include "mock_mac_port.h"
+#include "mock_port.h"
+#include "mock_transceiver.h"
+#include "mac.h"
 #include "prot/carry.h"
+
+settings_t settings = DEF_SETTINGS;
 
 //FAKE_VALUE_FUNC(unsigned int, HAL_GetTick);
 //FAKE_VALUE_FUNC(mac_buff_time_t, mac_port_buff_time);

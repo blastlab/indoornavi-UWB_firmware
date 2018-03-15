@@ -6,7 +6,7 @@
 FAKE_VOID_FUNC(reset_DW1000);
 FAKE_VOID_FUNC(spi_speed_slow, bool);
 FAKE_VALUE_FUNC(uint32_t, port_tick_hr);
-settings_t settings = {DEF_SETTINGS};
+settings_t settings = DEF_SETTINGS;
 
 void setUp(void)
 {

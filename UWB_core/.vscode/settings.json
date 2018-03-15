@@ -5,9 +5,6 @@
         120
     ],
     "files.associations": {
-        "transceiver.h": "c",
-        "port.h": "c",
-        "prot_parser.h": "c",
-        "mock_port.h": "c"
+        "sync.h": "c"
     }
 }
