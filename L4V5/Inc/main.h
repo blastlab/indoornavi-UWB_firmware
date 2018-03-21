@@ -50,6 +50,7 @@
 #define __MAIN_H
   /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_ll_spi.h"
+#include "stm32l4xx_ll_wwdg.h"
 #include "stm32l4xx_ll_bus.h"
 #include "stm32l4xx_ll_cortex.h"
 #include "stm32l4xx_ll_rcc.h"

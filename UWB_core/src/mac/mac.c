@@ -6,8 +6,6 @@ mac_instance_t mac;
 
 mac_buf_t *mac_buf_get_oldest_to_tx();
 void _mac_buffer_reset(mac_buf_t *buf);
-int _mac_get_frame_len(mac_buf_t *buf);
-int _mac_get_slot_time();
 void mac_try_transmit_frame_in_slot(int64_t time);
 
 void mac_tx_cb(const dwt_cb_data_t *data);
@@ -147,7 +145,7 @@ void mac_ack_frame_isr(uint8_t seq_num)
 void _mac_buffer_reset(mac_buf_t *buf)
 {
     buf->dPtr = buf->buf;
-    buf->state == BUSY;
+    buf->state = BUSY;
     buf->retransmit_fail_cnt = 0;
     buf->last_update_time = mac_port_buff_time();
 }

@@ -76,6 +76,8 @@ int transceiver_init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
 
     // turn on default rx mode
     transceiver_default_rx();
+
+    return 0;
 }
 
 void transceiver_set_cb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb, dwt_cb_t rxerr_cb)

@@ -1,4 +1,7 @@
 
+*.cproject
+*.project
+
 # file synchronization
 *.fft_db
 

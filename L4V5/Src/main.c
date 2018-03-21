@@ -77,8 +77,6 @@ TIM_HandleTypeDef htim6;
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
-WWDG_HandleTypeDef hwwdg;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
@@ -603,15 +601,16 @@ static void MX_USART1_UART_Init(void)
 static void MX_WWDG_Init(void)
 {
 
-  hwwdg.Instance = WWDG;
-  hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
-  hwwdg.Init.Window = 127;
-  hwwdg.Init.Counter = 127;
-  hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
-  if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_WWDG);
+
+  LL_WWDG_SetCounter(WWDG, 127);
+
+  LL_WWDG_Enable(WWDG);
+
+  LL_WWDG_SetPrescaler(WWDG, LL_WWDG_PRESCALER_8);
+
+  LL_WWDG_SetWindow(WWDG, 127);
 
 }
 

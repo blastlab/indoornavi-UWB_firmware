@@ -250,6 +250,7 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info)
         // indicate that last poll wasn't to you
         sync.toa.resp_ind = TOA_MAX_DEV_IN_POLL;
     }
+    return 0;
 }
 
 int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info)
@@ -269,6 +270,7 @@ int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info)
     {
         toa_enable_rx_after_resp_cb(&settings.mac.sync_dly, &sync.toa);
     }
+    return 0;
 }
 
 int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info)
@@ -278,33 +280,34 @@ int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info)
     int ts_len = sync.toa.anc_in_poll_cnt * sizeof(*packet->TsRespRx);
     SYNC_ASSERT(packet->FC == FC_SYNC_FIN);
     PROT_CHECK_LEN(FC_SYNC_FIN, packet->len, sizeof(FC_SYNC_FIN_s) + ts_len);
-
-    // read timestamps
     SYNC_ASSERT(sizeof(*packet->TsRespRx) == sizeof(*sync.toa.TsRespRx));
     SYNC_ASSERT(sizeof(packet->TsFinTxBuf) == 5);
+
+    sync_neightbour_t *neig = sync_find_or_create_neightbour(info->direct_src, packet->tree_level);
+    if(neig == 0)
+    {
+    	return 0;
+    }
+
+    // read timestamps
     sync.toa.TsPollTx = packet->TsPollTx;
     sync.toa.TsRespRx[sync.toa.resp_ind] = packet->TsRespRx[sync.toa.resp_ind];
+    sync.toa.TsFinRx = sync_glob_time(transceiver_get_rx_timestamp());
+		int64_t ext_time = toa_read_40b_value(packet->TsFinTxBuf);
+		int64_t loc_time = sync.toa.TsFinRx;
 
-    // read measure data
-    int tof_dw = toa_calc_tof_dw_tu(&sync.toa, sync.toa.resp_ind);
-    int cm = toa_tof_to_cm(tof_dw * DWT_TIME_UNITS);
-    int16_t cRSSI, cFPP, cSNR;
-    transceiver_read_diagnostic(&cRSSI, &cFPP, &cSNR);
-
-    // run synchronization algorithm
-    sync_neightbour_t *neig = sync_find_or_create_neightbour(info->direct_src, packet->tree_level);
-    if (neig != 0)
+    if (sync.toa.resp_ind < TOA_MAX_DEV_IN_POLL)
     {
-        // when it was poll to you
-        if (sync.toa.resp_ind < TOA_MAX_DEV_IN_POLL)
-        {
-            
-        }
-        else
-        {
-            //sync_brief(&sync.toa, neig);
-        }
+    	// when it was to you
+    	int tof_dw = toa_calc_tof_dw_tu(&sync.toa, sync.toa.resp_ind);
+      sync_update(neig, ext_time, loc_time, tof_dw);
     }
+    else
+    {
+      //todo: sync_brief(&sync.toa, neig);
+    	sync_update(neig, ext_time, loc_time, 0);
+    }
+    return 0;
 }
 
 int sync_tx_cb(int64_t TsDwTx)
