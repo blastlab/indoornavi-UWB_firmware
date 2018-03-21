@@ -2,10 +2,12 @@
 
 void port_sleep_ms(unsigned int time_ms)
 {
+	HAL_Delay(time_ms);
 }
 
 unsigned int port_tick_ms()
 {
+	HAL_GetTick();
 }
 
 // get high resosolution clock tick
@@ -38,11 +40,11 @@ void spi_speed_slow(bool fast)
 // returns DWT_SUCCESS for success or DWT_ERROR for error
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer, uint32_t readlength, uint8_t *readBuffer)
 {
-    return DWT_SUCCESS;
+    return 0;
 }
 
 // returns DWT_SUCCESS for success or DWT_ERROR for error
 int writetospi(uint16_t headerLength, const uint8_t *headerBuffer, uint32_t bodylength, const uint8_t *bodyBuffer)
 {
-    return DWT_SUCCESS;
+    return 0;
 }

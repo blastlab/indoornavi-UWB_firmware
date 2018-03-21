@@ -3,10 +3,10 @@
 
 #include <string.h>
 
-#include "iassert.h"
-#include "prot/prot_const.h"
-#include "settings.h"
-#include "transceiver.h"
+#include "../iassert.h"
+#include "../prot/prot_const.h"
+#include "../settings.h"
+#include "../transceiver.h"
 #include "toa.h"
 
 #define SYNC_ASSERT(expr) IASSERT(expr)

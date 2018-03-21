@@ -1,5 +1,5 @@
 #include "mac.h"
-#include "settings.h"
+#include "../settings.h"
 
 // global mac instance
 mac_instance_t mac;

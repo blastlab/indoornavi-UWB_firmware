@@ -1,4 +1,4 @@
-#include "prot/prot_const.h"
+#include "../prot/prot_const.h"
 
 typedef int (*text_parser_cb)(const char *cmd, const char *start, const char *stop);
 

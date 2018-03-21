@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "deca_device_api.h"
-#include "deca_param_types.h"
+#include "../decadriver/deca_device_api.h"
+#include "../decadriver/deca_param_types.h"
 
 #define NUM_16M_OFFSET  (37)
 #define NUM_16M_OFFSETWB  (68)

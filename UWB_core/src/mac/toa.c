@@ -115,4 +115,5 @@ int64_t toa_read_40b_value(const uint8_t *src)
         --src;
         val = (val << 8) + *src;
     }
+    return val;
 }

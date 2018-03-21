@@ -1,13 +1,13 @@
 #ifndef _MAC_H
 #define _MAC_H
-#include "logs.h"
-#include "transceiver.h"
-#include "prot/prot_const.h"
+#include "../logs.h"
+#include "../transceiver.h"
+#include "../prot/prot_const.h"
 
-#include "mac/mac_const.h"
-#include "mac/mac_settings.h"
-#include "mac/mac_port.h"
-#include "mac/sync.h"
+#include "mac_const.h"
+#include "mac_settings.h"
+#include "mac_port.h"
+#include "sync.h"
 
 typedef struct
 {

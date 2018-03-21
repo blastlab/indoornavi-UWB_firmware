@@ -1,4 +1,4 @@
-#include "prot/carry.h"
+#include "carry.h"
 
 carry_instance_t carry;
 
@@ -89,4 +89,6 @@ mac_buf_t *carry_prepare_buf_to(dev_addr_t target)
             return buf;
         }
     }
+
+    return buf;
 }

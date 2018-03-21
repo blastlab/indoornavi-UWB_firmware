@@ -101,7 +101,8 @@ void transceiver_default_rx()
 
 uint32_t transceiver_getUsFromRec()
 {
-    port_tick_hr();
+	//todo:
+   return port_tick_hr();
 }
 
 int64_t transceiver_get_rx_timestamp(void)
@@ -148,7 +149,6 @@ int64_t transceiver_get_time()
 
 void transceiver_read_diagnostic(int16_t *cRSSI, int16_t *cFPP, int16_t *cSNR)
 {
-    int firstPathPower, rxPower, SNR;
     dwt_rxdiag_t diag;
     dwt_readdiagnostics(&diag);
 

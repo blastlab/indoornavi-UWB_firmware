@@ -4,8 +4,8 @@
 #include <string.h> // memcpy
 
 #include "prot_const.h"
-#include "mac/mac.h"
-#include "settings.h"
+#include "../mac/mac.h"
+#include "../settings.h"
 
 #include "carry_settings.h"
 #include "carry_const.h"

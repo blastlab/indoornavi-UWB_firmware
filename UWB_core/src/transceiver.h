@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <math.h>
-#include "decadriver/deca_device_api.h"
 
 #include "settings.h"
 #include "platform/port.h"

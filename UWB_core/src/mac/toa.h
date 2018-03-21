@@ -1,10 +1,10 @@
 #ifndef _TOA_H__
 #define _TOA_H__
 
-#include "decadriver/deca_device_api.h" // DWT_TIME_UNITS
-#include "settings.h"
-#include "logs.h"
-#include "transceiver.h" // read diagnostic
+#include "../decadriver/deca_device_api.h" // DWT_TIME_UNITS
+#include "../settings.h"
+#include "../logs.h"
+#include "../transceiver.h" // read diagnostic
 
 // speed of light in air [m/s]
 #define SPEED_OF_LIGHT 299702547

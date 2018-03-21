@@ -1,7 +1,7 @@
 #ifndef _CARRY_SETTINGS_H
 #define _CARRY_SETTINGS_H
 
-#include "mac/mac_port.h" // mac_buff_time_t
+#include "../mac/mac_port.h" // mac_buff_time_t
 
 #define CARRY_ASSERT(expr) IASSERT(expr)
 

@@ -1,5 +1,5 @@
 #include "sync.h"
-#include "mac/mac.h"
+#include "mac.h"
 
 sync_instance_t sync;
 extern mac_instance_t mac;
@@ -362,6 +362,8 @@ int sync_rx_to_cb(int64_t Ts)
         toa_state(&sync.toa, TOA_IDLE);
         ret = 2;
         break;
+    default:
+    	break;
     }
 
     if (ret == 2)

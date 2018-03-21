@@ -1,7 +1,7 @@
 #ifndef _MAC_SETTINGS
 #define _MAC_SETTINGS
 
-#include "prot/prot_const.h" // ADDR_BROADCAST
+#include "../prot/prot_const.h" // ADDR_BROADCAST
 
 #define MAC_BUF_CNT 2
 #define MAC_BUF_LEN 128

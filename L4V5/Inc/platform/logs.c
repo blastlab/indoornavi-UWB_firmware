@@ -1,4 +1,4 @@
-#include "logs.h"
+#include <stdio.h>
 
 int log_text(char type, const char *frm, ...)
 {

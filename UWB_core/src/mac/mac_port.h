@@ -1,7 +1,7 @@
 #ifndef _MAC_PORT_H
 #define _MAC_PORT_H
 
-#include "iassert.h"
+#include "../iassert.h"
 #include "platform/port.h"
 
 #define MAC_ASSERT(expr) IASSERT(expr)

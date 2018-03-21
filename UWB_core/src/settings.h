@@ -2,7 +2,7 @@
 #define _SETTINGS_H
 
 #include "transceiver_settings.h"
-#include "mac_settings.h"
+#include "mac/mac_settings.h"
 #include "prot/carry_settings.h"
 
 typedef struct
