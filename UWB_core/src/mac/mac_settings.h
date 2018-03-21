@@ -6,12 +6,13 @@
 #define MAC_BUF_CNT 2
 #define MAC_BUF_LEN 128
 
-#define MAC_SYNC_MAX_AN_CNT 4
+#define TOA_MAX_DEV_IN_POLL 4
+#define SYNC_MAC_NEIGHTBOURS 5
 
 typedef struct
 {
     int fin_dly;
-    int resp_dly[MAC_SYNC_MAX_AN_CNT];
+    int resp_dly[TOA_MAX_DEV_IN_POLL];
     int guard_time;
 } toa_settings_t;
 
@@ -25,6 +26,7 @@ typedef struct
     int slots_sum_time;
     int max_frame_fail_cnt;
     toa_settings_t sync_dly;
+    bool raport_anchor_anchor_distance;
 } mac_settings_t;
 
 #define MAC_SETTINGS_DEF         \
@@ -36,6 +38,7 @@ typedef struct
         .slot_number = 15,       \
         .slots_sum_time = 12345, \
         .max_frame_fail_cnt = 3, \
+        .raport_anchor_anchor_distance = true, \
     }
 
 #endif

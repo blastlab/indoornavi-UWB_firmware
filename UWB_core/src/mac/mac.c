@@ -8,7 +8,7 @@ mac_buf_t *mac_buf_get_oldest_to_tx();
 void _mac_buffer_reset(mac_buf_t *buf);
 int _mac_get_frame_len(mac_buf_t *buf);
 int _mac_get_slot_time();
-void mac_try_transmit_frame_in_slot(uint64_t time);
+void mac_try_transmit_frame_in_slot(int64_t time);
 
 void mac_tx_cb(const dwt_cb_data_t *data);
 void mac_rx_cb(const dwt_cb_data_t *data);
@@ -24,7 +24,7 @@ void mac_init()
 void mac_tx_cb(const dwt_cb_data_t *data)
 {
     const mac_buf_t *buf = mac.buf_under_tx;
-    uint64_t tx_ts = transceiver_get_tx_timestamp();
+    int64_t tx_ts = transceiver_get_tx_timestamp();
 
     // zero means that no next frame has been send as
     // a ranging frame in a called callback
@@ -64,7 +64,7 @@ void mac_rx_er_cb(const dwt_cb_data_t *data)
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
-uint64_t mac_to_slots_time(uint64_t sync_time_raw)
+int64_t mac_to_slots_time(int64_t sync_time_raw)
 {
     int super_time = (sync_time_raw - mac.sync_offset) % settings.mac.slots_sum_time;
     return super_time;
@@ -72,15 +72,15 @@ uint64_t mac_to_slots_time(uint64_t sync_time_raw)
 
 void mac_your_slot_isr()
 {
-    uint64_t time = transceiver_get_time();
+    int64_t time = transceiver_get_time();
     mac_try_transmit_frame_in_slot(time);
 }
 
 // calc slot time and send try send packet if it is yours time
-void mac_try_transmit_frame_in_slot(uint64_t time)
+void mac_try_transmit_frame_in_slot(int64_t time)
 {
     // calc time from begining of yours slot
-    uint64_t slot_time = mac_to_slots_time(time);
+    int64_t slot_time = mac_to_slots_time(time);
     slot_time -= settings.mac.slot_number * settings.mac.slot_time;
     slot_time -= settings.mac.slot_guard_time;
     if (slot_time > settings.mac.slot_time)

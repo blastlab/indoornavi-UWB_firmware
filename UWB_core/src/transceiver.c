@@ -3,6 +3,7 @@
 int transceiver_br = 0;
 int transceiver_plen = 0;
 int transceiver_pac = 0;
+int transceiver_sfd = 0;
 
 static void _transceiver_fill_txconfig(transceiver_settings_t *ts);
 static void _transceiver_init_globals_from_set(transceiver_settings_t *ts, bool set_default_pac);
@@ -103,10 +104,10 @@ uint32_t transceiver_getUsFromRec()
     port_tick_hr();
 }
 
-uint64_t transceiver_get_rx_timestamp(void)
+int64_t transceiver_get_rx_timestamp(void)
 {
     uint8_t ts_tab[5];
-    uint64_t ts = 0;
+    int64_t ts = 0;
     int i;
     dwt_readrxtimestamp(ts_tab);
     for (i = 4; i >= 0; i--)
@@ -117,10 +118,10 @@ uint64_t transceiver_get_rx_timestamp(void)
     return ts;
 }
 
-uint64_t transceiver_get_tx_timestamp(void)
+int64_t transceiver_get_tx_timestamp(void)
 {
     uint8_t ts_tab[5];
-    uint64_t ts = 0;
+    int64_t ts = 0;
     int i;
     dwt_readtxtimestamp(ts_tab);
     for (i = 4; i >= 0; i--)
@@ -131,10 +132,10 @@ uint64_t transceiver_get_tx_timestamp(void)
     return ts;
 }
 
-uint64_t transceiver_get_time()
+int64_t transceiver_get_time()
 {
     uint8_t ts_tab[5];
-    uint64_t ts = 0;
+    int64_t ts = 0;
     int i;
     dwt_readsystime(ts_tab);
     for (i = 4; i >= 0; i--)
@@ -143,6 +144,37 @@ uint64_t transceiver_get_time()
         ts |= ts_tab[i];
     }
     return ts;
+}
+
+void transceiver_read_diagnostic(int16_t *cRSSI, int16_t *cFPP, int16_t *cSNR)
+{
+    int firstPathPower, rxPower, SNR;
+    dwt_rxdiag_t diag;
+    dwt_readdiagnostics(&diag);
+
+    // calculate distance and signal power
+    // user manual 4.7
+    const float k = 100.0f; // for centy prefix
+    const float A = settings.transceiver.dwt_config.prf == DWT_PRF_64M ? 121.74f : 113.77f;
+    const float N = diag.rxPreamCount - transceiver_sfd;
+    float RSSItmp;
+    RSSItmp = diag.firstPathAmp1 * diag.firstPathAmp1;
+    RSSItmp += diag.firstPathAmp2 * diag.firstPathAmp2;
+    RSSItmp += diag.firstPathAmp3 * diag.firstPathAmp3;
+    RSSItmp /= diag.rxPreamCount;
+    if (cFPP != 0)
+    {
+        *cFPP = k * 10.0f * log10f(RSSItmp) - k * A;
+    }
+    if (cRSSI != 0)
+    {
+        RSSItmp = (float)diag.maxGrowthCIR * (1 << 17) / (N * N);
+        *cRSSI = k * 10.0f * log10f(RSSItmp) - k * A;
+    }
+    if (cSNR != 0)
+    {
+        *cSNR = k * 20.0f * log10f((float)diag.firstPathAmp1 / diag.stdNoise);
+    }
 }
 
 int transceiver_send(const void *buf, unsigned int len)
@@ -233,10 +265,12 @@ static void _transceiver_init_globals_from_set(transceiver_settings_t *ts, bool 
     TRANSCEIVER_ASSERT(ts->dwt_config.rxPAC < 4 || set_default_pac);
 
     const int br[] = {110000, 850000, 6800000};
+    const int sfd_len[] = {64, 16, 8};
     const int pac[] = {8, 16, 32, 64};
     int def_pac = 0;
 
     transceiver_br = br[ts->dwt_config.dataRate];
+    transceiver_sfd = sfd_len[ts->dwt_config.dataRate];
 
     switch (ts->dwt_config.txPreambLength)
     {

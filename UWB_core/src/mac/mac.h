@@ -46,7 +46,7 @@ void mac_transmit_buffers();
 
 // should be called from the frame transmitted isr
 // @param is last frame tx timestamp in dw unit time
-int mac_transmitted_isr(uint64_t tx_timestamp);
+int mac_transmitted_isr(int64_t tx_timestamp);
 
 // should be called at the beginning of your slot time
 void mac_your_slot_isr();
