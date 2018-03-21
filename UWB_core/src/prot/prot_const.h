@@ -14,10 +14,7 @@ typedef unsigned short pan_dev_addr_t;
 #endif
 #endif
 
-typedef struct
-{
-    dev_addr_t direct_src;
-} prot_packet_info_t;
+typedef struct { dev_addr_t direct_src; } prot_packet_info_t;
 
 typedef int (*prot_parser_cb)(const void *data, const void *prot_packet_info_t);
 

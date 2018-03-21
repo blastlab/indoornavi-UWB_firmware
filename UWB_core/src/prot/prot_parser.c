@@ -1,9 +1,8 @@
 #include "prot_parser.h"
 
-typedef struct
-{
-    uint8_t FC;
-    prot_parser_cb cb;
+typedef struct {
+  uint8_t FC;
+  prot_parser_cb cb;
 } prot_cb_t;
 
 const prot_cb_t prot_cb_tab[] = {
@@ -11,18 +10,15 @@ const prot_cb_t prot_cb_tab[] = {
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);
 
-void prot_parse(mac_buf_t *buf, const prot_packet_info_t *info)
-{
-    IASSERT(buf != 0);
-    uint8_t FC = *buf->dPtr;
-    const prot_cb_t *pcb = &prot_cb_tab[0];
+void prot_parse(mac_buf_t *buf, const prot_packet_info_t *info) {
+  IASSERT(buf != 0);
+  uint8_t FC = *buf->dPtr;
+  const prot_cb_t *pcb = &prot_cb_tab[0];
 
-    for (int i = 0; i < prot_cb_len; ++i, ++pcb)
-    {
-        if (FC == pcb->FC)
-        {
-            IASSERT(pcb->cb != 0);
-            pcb->cb(buf->dPtr, info);
-        }
+  for (int i = 0; i < prot_cb_len; ++i, ++pcb) {
+    if (FC == pcb->FC) {
+      IASSERT(pcb->cb != 0);
+      pcb->cb(buf->dPtr, info);
     }
+  }
 }

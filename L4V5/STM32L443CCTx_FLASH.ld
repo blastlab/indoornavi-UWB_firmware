@@ -5,7 +5,7 @@
 **  File        : LinkerScript.ld
 **
 **  Abstract    : Linker script for STM32L443CCTx Device with
-**                256KByte FLASH, 48KByte RAM
+**                256KByte FLASH, 64KByte RAM
 **
 **                Set heap size, stack size and stack location according
 **                to application requirements.
@@ -52,71 +52,31 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = 0x2000C000;    /* end of RAM */
+_estack = 0x20010000;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
 
-PROG_PAGE_SIZE = 2K;
-PROG_FLASH_SIZE = 256K;
-PROG_FLASH_START = 0x8000000;
-PROG_BOOTLOADER_MAX_SIZE = 32K;
-PROG_MAX_PROGRAM_SIZE = (PROG_FLASH_SIZE - PROG_BOOTLOADER_MAX_SIZE) / 2;
-PROG_DESTINATION1 = PROG_FLASH_START + PROG_BOOTLOADER_MAX_SIZE;
-PROG_DESTINATION2 = PROG_DESTINATION1 + PROG_MAX_PROGRAM_SIZE;
-
-PROG_START1 = PROG_DESTINATION1;
-PROG_SETTINGS1 = PROG_START1 + PROG_PAGE_SIZE;
-PROG_TEXT1 = PROG_SETTINGS1 + PROG_PAGE_SIZE;
-
-/* COMMENT/UNCOMMENT .bootloader section KEEP */
-/* 0 - Bottloader + APP1 */
-/* 1 - Only App1 */
-/* 2 - Only App2 */
-COMPILE = 0;
-
-BOOTLOADER_SIZE = COMPILE==0 ? PROG_BOOTLOADER_MAX_SIZE               : 0;
-PROG_START      = COMPILE==2 ? PROG_START1 + PROG_MAX_PROGRAM_SIZE    : PROG_START1;
-PROG_SETTINGS   = COMPILE==2 ? PROG_SETTINGS1 + PROG_MAX_PROGRAM_SIZE : PROG_SETTINGS1;
-PROG_TEXT       = COMPILE==2 ? PROG_TEXT1 + PROG_MAX_PROGRAM_SIZE     : PROG_TEXT1;
-
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 48K
-RAM2 (xrw)      : ORIGIN = 0x10000000, LENGTH = 16K
-BOOTLOADER (rx) : ORIGIN = 0x8000000, LENGTH = BOOTLOADER_SIZE
-FLASH (rx)      : ORIGIN = 0x8000000+PROG_BOOTLOADER_MAX_SIZE, LENGTH = 256K
+RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 256K
 }
 
 /* Define output sections */
 SECTIONS
 {
-  .bootloader :
-  {
-  	KEEP(*(.bootloader)); /* conditionally comment */
-    BootKoniec = .;
-    BootSize = SIZEOF(.bootloader);
-    FILL(0xFF);
-  } >BOOTLOADER 
-  
   /* The startup code goes first into FLASH */
-  .isr_vector PROG_START :
+  .isr_vector :
   {
-  	ISR_START = .;
     . = ALIGN(8);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(8);
-    FILL(0xFF);
   } >FLASH
 
-  .settings PROG_SETTINGS :
-  {
-    KEEP(*(.settings))
-  } >FLASH
-  
   /* The program code and other data goes into FLASH */
-  .text PROG_TEXT :
+  .text :
   {
     . = ALIGN(8);
     *(.text)           /* .text sections (code) */
@@ -131,7 +91,7 @@ SECTIONS
     . = ALIGN(8);
     _etext = .;        /* define a global symbols at end of code */
   } >FLASH
-  
+
   /* Constant data goes into FLASH */
   .rodata :
   {

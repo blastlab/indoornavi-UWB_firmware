@@ -1,11 +1,13 @@
 #ifndef _TRANSCEIVER_H
 #define _TRANSCEIVER_H
 
-#include <stdint.h>
 #include <math.h>
+#include <stdint.h>
 
-#include "settings.h"
+
 #include "platform/port.h"
+#include "settings.h"
+
 
 #define UUS_TO_DWT_TIME 1
 #define MASK_40BIT (0xffffffffffL)
@@ -14,7 +16,8 @@
 int transceiver_init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr);
 
 // connect event callbacks
-void transceiver_set_cb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb, dwt_cb_t rxerr_cb);
+void transceiver_set_cb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
+                        dwt_cb_t rxerr_cb);
 
 // immediately send data via transceiver
 int transceiver_send(const void *buf, unsigned int len);

@@ -70,9 +70,13 @@
 
 #define SW1_Pin GPIO_PIN_13
 #define SW1_GPIO_Port GPIOC
+#define HW_PULL_Pin GPIO_PIN_1
+#define HW_PULL_GPIO_Port GPIOH
 #define DW_IRQ_Pin GPIO_PIN_0
 #define DW_IRQ_GPIO_Port GPIOA
 #define DW_IRQ_EXTI_IRQn EXTI0_IRQn
+#define HW_ADC_Pin GPIO_PIN_1
+#define HW_ADC_GPIO_Port GPIOA
 #define VIBR_INT_Pin GPIO_PIN_2
 #define VIBR_INT_GPIO_Port GPIOA
 #define VBAT_Pin GPIO_PIN_3
@@ -105,16 +109,16 @@
 #define SD_MOSI_GPIO_Port GPIOB
 #define SD_LOCK_Pin GPIO_PIN_8
 #define SD_LOCK_GPIO_Port GPIOA
-#define USB_SENSE_Pin GPIO_PIN_15
-#define USB_SENSE_GPIO_Port GPIOA
-#define SD_EN_Pin GPIO_PIN_4
-#define SD_EN_GPIO_Port GPIOB
-#define LPS_INT_Pin GPIO_PIN_5
-#define LPS_INT_GPIO_Port GPIOB
-#define SCL_Pin GPIO_PIN_6
-#define SCL_GPIO_Port GPIOB
-#define SDA_Pin GPIO_PIN_7
-#define SDA_GPIO_Port GPIOB
+#define IMU_SCK_Pin GPIO_PIN_3
+#define IMU_SCK_GPIO_Port GPIOB
+#define IMU_MISO_Pin GPIO_PIN_4
+#define IMU_MISO_GPIO_Port GPIOB
+#define IMU_MOSI_Pin GPIO_PIN_5
+#define IMU_MOSI_GPIO_Port GPIOB
+#define IMU_CS_Pin GPIO_PIN_6
+#define IMU_CS_GPIO_Port GPIOB
+#define IMU_INT_Pin GPIO_PIN_7
+#define IMU_INT_GPIO_Port GPIOB
 #define BOOT0_Pin GPIO_PIN_3
 #define BOOT0_GPIO_Port GPIOH
 

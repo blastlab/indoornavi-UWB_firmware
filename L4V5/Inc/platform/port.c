@@ -23,6 +23,40 @@ unsigned int port_tick_hr()
     return 0;
 }
 
+// turn led on
+void port_led_on(int LED_x)
+{
+	switch(LED_x)
+	{
+	case LED_G1:
+		LL_GPIO_SetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
+		break;
+	case LED_R1:
+		LL_GPIO_SetOutputPin(LED_R1_GPIO_Port, LED_R1_Pin);
+		break;
+	default:
+		IASSERT(0);
+		break;
+	}
+}
+
+// turrn led off
+void port_led_off(int LED_x)
+{
+	switch(LED_x)
+	{
+	case LED_G1:
+		LL_GPIO_ResetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
+		break;
+	case LED_R1:
+		LL_GPIO_ResetOutputPin(LED_R1_GPIO_Port, LED_R1_Pin);
+		break;
+	default:
+		IASSERT(0);
+		break;
+	}
+}
+
 // reset dw 1000 device by polling RST pin down for a few ms
 void reset_DW1000()
 {

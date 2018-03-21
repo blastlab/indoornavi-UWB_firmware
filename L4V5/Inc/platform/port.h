@@ -18,8 +18,25 @@
 #define PORT_TICKS_HR_PER_US 1000
 #define DW_EXTI_IRQn 		EXTI0_IRQn
 
+// leds
+#define LED_G1 1
+#define LED_R1 2
+#define LED_STAT LED_G1
+#define LED_ERR LED_R1
+
+// turn led on
+void port_led_on(int LED_x);
+
+// turrn led off
+void port_led_off(int LED_x);
+
+// reset dw 1000 device by polling RST pin down for at least 500us
+void reset_DW1000();
+
 // refresh watchdog timer
 void port_watchdog_refresh();
+
+// TIME
 
 // nop
 void port_sleep_ms(unsigned int time_ms);
@@ -30,8 +47,7 @@ unsigned int port_tick_ms();
 // get high resosolution clock - CPU tick counter
 unsigned int port_tick_hr();
 
-// reset dw 1000 device by polling RST pin down for at least 500us
-void reset_DW1000();
+// MUTEX
 
 // get deca spi mutex
 decaIrqStatus_t decamutexon(void);
@@ -39,14 +55,18 @@ decaIrqStatus_t decamutexon(void);
 // release deca spi mutex
 void decamutexoff(decaIrqStatus_t s);
 
-// set SPI speed below 3MHz when param is false or below 20MHz when true
-void spi_speed_slow(bool fast);
+// SPI
+
+// set SPI speed below 3MHz when param is true or below 20MHz when false
+void spi_speed_slow(bool slow);
 
 // returns DWT_SUCCESS(0) for success or DWT_ERROR for error
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer, uint32_t readlength, uint8_t *readBuffer);
 
 // returns DWT_SUCCESS(0) for success or DWT_ERROR for error
 int writetospi(uint16_t headerLength, const uint8_t *headerBuffer, uint32_t bodylength, const uint8_t *bodyBuffer);
+
+// FLASH
 
 // czysci rejon strony flasha pod nowy firmware
 HAL_StatusTypeDef port_flash_erase(void *flash_addr, uint32_t length);

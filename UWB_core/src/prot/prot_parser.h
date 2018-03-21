@@ -1,8 +1,9 @@
 #ifndef _PROT_PARSER_H
 #define _PROT_PARSER_H
 
-#include "prot_const.h"
 #include "../mac/mac.h"
+#include "prot_const.h"
+
 
 void prot_parse();
 
