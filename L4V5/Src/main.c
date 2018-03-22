@@ -52,7 +52,7 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "uwb_main.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -86,13 +86,11 @@ DMA_HandleTypeDef hdma_usart1_rx;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_CRC_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_LPTIM1_Init(void);
-static void MX_WWDG_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_AES_Init(void);
 static void MX_LPTIM2_Init(void);
@@ -106,6 +104,8 @@ static void MX_NVIC_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+static void MX_WWDG_Init(void);
+static void MX_RTC_Init(void);
 
 /* USER CODE END 0 */
 
@@ -113,6 +113,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	//todo: SCB->VTOR = (int) (FU_GetCurrentFlashBase());
+	UNUSED(MX_WWDG_Init);
+	UNUSED(MX_RTC_Init);
 
   /* USER CODE END 1 */
 
@@ -135,7 +138,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_RTC_Init();
   MX_SPI1_Init();
   MX_CRC_Init();
   MX_TIM6_Init();
@@ -143,7 +145,6 @@ int main(void)
   MX_LPTIM1_Init();
   MX_USB_DEVICE_Init();
   MX_FATFS_Init();
-  MX_WWDG_Init();
   MX_ADC1_Init();
   MX_AES_Init();
   MX_LPTIM2_Init();

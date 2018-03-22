@@ -38,6 +38,7 @@ typedef struct {
   short buf_get_ind;
   unsigned int sync_offset;
   mac_buf_t *buf_under_tx;
+  unsigned int last_rx_ts;
 } mac_instance_t;
 
 // initialize mac and transceiver
@@ -77,6 +78,9 @@ void mac_send(mac_buf_t *buf, bool ack_require);
 // change dst and src address, send according to flags, buf will be released
 // after transmission
 int mac_send_ranging_resp(mac_buf_t *buf, uint8_t transceiver_flags);
+
+// return time in ms from last received packed
+unsigned int mac_us_from_rx();
 
 unsigned char mac_read8(mac_buf_t *frame);
 void mac_write8(mac_buf_t *frame, unsigned char value);

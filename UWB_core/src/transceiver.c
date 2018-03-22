@@ -92,9 +92,28 @@ void transceiver_default_rx() {
   }
 }
 
-uint32_t transceiver_getUsFromRec() {
-  // todo:
-  return port_tick_hr();
+void transceiver_enter_deep_sleep()
+{
+	dwt_forcetrxoff();
+	dwt_setleds(0);
+	dwt_configuresleep(DWT_PRESRV_SLEEP, DWT_WAKE_CS | DWT_SLP_EN);
+	dwt_entersleep();
+}
+
+void transceiver_wake_up(uint8_t *buf, int len)
+{
+	TRANSCEIVER_ASSERT(len >= 200);
+	spi_speed_slow(true);
+
+  // Need to keep chip select line low for at least 500us
+	int ret = dwt_spicswakeup(buf, len);
+	TRANSCEIVER_ASSERT(ret == DWT_SUCCESS);
+	spi_speed_slow(true);
+
+  //wt_configuretxrf(&settings.transceiver.dwt_txconfig);
+  dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
+  dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
+
 }
 
 int64_t transceiver_get_rx_timestamp(void) {
@@ -176,6 +195,11 @@ int transceiver_send_ranging(const void *buf, unsigned int len, uint8_t flags) {
   dwt_writetxdata(len + 2, (uint8_t *)buf, 0);
   dwt_writetxfctrl(len + 2, 0, ranging_frame);
   return dwt_starttx(flags);
+}
+
+void transceiver_read(void *buf, unsigned int len)
+{
+	dwt_readrxdata(buf, len, 0);
 }
 
 int transceiver_estimate_tx_time_us(unsigned int len) {

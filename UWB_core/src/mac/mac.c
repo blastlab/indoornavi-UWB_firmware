@@ -22,6 +22,8 @@ void mac_tx_cb(const dwt_cb_data_t *data) {
   const mac_buf_t *buf = mac.buf_under_tx;
   int64_t tx_ts = transceiver_get_tx_timestamp();
 
+	port_led_on(LED_STAT);
+
   // zero means that no next frame has been send as
   // a ranging frame in a called callback
   int ret = 0;
@@ -39,18 +41,34 @@ void mac_tx_cb(const dwt_cb_data_t *data) {
 void mac_rx_cb(const dwt_cb_data_t *data) {
   int ret = 0;
 
-  // dwt_readrxdata((uint8_t *)&mac.rx_buf, data->datalength, 0);
-  if (data->rx_flags & DWT_CB_DATA_RX_FLAG_RNG) {
-    // process ranging
-  }
+	port_led_on(LED_STAT);
+	mac.last_rx_ts = port_tick_hr();
+	mac_buf_t *buf = mac_buffer();
+	if(buf != 0)
+	{
+		transceiver_read(buf->buf, data->datalength);
+
+		if (data->rx_flags & DWT_CB_DATA_RX_FLAG_RNG) {
+			// process ranging
+		}
+		else {
+			// parse data
+		}
+	}
+	else
+	{
+		LOG_ERR("No buff for rx_cb");
+	}
 }
 
 void mac_rx_to_cb(const dwt_cb_data_t *data) {
   // ranging isr
+	port_led_on(LED_ERR);
 }
 
 void mac_rx_er_cb(const dwt_cb_data_t *data) {
   // mayby some log?
+	port_led_on(LED_ERR);
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
@@ -250,6 +268,14 @@ int mac_send_ranging_resp(mac_buf_t *buf, uint8_t transceiver_flags) {
   int ret = transceiver_send_ranging(buf->buf, len, transceiver_flags);
   buf->state = FREE;
   return ret;
+}
+
+unsigned int mac_us_from_rx()
+{
+	float diff = port_tick_hr() - mac.last_rx_ts;
+	diff *= 1e6;
+	diff /= port_freq_hr();
+	return (unsigned int)diff;
 }
 
 unsigned char mac_read8(mac_buf_t *frame) {

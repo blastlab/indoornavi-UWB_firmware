@@ -1,26 +1,20 @@
 #include "platform/port.h"
 
+
+void port_watchdog_init()
+{
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_WWDG);
+	LL_WWDG_SetCounter(WWDG, 127);
+	LL_WWDG_Enable(WWDG);
+	LL_WWDG_SetPrescaler(WWDG, LL_WWDG_PRESCALER_8);
+	LL_WWDG_SetWindow(WWDG, 127);
+}
+
 void port_watchdog_refresh()
 {
 	if(LL_WWDG_GetCounter(WWDG) < LL_WWDG_GetWindow(WWDG)) {
 		LL_WWDG_SetCounter(WWDG, 127);
 	}
-}
-
-void port_sleep_ms(unsigned int time_ms)
-{
-	HAL_Delay(time_ms);
-}
-
-unsigned int port_tick_ms()
-{
-	return HAL_GetTick();
-}
-
-// get high resosolution clock tick
-unsigned int port_tick_hr()
-{
-    return 0;
 }
 
 // turn led on
@@ -74,7 +68,7 @@ void reset_DW1000()
 
 	//drive the RSTn pin low
 	HAL_GPIO_WritePin(DW_RST_GPIO_Port, DW_RST_Pin, GPIO_PIN_RESET);
-	HAL_Delay(2);
+	port_sleep_ms(2);
 
 	//put the pin back to tri-state ... as input
 	GPIO_InitStructure.Pin = DW_RST_Pin;
@@ -86,41 +80,20 @@ void reset_DW1000()
 	HAL_Delay(2);
 }
 
-// return 0 when IRQ is inactive, 1 otherwise
-ITStatus EXTI_GetITEnStatus(uint32_t IRQn)
+void port_reboot()
 {
-  ITStatus bitstatus = RESET;
-  uint32_t enablestatus = 0;
-  // Check the parameters */
-  assert_param(IS_GET_EXTI_LINE(EXTI_Line));
-
-  enablestatus = NVIC->ISER[(((uint32_t)(int32_t)IRQn) >> 5UL)] & (uint32_t)(1UL << (((uint32_t)(int32_t)IRQn) & 0x1FUL));;
-  if (enablestatus != (uint32_t)RESET)
-  {
-    bitstatus = SET;
-  }
-  else
-  {
-    bitstatus = RESET;
-  }
-  return bitstatus;
+	// turn off USB, to reconnect after reset
+	// it help from usb timeout error from the host side
+	USB_StopDevice(USB);
+	USB_DevDisconnect (USB);
+	port_sleep_ms(10); // to be sure
+	NVIC_SystemReset();
 }
 
-// get deca spi mutex
-decaIrqStatus_t decamutexon(void)
+void port_enter_stop_mode()
 {
-	decaIrqStatus_t s = EXTI_GetITEnStatus(DW_EXTI_IRQn);
-
-	if(s) {
-		NVIC_DisableIRQ(DW_EXTI_IRQn); //disable the external interrupt line
-	}
-	return s ;   // return state before disable, value is used to re-enable in decamutexoff call
-}
-
-// release deca spi mutex
-void decamutexoff(decaIrqStatus_t s)
-{
-	if(s) { //need to check the port state as we can't use level sensitive interrupt on the STM ARM
-		NVIC_EnableIRQ(DW_EXTI_IRQn);
-}
+	__disable_irq();
+	port_led_off(LED_R1);
+	port_led_off(LED_G1);
+	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 }

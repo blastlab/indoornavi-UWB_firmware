@@ -18,6 +18,10 @@
 #define PORT_TICKS_HR_PER_US 1000
 #define DW_EXTI_IRQn 		EXTI0_IRQn
 
+#define BOOTLOADER_MAGIC_NUMBER	(0xBECA95)
+#define BOOTLOADER_MAGIC_REG	(RTC->BKP0R)
+#define BOOTLOADER_MAGIC_REG_GO_SLEEP (0x12345678)
+
 // leds
 #define LED_G1 1
 #define LED_R1 2
@@ -33,8 +37,23 @@ void port_led_off(int LED_x);
 // reset dw 1000 device by polling RST pin down for at least 500us
 void reset_DW1000();
 
+// reset STM
+void port_reboot();
+
+// turn on low power or stop mode
+void port_enter_stop_mode();
+
+// start watchdog work
+void port_watchdog_init();
+
 // refresh watchdog timer
 void port_watchdog_refresh();
+
+// measure current battery voltage
+void port_battery_measure();
+
+// return last battery voltage in [mV]
+int port_battery_voltage();
 
 // TIME
 
@@ -44,8 +63,11 @@ void port_sleep_ms(unsigned int time_ms);
 // get clock
 unsigned int port_tick_ms();
 
-// get high resosolution clock - CPU tick counter
+// get high resolution clock - CPU tick counter
 unsigned int port_tick_hr();
+
+// get high resolution clock frequency
+unsigned int port_freq_hr();
 
 // MUTEX
 
