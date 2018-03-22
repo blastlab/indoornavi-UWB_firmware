@@ -62,10 +62,10 @@ int carry_write_trace(dev_addr_t *buf, dev_addr_t target)
     return 0;
 }
 
-carry_packet_t *_carry_prot_fill(mac_buf_t *buf)
+FC_CARRY_s *_carry_prot_fill(mac_buf_t *buf)
 {
     CARRY_ASSERT(buf != 0);
-    carry_packet_t *prot = (carry_packet_t *)buf;
+    FC_CARRY_s *prot = (FC_CARRY_s *)buf;
     prot->FC = FC_CARRY;
     prot->len = CARRY_HEAD_MIN_LEN;
     prot->src_addr = settings.mac.addr;
@@ -79,7 +79,7 @@ mac_buf_t *carry_prepare_buf_to(dev_addr_t target)
 
     if (buf->dPtr == &buf->frame.data[0])
     {
-        carry_packet_t *ppacket = _carry_prot_fill(buf);
+        FC_CARRY_s *ppacket = _carry_prot_fill(buf);
         int len = carry_write_trace(&ppacket->hops[0], target);
         // when
         if (len > 0)

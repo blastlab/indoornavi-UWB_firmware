@@ -5,7 +5,6 @@
 
 #define CARRY_ASSERT(expr) IASSERT(expr)
 
-#define CARRY_MAX_HOPS 8
 #define CARRY_MAX_TRACE 2
 #define CARRY_MAX_TARGETS 8
 

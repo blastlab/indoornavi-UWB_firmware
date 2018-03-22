@@ -10,6 +10,8 @@
 #include "carry_settings.h"
 #include "carry_const.h"
 
+#include "../parsers/bin_parser.h"
+
 // protocol struct
 typedef struct __packed
 {
@@ -18,7 +20,7 @@ typedef struct __packed
     dev_addr_t src_addr;
     unsigned char flag_hops;
     dev_addr_t hops[0];
-} carry_packet_t;
+} FC_CARRY_s;
 
 #define CARRY_HEAD_MIN_LEN (1 + 1 + sizeof(dev_addr_t) + 1)
 
