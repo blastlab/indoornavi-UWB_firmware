@@ -6,6 +6,7 @@
  */
 
 #include "mac/mac.h"
+#include "prot/carry.h"
 
 void desynchronize()
 {
@@ -14,7 +15,7 @@ void desynchronize()
   port_watchdog_refresh();
 }
 
-void turnOff()
+void turn_off()
 {
 	// log turn off to host
 	LOG_INF("turn off");
@@ -47,37 +48,42 @@ void turnOff()
 	while(1);
 }
 
-void enter_stop_mode()
+void battery_control()
 {
-	transceiver_enter_deep_sleep();
-	while(1) {
-		port_enter_stop_mode();
-	}
+	static unsigned int last_batt_measure_time = 0;
+  if(port_tick_ms() - last_batt_measure_time > 5000) {
+  	port_battery_measure();
+  	last_batt_measure_time = port_tick_ms();
+
+  	if(2400 < port_battery_voltage() && port_battery_voltage() < 3100) {
+  		turn_off();
+  	}
+  }
+}
+
+void ranging_control()
+{
 }
 
 void uwb_main() {
-	unsigned int last_batt_measure_time = 0;
-
-  spi_init();
 
 	if(BOOTLOADER_MAGIC_REG == BOOTLOADER_MAGIC_REG_GO_SLEEP) {
-		enter_stop_mode();
+		while(1) {
+			port_enter_stop_mode();
+		}
 	}
 
-	port_watchdog_init();
   settings_init();
   desynchronize();
 
+	port_init();
   mac_init();
   carry_init();
 
   while (1) {
     port_led_off(LED_STAT);
-    port_led_on(LED_ERR);
-
-    if(port_tick_ms() - last_batt_measure_time > 5000) {
-    	port_battery_measure();
-    	last_batt_measure_time = port_tick_ms();
-    }
+    port_led_off(LED_ERR);
+    battery_control();
+    ranging_control();
   }
 }

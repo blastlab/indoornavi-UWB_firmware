@@ -7,7 +7,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
@@ -28,6 +27,9 @@
 #define LED_R1 2
 #define LED_STAT LED_G1
 #define LED_ERR LED_R1
+
+// extra initialization for port modules
+void port_init();
 
 // turn led on
 void port_led_on(int LED_x);
@@ -79,9 +81,6 @@ decaIrqStatus_t decamutexon(void);
 void decamutexoff(decaIrqStatus_t s);
 
 // SPI
-
-// initialize variables
-void spi_init();
 
 // set SPI speed below 3MHz when param is true or below 20MHz when false
 void spi_speed_slow(bool slow);

@@ -1,5 +1,16 @@
 #include "platform/port.h"
 
+
+void port_battery_init();
+void spi_init();
+
+void port_init()
+{
+	spi_init();
+	port_battery_init();
+	port_watchdog_init();
+}
+
 void port_watchdog_init() {
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_WWDG);
   LL_WWDG_SetCounter(WWDG, 127);
