@@ -20,8 +20,6 @@ int transceiver_init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr) {
     _transceiver_init_globals_from_set(&settings.transceiver, 0);
   }
 
-  spi_init();
-
   // reset device
   reset_DW1000();
   port_sleep_ms(5);

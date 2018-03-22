@@ -2,11 +2,8 @@
 #define _PORT_H
 
 #include "decadriver/deca_device_api.h" // decaIrqStatus_t
-#include "stm32l4xx_hal.h"
-#include "usbd_cdc_if.h"
 #include <stdbool.h>
 #include <stdint.h>
-
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
@@ -80,9 +77,6 @@ void decamutexoff(decaIrqStatus_t s);
 
 // SPI
 
-// initialize variables
-void spi_init();
-
 // set SPI speed below 3MHz when param is true or below 20MHz when false
 void spi_speed_slow(bool slow);
 
@@ -96,11 +90,10 @@ int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
 
 // FLASH
 
-// czysci rejon strony flasha pod nowy firmware
+// erase whole flash sectors with given address and length
 int port_flash_erase(void *flash_addr, uint32_t length);
 
-// zapisuje ilosc bajtow we flashu pod wskazany adres, length % 8 musi byc rowne
-// 0
+// write in flash at @destination @length bytes of data. @length % 8 must be 0
 int port_flash_save(void *destination, const void *p_source, uint32_t length);
 
 #endif

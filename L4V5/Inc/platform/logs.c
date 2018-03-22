@@ -1,14 +1,14 @@
-#include <stdio.h>
-#include <stdarg.h>
-#include "port.h"
 #include "base64.h"
+#include "port.h"
+#include <stdarg.h>
+#include <stdio.h>
+
 
 #define LOG_BUF_LEN 256
 
 static char buf[LOG_BUF_LEN + 1];
 
-int log_text(char type, const char *frm, ...)
-{
+int log_text(char type, const char *frm, ...) {
   int n, f;
   va_list arg;
   va_start(arg, frm);
@@ -38,15 +38,13 @@ int log_text(char type, const char *frm, ...)
   return n;
 }
 
-int log_bin(char type, const void *bin, int size)
-{
+int log_bin(char type, const void *bin, int size) {
   int f;
   f = 0;
   buf[f++] = type;
   buf[f++] = ' ';
   if (base64_textSize(size) + f >= LOG_BUF_LEN) {
-    log_text('E', "logbin: too big binary file! FC:%xh",
-            ((uint8_t *)bin)[0]);
+    log_text('E', "logbin: too big binary file! FC:%xh", ((uint8_t *)bin)[0]);
     return 0;
   } else {
     f += base64_encode((unsigned char *)(buf + f), bin, size);

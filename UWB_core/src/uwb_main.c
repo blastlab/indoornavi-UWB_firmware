@@ -58,6 +58,8 @@ void enter_stop_mode()
 void uwb_main() {
 	unsigned int last_batt_measure_time = 0;
 
+  spi_init();
+
 	if(BOOTLOADER_MAGIC_REG == BOOTLOADER_MAGIC_REG_GO_SLEEP) {
 		enter_stop_mode();
 	}
