@@ -11,7 +11,7 @@ typedef unsigned short pan_dev_addr_t;
 
 #ifndef CORTEX_M
 #ifndef __packed
-#define __packed
+#define __packed 
 #endif
 #endif
 

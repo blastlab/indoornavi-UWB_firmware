@@ -8,7 +8,7 @@
 #define BIN_ASSERT(expr) IASSERT(expr)
 
 
-typedef int (*prot_parser_cb)(const void *data, const void *prot_packet_info_t);
+typedef void (*prot_parser_cb)(const void *data, const prot_packet_info_t *info);
 
 typedef struct
 {

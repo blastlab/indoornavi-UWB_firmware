@@ -1,16 +1,16 @@
-#include "text_parser.h"
+#include "ascii_parser.h"
 
-char _text_buf_t[256];
-text_buf_t text_buf = {
-    .cmd = _text_buf_t,
-    .start = _text_buf_t, 
-    .end = _text_buf_t + sizeof(_text_buf_t)
+char _ascii_buf_raw[256];
+ascii_buf_t ascii_buf = {
+    .cmd = _ascii_buf_raw,
+    .start = _ascii_buf_raw, 
+    .end = _ascii_buf_raw + sizeof(_ascii_buf_raw)
 };
 
 // zwroc wskaznik za num spacjami albo 0
-cchar * text_point_param_number(text_buf_t *buf, cchar *cmd, int num)
+cchar * ascii_point_param_number(ascii_buf_t *buf, cchar *cmd, int num)
 {
-    cchar * ptr = cmd;
+    cchar *ptr = cmd;
     while(num > 0)
     {
         while(*ptr != ' ' && *ptr != 0)
@@ -30,9 +30,8 @@ cchar * text_point_param_number(text_buf_t *buf, cchar *cmd, int num)
 }
 
 // return 
-int text_atoi(text_buf_t *buf, cchar *cmd, int base)
+int ascii_atoi(ascii_buf_t *buf, cchar *ptr, int base)
 {
-    cchar *ptr = text_point_param_number(buf, cmd, num);
     int result = 0;
     if(ptr == 0)
     {
@@ -49,7 +48,7 @@ int text_atoi(text_buf_t *buf, cchar *cmd, int base)
 }
 
 // return pointer to 
-int text_get_param(text_buf_t *buf, cchar *cmd, int base)
+int ascii_get_param(ascii_buf_t *buf, cchar *cmd, int base)
 {
     int i;
     cchar *ptr = buf->cmd;
@@ -62,14 +61,14 @@ int text_get_param(text_buf_t *buf, cchar *cmd, int base)
         }
         if(cmd[i] == 0)
         {
-            return text_atoi(buf, ptr, base);
+            return ascii_atoi(buf, ptr, base);
         }
         ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
     }
     return -1;
 }
 
-bool text_starts_with(text_buf_t *buf, cchar *cmd)
+bool ascii_starts_with(ascii_buf_t *buf, cchar *cmd)
 {
     cchar *ptr = buf->cmd;
     while(*cmd != 0)
@@ -84,23 +83,23 @@ bool text_starts_with(text_buf_t *buf, cchar *cmd)
     return true;
 }
 
-void text_parse(const text_buf_t *buf)
+void ascii_parse(const ascii_buf_t *buf)
 {
-    // in text_parser_cb.c
-    extern const text_cb_t text_cb_tab[];
-    extern const int text_cb_len;
+    // in ascii_parser_cb.c
+    extern const ascii_cb_t ascii_cb_tab[];
+    extern const int ascii_cb_len;
 
     prot_packet_info_t info;
     memset(&info, 0, sizeof(info));
-    int did = text_get_param(buf, "did:", 16);
+    int did = ascii_get_param(buf, "did:", 16);
     info.direct_src = did > 0 ? did : ADDR_BROADCAST;
 
-    for(int i = 0; i < text_cb_len; ++i)
+    for(int i = 0; i < ascii_cb_len; ++i)
     {
-        if(text_starts_with(buf, text_cb_tab[i].cmd))
+        if(ascii_starts_with(buf, ascii_cb_tab[i].cmd))
         {
-            IASSERT(text_cb_tab[i].cb != 0);
-            text_cb_tab[i].cb(buf, &info);
+            //IASSERT(ascii_cb_tab[i].cb != 0);
+            ascii_cb_tab[i].cb(buf, &info);
             return;       
         }
     }

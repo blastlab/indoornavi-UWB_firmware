@@ -1,24 +1,30 @@
 #include "bin_parser.h"
+#include "bin_struct.h"
+#include "../prot/carry.h"
+#include "printer.h"
 
-void _bin_finalize(uint8_t FC, const void *data, uint8_t len, const void *prot_packet_info_t)
+void _bin_finalize(uint8_t FC, const void *data, uint8_t len, const prot_packet_info_t *info)
 {
-
     if(info->direct_src == ADDR_BROADCAST)
     {
-        print_stat(&packet, settings.mac.addr);
+        FC_STAT_s stat;
+        stat.err_cnt = 1;
+        stat.to_cnt = 2;
+        stat.rx_cnt = 3;
+        print_stat(&stat, settings.mac.addr);
     }
     else
     {
         uint8_t *header = (uint8_t*)data;
         header[0] = FC;
         header[1] = len;
-        mac_buf_t *buf = carry_prepare_buf_to(inf->direct_src);
-        mac_write(buf, &packet, packet->len);
+        mac_buf_t *buf = carry_prepare_buf_to(info->direct_src);
+        mac_write(buf, data, len);
         carry_send(buf, false);
     }
 }
 
-int FC_STAT_ASK_cb(const void *data, const void *prot_packet_info_t info)
+void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info)
 {
     BIN_ASSERT(*(uint8_t*)data == FC_STAT_ASK);
     FC_STAT_s packet;
