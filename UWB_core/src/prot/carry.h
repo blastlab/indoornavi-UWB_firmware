@@ -3,12 +3,12 @@
 
 #include <string.h> // memcpy
 
+#include "../mac/mac.h"
+#include "../settings.h"
 #include "prot_const.h"
-#include "mac/mac.h"
-#include "settings.h"
 
-#include "carry_settings.h"
 #include "carry_const.h"
+#include "carry_settings.h"
 
 #include "../parsers/bin_parser.h"
 

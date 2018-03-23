@@ -10,43 +10,50 @@
 #include "mac/sync.h"
 
 // macro to find unreleased buffer at compilation time
-#define MAC_USAGE_BUF_START(name) \
-    mac_buf_t *#name = mac_buffer(); \
-    if(#name != 0) {
+#define MAC_USAGE_BUF_START(name)  \
+  mac_buf_t *#name = mac_buffer(); \
+  if (#name != 0)                  \
+  {
 
-#define MAC_USAGE_BUF_STOP(name) mac_free(#name);}
+#define MAC_USAGE_BUF_STOP(name) \
+  mac_free(#name);               \
+  }
 
 typedef struct
 {
-    union {
-        unsigned char buf[MAC_BUF_LEN];
-        struct _packed
-        {
-            unsigned char control;
-            unsigned char seq_num;
-            pan_dev_addr_t pan;
-            dev_addr_t src;
-            dev_addr_t dst;
-            //unsigned int time;
-            unsigned char data[64];
-        } frame;
-    };
-    unsigned char *dPtr;
-    mac_buf_state state;
-    unsigned char isRangingFrame;
-    short retransmit_fail_cnt;
-    unsigned int last_update_time;
+  union {
+    unsigned char buf[MAC_BUF_LEN];
+    struct _packed
+    {
+      unsigned char control;
+      unsigned char seq_num;
+      pan_dev_addr_t pan;
+      dev_addr_t src;
+      dev_addr_t dst;
+      //unsigned int time;
+      unsigned char data[64];
+    } frame;
+  };
+  unsigned char *dPtr;
+  mac_buf_state state;
+  unsigned char isRangingFrame;
+  short retransmit_fail_cnt;
+  unsigned int last_update_time;
 } mac_buf_t;
 
 typedef struct
 {
-    int slot_number;
-    mac_buf_t buf[MAC_BUF_CNT];
-    mac_buf_t rx_buf;
-    short buf_get_ind;
-    unsigned int sync_offset;
-    mac_buf_t *buf_under_tx;
+  int slot_number;
+  mac_buf_t buf[MAC_BUF_CNT];
+  mac_buf_t rx_buf;
+  short buf_get_ind;
+  unsigned int sync_offset;
+  mac_buf_t *buf_under_tx;
+  unsigned int last_rx_ts;
 } mac_instance_t;
+
+// initialize mac and transceiver
+void mac_init();
 
 // should be called at the beginning of your time slot
 void mac_transmit_buffers();
@@ -79,8 +86,12 @@ void mac_free(mac_buf_t *buf);
 // add frame to the transmit queue, buf will be released after transmission
 void mac_send(mac_buf_t *buf, bool ack_require);
 
-//change dst and src address, send according to flags, buf will be released after transmission
+// change dst and src address, send according to flags, buf will be released
+// after transmission
 int mac_send_ranging_resp(mac_buf_t *buf, uint8_t transceiver_flags);
+
+// return time in ms from last received packed
+unsigned int mac_us_from_rx();
 
 unsigned char mac_read8(mac_buf_t *frame);
 void mac_write8(mac_buf_t *frame, unsigned char value);

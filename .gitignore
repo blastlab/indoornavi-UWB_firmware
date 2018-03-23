@@ -1,0 +1,98 @@
+
+*.cproject
+*.project
+
+# file synchronization
+*.fft_db
+
+*gitversion.h
+*.mxproject
+*.xml
+
+.metadata
+bin/
+tmp/
+*Debug/
+*Src/gitversion.c
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# EAGLE
+*.b#?
+*.s#?
+*.l#?
+*/eagle.epf
+
+# Autorouter files
+*.pro
+*.job
+
+# CAM files
+*.$$$
+*.cmp
+*.ly2
+*.l15
+*.sol
+*.plc
+*.stc
+*.sts
+*.crc
+*.crs
+
+*.dri
+*.drl
+*.gpi
+*.pls
+
+*.drd
+*.drd.*
+
+*.info
+
+*.eps
+
+# file locks introduced since 7.x
+*.lck
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# PyDev specific (Python IDE for Eclipse)
+*.pydevproject
+
+
+# Java annotation processor (APT)
+.factorypath
+
+# PDT-specific (PHP Development Tools)
+.buildpath
+
+# sbteclipse plugin
+.target
+
+# Tern plugin
+.tern-project
+
+# TeXlipse plugin
+.texlipse
+
+# STS (Spring Tool Suite)
+.springBeans
+
+# Code Recommenders
+.recommenders/
+
+# Scala IDE specific (Scala & Java development for Eclipse)
+.cache-main
+.scala_dependencies
+.worksheet

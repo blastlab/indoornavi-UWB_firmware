@@ -11,7 +11,7 @@ typedef unsigned short pan_dev_addr_t;
 
 #ifndef CORTEX_M
 #ifndef __packed
-#define __packed 
+#define __packed
 #endif
 #endif
 
@@ -22,5 +22,4 @@ typedef struct
     dev_addr_t direct_src;
     struct FC_CARRY_s *carry;
 } prot_packet_info_t;
-
 #endif

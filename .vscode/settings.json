@@ -1,6 +1,3 @@
 {
-    "files.associations": {
-        "bin_parser.h": "c",
-        "mac.h": "c"
-    }
+    "editor.formatOnSave": true
 }
