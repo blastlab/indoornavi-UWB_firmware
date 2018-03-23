@@ -1,23 +1,23 @@
+#include "prot/carry.h"
 #include "unity.h"
+
+
 #include "mock_port.h"
 #include "mock_transceiver.h"
+
+#include "logs.h"
 #include "mac.h"
-#include "prot/carry.h"
+
 
 settings_t settings = DEF_SETTINGS;
 
-//FAKE_VALUE_FUNC(unsigned int, HAL_GetTick);
-//FAKE_VALUE_FUNC(mac_buff_time_t, mac_port_buff_time);
+// FAKE_VALUE_FUNC(unsigned int, HAL_GetTick);
+// FAKE_VALUE_FUNC(mac_buff_time_t, mac_port_buff_time);
 
-void setUp(void)
-{
-}
+void setUp(void) {}
 
-void tearDown(void)
-{
-}
+void tearDown(void) {}
 
-void test_carry_NeedToImplement(void)
-{
-    TEST_IGNORE_MESSAGE("Need to Implement carry");
+void test_carry_NeedToImplement(void) {
+  TEST_IGNORE_MESSAGE("Need to Implement carry");
 }
