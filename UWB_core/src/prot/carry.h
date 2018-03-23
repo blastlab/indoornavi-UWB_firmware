@@ -66,9 +66,4 @@ mac_buf_t *carry_prepare_buf_to(dev_addr_t target);
 // add packet to the transmit queue
 void carry_send(mac_buf_t *packet, bool require_ack);
 
-// events handlers:
-
-// handle incoming message
-extern prot_parser_cb carry_parser;
-
 #endif // _CARRY_H
