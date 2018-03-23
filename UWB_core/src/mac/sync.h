@@ -1,7 +1,9 @@
 #ifndef _SYNC_H
 #define _SYNC_H
 
+#include <math.h>
 #include <string.h>
+
 
 #include "../iassert.h"
 #include "../prot/prot_const.h"
@@ -11,24 +13,21 @@
 
 #define SYNC_ASSERT(expr) IASSERT(expr)
 
-typedef struct __packed
-{
+typedef struct __packed {
   uint8_t FC;
   uint8_t len;
   uint8_t num_poll_anchor;
   dev_addr_t poll_addr[0];
 } FC_SYNC_POLL_s;
 
-typedef struct __packed
-{
+typedef struct __packed {
   uint8_t FC;
   uint8_t len;
   uint32_t TsPollRx;
   uint32_t TsRespTx;
 } FC_SYNC_RESP_s;
 
-typedef struct __packed
-{
+typedef struct __packed {
   uint8_t FC;
   uint8_t len;
   uint8_t tree_level;
@@ -38,8 +37,7 @@ typedef struct __packed
   uint32_t TsRespRx[0];
 } FC_SYNC_FIN_s;
 
-typedef struct
-{
+typedef struct {
   dev_addr_t addr;
   uint8_t tree_level;
   int64_t time_offset, update_ts;
@@ -48,8 +46,7 @@ typedef struct
   float tof_dw;
 } sync_neightbour_t;
 
-typedef struct
-{
+typedef struct {
   toa_core_t toa;
   int64_t toa_ts_poll_rx_raw;
   uint8_t tree_level;
