@@ -97,7 +97,7 @@ void txt_parse(const txt_buf_t *buf)
     {
         if (txt_starts_with(buf, txt_cb_tab[i].cmd))
         {
-            //IASSERT(txt_cb_tab[i].cb != 0);
+            IASSERT(txt_cb_tab[i].cb != 0);
             txt_cb_tab[i].cb(buf, &info);
             return;
         }

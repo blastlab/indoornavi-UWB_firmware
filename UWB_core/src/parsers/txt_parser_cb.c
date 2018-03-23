@@ -38,8 +38,22 @@ void txt_version_cb(const txt_buf_t *buf, cchar *cmd, const prot_packet_info_t *
     _txt_ask(info, FC_VERSION_ASK);
 }
 
+void txt_hang_cb(const txt_buf_t *buf, cchar *cmd, const prot_packet_info_t *info)
+{
+    while (1)
+    {
+    }
+}
+
+void txt_test_cb(const txt_buf_t *buf, cchar *cmd, const prot_packet_info_t *info)
+{
+    LOG_TEST("PASS");
+}
+
 const txt_cb_t txt_cb_tab[] = {
     {"stat", txt_stat_cb},
-    {"version", txt_version_cb}};
+    {"version", txt_version_cb},
+    {"_hang", txt_hang_cb},
+    {"test", txt_test_cb}};
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);
