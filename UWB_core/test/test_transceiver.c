@@ -3,6 +3,7 @@
 
 // mocks
 #include "mock_deca_device_api.h"
+FAKE_VOID_FUNC(port_sleep_ms, unsigned int);
 FAKE_VOID_FUNC(reset_DW1000);
 FAKE_VOID_FUNC(spi_speed_slow, bool);
 FAKE_VALUE_FUNC(uint32_t, port_tick_hr);

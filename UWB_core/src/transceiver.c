@@ -343,5 +343,3 @@ static void _transceiver_init_globals_from_set(transceiver_settings_t *ts,
 
   transceiver_pac = pac[ts->dwt_config.rxPAC];
 }
-
-void deca_sleep(unsigned int time_ms) { port_sleep_ms(time_ms); }

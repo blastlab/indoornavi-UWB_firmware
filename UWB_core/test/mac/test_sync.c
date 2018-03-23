@@ -3,18 +3,14 @@
 
 #include "mac.h"
 #include "toa.h"
+#include "logs.h"
 #include "mock_transceiver.h"
 #include "mock_deca_device_api.h"
 FAKE_VALUE_FUNC(uint32_t, port_tick_hr);
+FAKE_VALUE_FUNC(uint32_t, port_freq_hr);
 FAKE_VALUE_FUNC(int, _toa_get_range_bias, uint8, int, uint8, int);
-
-int log_text(char type, const char *frm, ...)
-{
-    va_list arg;
-    va_start(arg, frm);
-    vprintf(frm, arg);
-    va_end(arg);
-}
+FAKE_VOID_FUNC(port_led_on, int);
+FAKE_VOID_FUNC(port_led_off, int);
 
 settings_t settings = DEF_SETTINGS;
 sync_instance_t sync;

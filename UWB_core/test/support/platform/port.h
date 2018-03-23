@@ -81,12 +81,10 @@ void decamutexoff(decaIrqStatus_t s);
 void spi_speed_slow(bool slow);
 
 // returns DWT_SUCCESS(0) for success or DWT_ERROR for error
-int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
-                uint32_t readlength, uint8_t *readBuffer);
+int readfromspi(uint16 headerLength, const uint8 *headerBuffer, uint32 readlength, uint8 *readBuffer);
 
 // returns DWT_SUCCESS(0) for success or DWT_ERROR for error
-int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
-               uint32_t bodylength, const uint8_t *bodyBuffer);
+int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength, const uint8 *bodyBuffer);
 
 // FLASH
 
