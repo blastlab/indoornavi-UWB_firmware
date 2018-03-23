@@ -9,6 +9,13 @@
 #include "mac/mac_port.h"
 #include "mac/sync.h"
 
+// macro to find unreleased buffer at compilation time
+#define MAC_USAGE_BUF_START(name) \
+    mac_buf_t *#name = mac_buffer(); \
+    if(#name != 0) {
+
+#define MAC_USAGE_BUF_STOP(name) mac_free(#name);}
+
 typedef struct
 {
     union {

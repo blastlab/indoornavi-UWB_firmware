@@ -10,6 +10,8 @@
 #include "carry_settings.h"
 #include "carry_const.h"
 
+#include "../parsers/bin_parser.h"
+
 // protocol struct
 typedef struct __packed
 {
@@ -18,7 +20,7 @@ typedef struct __packed
     dev_addr_t src_addr;
     unsigned char flag_hops;
     dev_addr_t hops[0];
-} carry_packet_t;
+} FC_CARRY_s;
 
 #define CARRY_HEAD_MIN_LEN (1 + 1 + sizeof(dev_addr_t) + 1)
 
@@ -59,14 +61,9 @@ int carry_write_trace(dev_addr_t *buf, dev_addr_t target);
 // to its default values. Field carry_flags can be one off CARRY_FLAG_xx,
 // when tharget is different than
 // When some error occure then return 0
-void carry_prepare(mac_buf_t *buf, dev_addr_t target, unsigned char carry_flags);
+mac_buf_t *carry_prepare_buf_to(dev_addr_t target);
 
 // add packet to the transmit queue
 void carry_send(mac_buf_t *packet, bool require_ack);
-
-// events handlers:
-
-// handle incoming message
-extern prot_parser_cb carry_parser;
 
 #endif // _CARRY_H
