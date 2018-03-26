@@ -1,14 +1,17 @@
 #include "platform/port.h"
+#include "stm32l4xx_ll_crc.h"
 
 
 void port_battery_init();
 void spi_init();
+void crc_init();
 
 void port_init()
 {
 	spi_init();
 	port_battery_init();
 	port_watchdog_init();
+	crc_init();
 }
 
 void port_watchdog_init() {

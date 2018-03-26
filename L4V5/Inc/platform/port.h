@@ -7,6 +7,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define HARDWARE_MAJOR 0
+#define HARDWARE_MINOR 1
+#define HARDWARE_UID_64 (*(uint64_t*)(0x1FFF7590))
+#define HARDWARE_OTP_ADDR 0x1FFF7000
+
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
@@ -71,6 +76,14 @@ unsigned int port_tick_hr();
 
 // get high resolution clock frequency
 unsigned int port_freq_hr();
+
+// CRC
+
+// set inital value to the crc calculator
+void port_crc_reset();
+
+// feed crc calculator with new data and return result
+uint16_t port_crc_feed(const void *data, int size);
 
 // MUTEX
 
