@@ -63,7 +63,7 @@ int carry_write_trace(dev_addr_t *buf, dev_addr_t target);
 // When some error occure then return 0
 mac_buf_t *carry_prepare_buf_to(dev_addr_t target);
 
-// add packet to the transmit queue
-void carry_send(mac_buf_t *packet, bool require_ack);
+// prepare response to the given devive
+mac_buf_t *carry_prepare_response(const prot_packet_info_t *info);
 
 #endif // _CARRY_H
