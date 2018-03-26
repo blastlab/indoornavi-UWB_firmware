@@ -1,3 +1,8 @@
 {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "files.associations": {
+        "mac.h": "c",
+        "mock_port.h": "c",
+        "mock_deca_device_api.h": "c"
+    }
 }

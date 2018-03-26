@@ -3,6 +3,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define LOG_USB_EN 1
+#define LOG_SD_EN 0
+#define LOG_USB_UART 0
 
 #define LOG_BUF_LEN 256
 
@@ -44,7 +47,7 @@ int LOG_Bin(char type, const void *bin, int size) {
   buf[f++] = type;
   buf[f++] = ' ';
   if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
-    log_text('E', "logbin: too big binary file! FC:%xh", ((uint8_t *)bin)[0]);
+    LOG_Text('E', "logbin: too big binary file! FC:%xh", ((uint8_t *)bin)[0]);
     return 0;
   } else {
     f += BASE64_Encode((unsigned char *)(buf + f), bin, size);

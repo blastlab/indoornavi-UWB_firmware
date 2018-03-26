@@ -1,15 +1,14 @@
 #ifndef _PORT_H
 #define _PORT_H
 
-#include "decadriver/deca_device_api.h" // decaIrqStatus_t
+#include "port_config.h"
 #include "stm32l4xx_hal.h"
 #include "usbd_cdc_if.h"
-#include <stdbool.h>
-#include <stdint.h>
+
 
 #define HARDWARE_MAJOR 0
 #define HARDWARE_MINOR 1
-#define HARDWARE_UID_64 (*(uint64_t*)(0x1FFF7590))
+#define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))
 #define HARDWARE_OTP_ADDR 0x1FFF7000
 
 #include "iassert.h"
@@ -108,11 +107,16 @@ int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
 
 // FLASH
 
-// czysci rejon strony flasha pod nowy firmware
-int port_flash_erase(void *flash_addr, uint32_t length);
+// save value in reset-safe backup register
+void PORT_BkpRegisterWrite(uint32_t reg, uint32_t value);
 
-// zapisuje ilosc bajtow we flashu pod wskazany adres, length % 8 musi byc rowne
-// 0
-int port_flash_save(void *destination, const void *p_source, uint32_t length);
+// read value from reset-safe backup register
+uint32_t PORT_BkpRegisterRead(uint32_t reg);
+
+// clear flash pages before fill with new data
+int PORT_FlashErase(void *flash_addr, uint32_t length);
+
+// write new data to previously erased flash memory
+int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
 #endif

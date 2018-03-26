@@ -4,20 +4,18 @@
 #include "prot/prot_const.h"
 #include "transceiver.h"
 
-
 #include "mac/mac_const.h"
 #include "mac/mac_port.h"
 #include "mac/mac_settings.h"
 #include "mac/sync.h"
 
-
 // macro to find unreleased buffer at compilation time
 #define MAC_USAGE_BUF_START(name)                                              \
-  mac_buf_t *#name = mac_buffer();                                             \
+  mac_buf_t *#name = MAC_Buffer();                                             \
   if (#name != 0) {
 
 #define MAC_USAGE_BUF_STOP(name)                                               \
-  mac_free(#name);                                                             \
+  MAC_Free(#name);                                                             \
   }
 
 typedef struct {
@@ -52,9 +50,6 @@ typedef struct {
 
 // initialize mac and transceiver
 void MAC_Init();
-
-// should be called at the beginning of your time slot
-void mac_transmit_buffers();
 
 // should be called from the frame transmitted isr
 // @param is last frame tx timestamp in dw unit time

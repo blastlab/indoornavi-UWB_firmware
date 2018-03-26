@@ -212,7 +212,7 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
   FU_instance.sesionPacketCounter = 0;
 
   // check result
-  if (port_flash_erase(FU_GetAddressToWrite(), FU_instance.fileSize) !=
+  if (PORT_FlashErase(FU_GetAddressToWrite(), FU_instance.fileSize) !=
       HAL_OK) {
     FU_SendError(info, FU_ERR_FLASH_ERASING);
     return;
@@ -259,7 +259,7 @@ static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
   uint16_t dataSize = fup->frameLen - FU_PROT_HEAD_SIZE - 2; // 2 for CRC
   unsigned char *address = FU_GetAddressToWrite() + FU_BLOCK_SIZE * fup->extra;
   PORT_WatchdogRefresh();
-  int ret = port_flash_save(address, fup->data, dataSize);
+  int ret = PORT_FlashSave(address, fup->data, dataSize);
   if (ret != 0) {
     FU_SendError(info, FU_ERR_FLASH_WRITING);
     return;
@@ -291,15 +291,6 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
   }
 }
 
-// process AskVersion opcode callback
-static void FU_AskVer(const FU_prot *fup, const prot_packet_info_t *info) {
-  FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
-  FU_tx.frameLen = FU_PROT_HEAD_SIZE + 1;
-  // todo:
-  // memcpy(&FU_tx.extra, (void*)FU_VERSION_LOC, 4);
-  FU_SendResponse(&FU_tx, info);
-}
-
 // obluga paczki przychodzacej
 void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info) {
   if (FU_IsCRCError(fup)) {
@@ -319,21 +310,28 @@ void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info) {
     FU_SOT(fup, info);
   } else if (FU_IsOpcode(fup->opcode, FU_OPCODE_EOT)) {
     FU_EOT(fup, info);
-  } else if (FU_IsOpcode(fup->opcode, FU_OPCODE_ASK_VER)) {
-    FU_AskVer(fup, info);
   } else {
     FU_SendError(info, FU_ERR_BAD_OPCODE_SET);
   }
 }
 
-// funkcja wywo�ywana z main
-void FU_Init() {
-  // DW_ASSERT(FU_MAX_PROGRAM_SIZE % FLASH_PAGE_SIZE == 0);
-  // DW_ASSERT(FU_DESTINATION_2+FU_MAX_PROGRAM_SIZE <= (void*)(FLASH_BASE +
-  // FLASH_BANK_SIZE));
-  FU_instance.newVer = FU_GetLocalHash();
 
-  // check if you should send FU_
+void FU_AcceptFirmware()
+{
+	if(PORT_BkpRegisterRead((uint32_t)&BOOTLOADER_MAGIC_REG) != BOOTLOADER_MAGIC_NUMBER)
+	{
+		PORT_BkpRegisterWrite((uint32_t)&BOOTLOADER_MAGIC_REG, BOOTLOADER_MAGIC_NUMBER);
+	}
+}
+
+// funkcja wywo�ywana z main
+void FU_Init(bool forceNoFirmwareCheck) {
+  FU_ASSERT(FU_MAX_PROGRAM_SIZE % FLASH_PAGE_SIZE == 0);
+  FU_ASSERT(FU_DESTINATION_2+FU_MAX_PROGRAM_SIZE <= (void*)(FLASH_BASE + FLASH_BANK_SIZE));
+  FU_instance.newVer = FU_GetLocalHash();
+  if(forceNoFirmwareCheck) {
+  	FU_AcceptFirmware();
+  }
 }
 
 // ===========

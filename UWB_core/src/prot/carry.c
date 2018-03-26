@@ -2,7 +2,7 @@
 
 carry_instance_t carry;
 
-void CARRY_Init() {}
+void CARRY_Init(bool isConnectedToServer) {}
 
 // return pointer to target or zero
 carry_target_t *_CARRY_FindTarget(dev_addr_t target) {

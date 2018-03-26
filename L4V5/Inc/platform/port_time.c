@@ -7,6 +7,9 @@
 
 #include "port.h"
 
+// define how many high resolution clock tick is in one us
+#define PORT_TICKS_HR_PER_US 1000
+
 void PORT_SleepMs(unsigned int time_ms) {
   int end = time_ms + PORT_TickMs();
   while (end - (int)PORT_TickMs() > 0) {

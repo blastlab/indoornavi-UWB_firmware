@@ -9,6 +9,14 @@
 #define TOA_MAX_DEV_IN_POLL 4
 #define SYNC_MAC_NEIGHTBOURS 5
 
+typedef enum
+{
+	RTLS_TAG = 'T',
+	RTLS_ANCHOR = 'A',
+	RTLS_SINK = 'S',
+	RTLS_LISTENER = 'L',
+} rtls_role;
+
 typedef struct
 {
   int fin_dly;
@@ -26,6 +34,7 @@ typedef struct
   int slots_sum_time;
   int max_frame_fail_cnt;
   toa_settings_t sync_dly;
+  rtls_role role;
   bool raport_anchor_anchor_distance;
 } mac_settings_t;
 
@@ -38,6 +47,7 @@ typedef struct
     .slot_number = 15,                     \
     .slots_sum_time = 12345,               \
     .max_frame_fail_cnt = 3,               \
+    .role = RTLS_TAG,                      \
     .raport_anchor_anchor_distance = true, \
   }
 

@@ -50,7 +50,7 @@ typedef struct
 } carry_instance_t;
 
 // initialize module data
-void CARRY_Init();
+void CARRY_Init(bool isConnectedToServer);
 
 // write trace to target, including target address
 // target address is the last one

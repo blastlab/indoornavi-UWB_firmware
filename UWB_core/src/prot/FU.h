@@ -67,7 +67,6 @@ typedef struct {
 ;
 
 // firmware upgrade protocol opcode
-#define FU_OPCODE_ASK_VER 1
 #define FU_OPCODE_SOT 2
 #define FU_OPCODE_DATA 3
 #define FU_OPCODE_ACK 4
@@ -197,10 +196,10 @@ typedef struct {
 #define FU_PROT_VERSION 1
 
 // exported functions
-void FU_Init();
+void FU_Init(bool forceNoFirmwareCheck);
+void FU_AcceptFirmware();
 uint8_t *FU_GetCurrentFlashBase();
 void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info);
-void FU_HandleAsHost(const FU_prot *fup, const prot_packet_info_t *info);
 
 // === test module ===
 //#define TEST_FU // comment to lock unit tests

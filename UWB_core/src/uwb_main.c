@@ -86,6 +86,7 @@ void UwbMain()
 	PORT_Init();
 	MAC_Init();
 	CARRY_Init();
+	FU_Init(settings.mac.role == RTLS_SINK);
 
 	while (1)
 	{

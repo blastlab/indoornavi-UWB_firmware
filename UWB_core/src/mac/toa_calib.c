@@ -163,7 +163,7 @@ const uint8 range25cm64PRFwb[2][NUM_64M_OFFSETWB] =
  *
  * returns correction needed in meters
  */
-int _toa_get_range_bias(uint8 chan, int range, uint8 prf, int smartTxPower)
+int _TOA_GetRangeBias(uint8 chan, int range, uint8 prf, int smartTxPower)
 {
   // first get the lookup index that corresponds to given range for a particular
   // channel at 16M PRF

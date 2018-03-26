@@ -1,7 +1,6 @@
 #include "sync.h"
 #include "unity.h"
 
-
 #include <math.h>
 
 #include "logs.h"
@@ -10,11 +9,11 @@
 #include "mock_transceiver.h"
 #include "toa.h"
 
-FAKE_VALUE_FUNC(uint32_t, port_tick_hr);
-FAKE_VALUE_FUNC(uint32_t, port_freq_hr);
-FAKE_VALUE_FUNC(int, _toa_get_range_bias, uint8, int, uint8, int);
-FAKE_VOID_FUNC(port_led_on, int);
-FAKE_VOID_FUNC(port_led_off, int);
+FAKE_VALUE_FUNC(uint32_t, PORT_TickHr);
+FAKE_VALUE_FUNC(uint32_t, PORT_FreqHr);
+FAKE_VALUE_FUNC(int, _TOA_GetRangeBias, uint8, int, uint8, int);
+FAKE_VOID_FUNC(PORT_LedOn, int);
+FAKE_VOID_FUNC(PORT_LedOff, int);
 
 settings_t settings = DEF_SETTINGS;
 sync_instance_t sync;
@@ -24,32 +23,32 @@ void setUp(void) {}
 void tearDown(void) {}
 
 // static functions
-int64_t sync_glob_time(int64_t dw_ts);
+int64_t SYNC_GlobTime(int64_t dw_ts);
 
 void test_sync_rw_40b_values() {
   uint8_t buf[10];
   memset(buf, 0, 10);
 
-  toa_write_40b_value(buf, 0x1122334455);
+  TOA_Write40bValue(buf, 0x1122334455);
   TEST_ASSERT_EQUAL_HEX64(0x1122334455, *(int64_t *)buf);
 
-  int64_t result = toa_read_40b_value(buf);
+  int64_t result = TOA_Read40bValue(buf);
   TEST_ASSERT_EQUAL_HEX64(0x1122334455, result);
 }
 
-void test_sync_sync_glob_time() {
+void test_sync_SYNC_GlobTime() {
   int64_t result;
 
   sync.local_obj.update_ts = 100;
   sync.local_obj.time_coeffP[0] = 0.01f;
   sync.local_obj.time_offset = 400;
-  result = sync_glob_time(1100);
+  result = SYNC_GlobTime(1100);
   TEST_ASSERT_INT64_WITHIN(1, 1100 + 10 + 400, result);
 
   sync.local_obj.update_ts = 100;
   sync.local_obj.time_coeffP[0] = 0.0f;
   sync.local_obj.time_offset = MASK_40BIT;
-  result = sync_glob_time(10);
+  result = SYNC_GlobTime(10);
   TEST_ASSERT_INT64_WITHIN(1, 9, result);
 }
 

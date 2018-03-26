@@ -6,8 +6,27 @@
  */
 #include "port.h"
 
+
+// save value in reset-safe backup register
+void PORT_BkpRegisterWrite(uint32_t reg, uint32_t value)
+{
+	PORT_ASSERT(reg > (uint32_t)&RTC->BKP0R);
+	uint32_t *ptr = (uint32_t *)reg;
+	HAL_PWR_EnableBkUpAccess();
+	*ptr = value;
+	HAL_PWR_DisableBkUpAccess();
+}
+
+// read value from reset-safe backup register
+uint32_t PORT_BkpRegisterRead(uint32_t reg)
+{
+	PORT_ASSERT(reg > (uint32_t)&RTC->BKP0R);
+	uint32_t *ptr = (uint32_t *)reg;
+	return *ptr;
+}
+
 // czysci rejon strony flasha pod nowy firmware
-int port_flash_erase(void *flash_addr, uint32_t length) {
+int PORT_FlashErase(void *flash_addr, uint32_t length) {
   PORT_ASSERT((uint32_t)flash_addr >= FLASH_BASE);
   PORT_ASSERT(length < FLASH_BANK_SIZE);
   HAL_StatusTypeDef ret = HAL_OK;
@@ -43,12 +62,12 @@ int port_flash_erase(void *flash_addr, uint32_t length) {
 
 // zapisuje ilosc bajtow we flashu pod wskazany adres, length % 8 musi byc rowne
 // 0
-int port_flash_save(void *destination, const void *p_source, uint32_t length) {
+int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
   uint8_t status = 0;
   uint32_t i = 0;
   uint8_t *dst = (uint8_t *)destination;
   uint32_t *src = (uint32_t *)p_source;
-  PORT_ASSERT((uint32_t)destination % 8 == 0);
+  PORT_ASSERT(((uint32_t)destination % 8) == 0);
   // gdy te dane sa juz tam zapisane
   // np podczas retransmisji danych
   if (memcmp(dst, p_source, length) == 0) {
