@@ -24,14 +24,14 @@ const float batterFilterCoeff = 0.5f;
 
 static unsigned int _battery_mv = 0;
 
-void port_battery_init()
+void PORT_BatteryInit()
 {
 	HAL_ADCEx_Calibration_Start(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
 	HAL_ADCEx_Calibration_GetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
 }
 
 // measure current battery voltage
-void port_battery_measure() {
+void PORT_BatteryMeasure() {
   int adcInt, adcBat, nap;
   float VDDA;
   ADC_ChannelConfTypeDef ch;
@@ -88,4 +88,4 @@ void port_battery_measure() {
 }
 
 // return last battery voltage in [mV]
-int port_battery_voltage() { return _battery_mv; }
+int PORT_BatteryVoltage() { return _battery_mv; }

@@ -114,8 +114,8 @@ static inline int FU_GetLocalHash() {
 
 // check if CRC is ok
 static uint8_t FU_IsCRCError(const FU_prot *fup) {
-  port_crc_reset();
-  return port_crc_feed(fup, fup->frameLen);
+  PORT_CrcReset();
+  return PORT_CrcFeed(fup, fup->frameLen);
 }
 
 // return 1 data in flash and packet with new version is correct
@@ -125,18 +125,18 @@ static uint8_t FU_IsFlashCRCError(const FU_prot *fup) {
   // number of file data bytes in frame, -2 for CRC
   int sizeFup = fup->frameLen - FU_PROT_HEAD_SIZE - 2;
   void *destination = FU_GetAddressToWrite();
-  port_crc_reset();
-  port_crc_feed(destination, sizeP);
-  port_crc_feed(fup->data, sizeFup);
-  port_crc_feed((uint8_t *)destination + sizeP + sizeFup,
+  PORT_CrcReset();
+  PORT_CrcFeed(destination, sizeP);
+  PORT_CrcFeed(fup->data, sizeFup);
+  PORT_CrcFeed((uint8_t *)destination + sizeP + sizeFup,
                 FU_instance.fileSize - sizeP - sizeFup);
-  return port_crc_feed(&FU_instance.newCrc, 2); // 0: ok, else error
+  return PORT_CrcFeed(&FU_instance.newCrc, 2); // 0: ok, else error
 }
 
 // calculate CRC and add it at position fup[frameLen-2] and fup[frameLen-1]
 static void FU_FillCRC(const FU_prot *fup) {
-  port_crc_reset();
-  uint16_t txCrc = port_crc_feed(fup, fup->frameLen - 2);
+  PORT_CrcReset();
+  uint16_t txCrc = PORT_CrcFeed(fup, fup->frameLen - 2);
   ((uint8_t *)(fup))[fup->frameLen - 2] =
       (uint8_t)(txCrc >> 8); // add 2 CRC bytes
   ((uint8_t *)(fup))[fup->frameLen - 1] = (uint8_t)(txCrc);
@@ -167,8 +167,8 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   fup->frameLen += 2; // correct value for CRC calculation
   FU_FillCRC(fup);
   mac_buf_t *buf = carry_prepare_response(info);
-  mac_write(buf, fup, fup->frameLen);
-  mac_send(buf, true);
+  MAC_Write(buf, fup, fup->frameLen);
+  MAC_Send(buf, true);
 }
 
 // set opcode, error code, package length then version and CRC and send message
@@ -258,7 +258,7 @@ static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
   // to zaladuj program do flash
   uint16_t dataSize = fup->frameLen - FU_PROT_HEAD_SIZE - 2; // 2 for CRC
   unsigned char *address = FU_GetAddressToWrite() + FU_BLOCK_SIZE * fup->extra;
-  port_watchdog_refresh();
+  PORT_WatchdogRefresh();
   int ret = port_flash_save(address, fup->data, dataSize);
   if (ret != 0) {
     FU_SendError(info, FU_ERR_FLASH_WRITING);
@@ -284,10 +284,10 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
     FU_instance.fileSize = 0;
     FU_instance.newHash = 0;
     LOG_INF("FU successfully firmware uploaded");
-    port_watchdog_refresh();
+    PORT_WatchdogRefresh();
     HAL_Delay(5); // to send messages
-    port_watchdog_refresh();
-    port_reboot();
+    PORT_WatchdogRefresh();
+    PORT_Reboot();
   }
 }
 

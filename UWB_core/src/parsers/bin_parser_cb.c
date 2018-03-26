@@ -3,7 +3,7 @@
 #include "../prot/carry.h"
 #include "printer.h"
 
-void _bin_finalize(uint8_t FC, const void *data, uint8_t len, const prot_packet_info_t *info)
+void _BIN_Finalize(uint8_t FC, const void *data, uint8_t len, const prot_packet_info_t *info)
 {
     if(info->direct_src == ADDR_BROADCAST)
     {
@@ -11,16 +11,16 @@ void _bin_finalize(uint8_t FC, const void *data, uint8_t len, const prot_packet_
         stat.err_cnt = 1;
         stat.to_cnt = 2;
         stat.rx_cnt = 3;
-        print_stat(&stat, settings.mac.addr);
+        PRINT_Stat(&stat, settings.mac.addr);
     }
     else
     {
         uint8_t *header = (uint8_t*)data;
         header[0] = FC;
         header[1] = len;
-        mac_buf_t *buf = carry_prepare_buf_to(info->direct_src);
-        mac_write(buf, data, len);
-        carry_send(buf, false);
+        mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src);
+        MAC_Write(buf, data, len);
+        MAC_Send(buf, false);
     }
 }
 
@@ -30,7 +30,7 @@ void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info)
     FC_STAT_s packet;
     packet.err_cnt = 1;
     packet.rx_cnt = 2;
-    _bin_finalize(FC_STAT_RESP, &packet, packet.len, info);
+    _BIN_Finalize(FC_STAT_RESP, &packet, packet.len, info);
 }
 
 const prot_cb_t prot_cb_tab[] = {

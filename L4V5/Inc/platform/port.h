@@ -34,56 +34,56 @@
 #define LED_ERR LED_R1
 
 // extra initialization for port modules
-void port_init();
+void PORT_Init();
 
 // turn led on
-void port_led_on(int LED_x);
+void PORT_LedOn(int LED_x);
 
 // turrn led off
-void port_led_off(int LED_x);
+void PORT_LedOff(int LED_x);
 
 // reset dw 1000 device by polling RST pin down for at least 500us
-void reset_DW1000();
+void PORT_ResetTransceiver();
 
 // reset STM
-void port_reboot();
+void PORT_Reboot();
 
 // turn on low power or stop mode
-void port_enter_stop_mode();
+void PORT_EnterStopMode();
 
 // start watchdog work
-void port_watchdog_init();
+void PORT_WatchdogInit();
 
 // refresh watchdog timer
-void port_watchdog_refresh();
+void PORT_WatchdogRefresh();
 
 // measure current battery voltage
-void port_battery_measure();
+void PORT_BatteryMeasure();
 
 // return last battery voltage in [mV]
-int port_battery_voltage();
+int PORT_BatteryVoltage();
 
 // TIME
 
 // nop
-void port_sleep_ms(unsigned int time_ms);
+void PORT_SleepMs(unsigned int time_ms);
 
 // get clock
-unsigned int port_tick_ms();
+unsigned int PORT_TickMs();
 
 // get high resolution clock - CPU tick counter
-unsigned int port_tick_hr();
+unsigned int PORT_TickHr();
 
 // get high resolution clock frequency
-unsigned int port_freq_hr();
+unsigned int PORT_FreqHr();
 
 // CRC
 
 // set inital value to the crc calculator
-void port_crc_reset();
+void PORT_CrcReset();
 
 // feed crc calculator with new data and return result
-uint16_t port_crc_feed(const void *data, int size);
+uint16_t PORT_CrcFeed(const void *data, int size);
 
 // MUTEX
 
@@ -96,7 +96,7 @@ void decamutexoff(decaIrqStatus_t s);
 // SPI
 
 // set SPI speed below 3MHz when param is true or below 20MHz when false
-void spi_speed_slow(bool slow);
+void PORT_SpiSpeedSlow(bool slow);
 
 // returns DWT_SUCCESS(0) for success or DWT_ERROR for error
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,

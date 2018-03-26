@@ -1,48 +1,48 @@
 #include "txt_parser.h"
 
-void _txt_finalize(mac_buf_t *buf, const prot_packet_info_t *info) {
+void _TXT_Finalize(mac_buf_t *buf, const prot_packet_info_t *info) {
   if (info->direct_src == ADDR_BROADCAST) {
     buf->dPtr = &buf->buf[0];
-    bin_parse(buf, info);
-    mac_free(buf);
+    BIN_ParseSingle(buf, info);
+    MAC_Free(buf);
   } else {
-    carry_send(buf, true);
+    MAC_Send(buf, true);
   }
 }
 
-void _txt_ask(const prot_packet_info_t *info, uint8_t FC) {
+void _TXT_Ask(const prot_packet_info_t *info, uint8_t FC) {
   dev_addr_t addr = info->direct_src;
   mac_buf_t *buf =
-      addr == ADDR_BROADCAST ? mac_buffer() : carry_prepare_buf_to(addr);
+      addr == ADDR_BROADCAST ? MAC_Buffer() : CARRY_PrepareBufTo(addr);
   if (buf != 0) {
-    mac_write8(buf, FC);
-    mac_write8(buf, 2); // len
-    _txt_finalize(buf, info);
+    MAC_Write8(buf, FC);
+    MAC_Write8(buf, 2); // len
+    _TXT_Finalize(buf, info);
   }
 }
 
 // === callbacks ===
 
-void txt_stat_cb(const txt_buf_t *buf, const prot_packet_info_t *info) {
-  _txt_ask(info, FC_STAT_ASK);
+void TXT_StatCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
+  _TXT_Ask(info, FC_STAT_ASK);
 }
 
-void txt_version_cb(const txt_buf_t *buf, const prot_packet_info_t *info) {
-  _txt_ask(info, FC_VERSION_ASK);
+void TXT_VersionCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
+  _TXT_Ask(info, FC_VERSION_ASK);
 }
 
-void txt_hang_cb(const txt_buf_t *buf, const prot_packet_info_t *info) {
+void TXT_HangCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
   while (1) {
   }
 }
 
-void txt_test_cb(const txt_buf_t *buf, const prot_packet_info_t *info) {
+void TXT_TestCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
   LOG_TEST("PASS");
 }
 
-const txt_cb_t txt_cb_tab[] = {{"stat", txt_stat_cb},
-                               {"version", txt_version_cb},
-                               {"_hang", txt_hang_cb},
-                               {"test", txt_test_cb}};
+const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
+                               {"version", TXT_VersionCb},
+                               {"_hang", TXT_HangCb},
+                               {"test", TXT_TestCb}};
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

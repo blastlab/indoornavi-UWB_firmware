@@ -153,7 +153,7 @@ int sync_send_poll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt)
 {
   SYNC_ASSERT(0 < anc_cnt && anc_cnt < 8);
   SYNC_ASSERT(dst != ADDR_BROADCAST);
-  mac_buf_t *buf = mac_buffer_prepare(dst, false);
+  mac_buf_t *buf = MAC_BufferPrepare(dst, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
   if (buf == 0)
   {
@@ -166,7 +166,7 @@ int sync_send_poll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt)
       .num_poll_anchor = anc_cnt,
   };
   memcpy(&packet.poll_addr[0], &anchors[0], anc_addr_len);
-  mac_write(buf, &packet, packet.len);
+  MAC_Write(buf, &packet, packet.len);
 
   sync.toa.addr_tab[0] = dst;
   memcpy(&sync.toa.addr_tab[1], anchors, anc_addr_len);
@@ -174,7 +174,7 @@ int sync_send_poll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt)
   // send this frame in your slot but with ranging flage
   buf->isRangingFrame = true;
   toa_state(&sync.toa, TOA_POLL_WAIT_TO_SEND);
-  mac_send(buf, false);
+  MAC_Send(buf, false);
   return 0;
 }
 
@@ -186,14 +186,14 @@ int sync_send_resp(int64_t PollDwRxTs)
   sync.toa.TsRespTx = toa_set_tx_time(PollDwRxTs, resp_dly);
   sync.toa.TsRespTx = sync_glob_time(sync.toa.TsRespTx);
 
-  mac_buf_t *buf = mac_buffer_prepare(sync.toa.initiator, false);
+  mac_buf_t *buf = MAC_BufferPrepare(sync.toa.initiator, false);
   FC_SYNC_RESP_s packet = {
       .FC = FC_SYNC_RESP,
       .len = sizeof(FC_SYNC_RESP_s),
       .TsPollRx = sync.toa.TsPollRx,
       .TsRespTx = sync.toa.TsRespTx,
   };
-  mac_write(buf, &packet, packet.len);
+  MAC_Write(buf, &packet, packet.len);
 
   int tx_to_rx_dly = tset->resp_dly[sync.toa.anc_in_poll_cnt];
   tx_to_rx_dly += tset->fin_dly - tset->guard_time - resp_dly;
@@ -202,7 +202,7 @@ int sync_send_resp(int64_t PollDwRxTs)
 
   toa_state(&sync.toa, TOA_RESP_WAIT_TO_SEND);
   const int tx_flags = DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED;
-  return mac_send_ranging_resp(buf, tx_flags);
+  return MAC_SendRangingResp(buf, tx_flags);
 }
 
 int sync_send_final()
@@ -212,7 +212,7 @@ int sync_send_final()
   fin_dly += tset->fin_dly;
   int64_t TsFinTx = toa_set_tx_time(sync.toa.TsPollTx, fin_dly);
 
-  mac_buf_t *buf = mac_buffer_prepare(sync.toa.addr_tab[0], false);
+  mac_buf_t *buf = MAC_BufferPrepare(sync.toa.addr_tab[0], false);
   FC_SYNC_FIN_s packet = {
       .FC = FC_SYNC_FIN,
       .len = sizeof(FC_SYNC_FIN_s),
@@ -224,11 +224,11 @@ int sync_send_final()
   int resp_rx_ts_len = sizeof(*packet.TsRespRx) * sync.toa.anc_in_poll_cnt;
   packet.len += resp_rx_ts_len;
   memcpy(&packet.TsRespRx[0], &sync.toa.TsRespRx[0], resp_rx_ts_len);
-  mac_write(buf, &packet, packet.len);
+  MAC_Write(buf, &packet, packet.len);
 
   toa_state(&sync.toa, TOA_FIN_WAIT_TO_SEND);
   const int tx_flags = DWT_START_TX_DELAYED;
-  return mac_send_ranging_resp(buf, tx_flags);
+  return MAC_SendRangingResp(buf, tx_flags);
 }
 
 int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info)
@@ -237,7 +237,7 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info)
   FC_SYNC_POLL_s *packet = (FC_SYNC_POLL_s *)data;
   SYNC_ASSERT(packet->FC == FC_SYNC_FIN);
   PROT_CHECK_LEN(FC_SYNC_POLL, packet->len, sizeof(FC_SYNC_POLL_s));
-  int64_t rx_ts = transceiver_get_rx_timestamp();
+  int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
   sync.toa_ts_poll_rx_raw = rx_ts;
   sync.toa.TsPollRx = sync_glob_time(rx_ts);
@@ -267,7 +267,7 @@ int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info)
   FC_SYNC_FIN_s *packet = (FC_SYNC_FIN_s *)data;
   SYNC_ASSERT(packet->FC == FC_SYNC_FIN);
   PROT_CHECK_LEN(FC_SYNC_RESP, packet->len, sizeof(FC_SYNC_RESP_s));
-  int64_t rx_ts = transceiver_get_rx_timestamp();
+  int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
   sync.toa.TsRespRx[sync.toa.resp_ind++] = sync_glob_time(rx_ts);
   if (sync.toa.resp_ind >= sync.toa.anc_in_poll_cnt)
@@ -301,7 +301,7 @@ int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info)
   // read timestamps
   sync.toa.TsPollTx = packet->TsPollTx;
   sync.toa.TsRespRx[sync.toa.resp_ind] = packet->TsRespRx[sync.toa.resp_ind];
-  sync.toa.TsFinRx = sync_glob_time(transceiver_get_rx_timestamp());
+  sync.toa.TsFinRx = sync_glob_time(TRANSCEIVER_GetRxTimestamp());
   int64_t ext_time = toa_read_40b_value(packet->TsFinTxBuf);
   int64_t loc_time = sync.toa.TsFinRx;
 

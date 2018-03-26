@@ -26,18 +26,18 @@ typedef struct {
 } txt_cb_t;
 
 // return pointer to parameter number @num
-cchar *txt_point_param_number(const txt_buf_t *buf, cchar *cmd, int num);
+cchar *TXT_PointParamNumber(const txt_buf_t *buf, cchar *cmd, int num);
 
 // return integer from string (in circular buffer) pointed by ptr
-int txt_atoi(const txt_buf_t *buf, cchar *ptr, int base);
+int TXT_AtoI(const txt_buf_t *buf, cchar *ptr, int base);
 
 // return pointer to
-int txt_get_param(const txt_buf_t *buf, cchar *cmd, int base);
+int TXT_GetParam(const txt_buf_t *buf, cchar *cmd, int base);
 
 // return true if @buf.cmd starts with @cmd
-bool txt_starts_with(const txt_buf_t *buf, cchar *cmd);
+bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd);
 
 // parse command
-void txt_parse(const txt_buf_t *buf);
+void TXT_Parse(const txt_buf_t *buf);
 
 #endif // _TXT_PARSER_H

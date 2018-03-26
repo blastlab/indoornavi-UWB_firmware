@@ -8,6 +8,6 @@
 #ifndef UWB_MAIN_H_
 #define UWB_MAIN_H_
 
-void uwb_main();
+void UwbMain();
 
 #endif /* UWB_MAIN_H_ */

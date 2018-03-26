@@ -28,11 +28,11 @@ int port_flash_erase(void *flash_addr, uint32_t length) {
 
   // erase flash
   HAL_FLASH_Unlock();
-  port_watchdog_refresh();
+  PORT_WatchdogRefresh();
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
   while (ret == HAL_OK && nPages > 0) {
     ret = HAL_FLASHEx_Erase(&feitd, &pageError); // up to 25ms
-    port_watchdog_refresh(); // necessarily refresh watchdog after page erase
+    PORT_WatchdogRefresh(); // necessarily refresh watchdog after page erase
     --nPages;
     ++feitd.Page;
   }

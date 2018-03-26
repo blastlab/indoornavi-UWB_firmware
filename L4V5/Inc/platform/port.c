@@ -2,19 +2,19 @@
 #include "stm32l4xx_ll_crc.h"
 
 
-void port_battery_init();
-void spi_init();
-void crc_init();
+void PORT_BatteryInit();
+void PORT_SpiInit();
+void PORT_CrcInit();
 
-void port_init()
+void PORT_Init()
 {
-	spi_init();
-	port_battery_init();
-	port_watchdog_init();
-	crc_init();
+	PORT_SpiInit();
+	PORT_BatteryInit();
+	PORT_WatchdogInit();
+	PORT_CrcInit();
 }
 
-void port_watchdog_init() {
+void PORT_WatchdogInit() {
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_WWDG);
   LL_WWDG_SetCounter(WWDG, 127);
   LL_WWDG_Enable(WWDG);
@@ -22,14 +22,14 @@ void port_watchdog_init() {
   LL_WWDG_SetWindow(WWDG, 127);
 }
 
-void port_watchdog_refresh() {
+void PORT_WatchdogRefresh() {
   if (LL_WWDG_GetCounter(WWDG) < LL_WWDG_GetWindow(WWDG)) {
     LL_WWDG_SetCounter(WWDG, 127);
   }
 }
 
 // turn led on
-void port_led_on(int LED_x) {
+void PORT_LedOn(int LED_x) {
   switch (LED_x) {
   case LED_G1:
     LL_GPIO_SetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
@@ -44,7 +44,7 @@ void port_led_on(int LED_x) {
 }
 
 // turrn led off
-void port_led_off(int LED_x) {
+void PORT_LedOff(int LED_x) {
   switch (LED_x) {
   case LED_G1:
     LL_GPIO_ResetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
@@ -59,7 +59,7 @@ void port_led_off(int LED_x) {
 }
 
 // reset dw 1000 device by polling RST pin down for a few ms
-void reset_DW1000() {
+void PORT_ResetTransceiver() {
   // May be pulled low by external open drain driver to reset the DW1000.
   // Must not be pulled high by external source.
   // from DW1000 datasheet table 1
@@ -74,7 +74,7 @@ void reset_DW1000() {
 
   // drive the RSTn pin low
   HAL_GPIO_WritePin(DW_RST_GPIO_Port, DW_RST_Pin, GPIO_PIN_RESET);
-  port_sleep_ms(2);
+  PORT_SleepMs(2);
 
   // put the pin back to tri-state ... as input
   GPIO_InitStructure.Pin = DW_RST_Pin;
@@ -86,18 +86,18 @@ void reset_DW1000() {
   HAL_Delay(2);
 }
 
-void port_reboot() {
+void PORT_Reboot() {
   // turn off USB, to reconnect after reset
   // it help from usb timeout error from the host side
   USB_StopDevice(USB);
   USB_DevDisconnect(USB);
-  port_sleep_ms(10); // to be sure
+  PORT_SleepMs(10); // to be sure
   NVIC_SystemReset();
 }
 
-void port_enter_stop_mode() {
+void PORT_EnterStopMode() {
   __disable_irq();
-  port_led_off(LED_R1);
-  port_led_off(LED_G1);
+  PORT_LedOff(LED_R1);
+  PORT_LedOff(LED_G1);
   HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 }

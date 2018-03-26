@@ -50,18 +50,18 @@ typedef struct
 } carry_instance_t;
 
 // initialize module data
-void carry_init();
+void CARRY_Init();
 
 // write trace to target, including target address
 // target address is the last one
 // return number of written addresses or 0 when target is unknown
-int carry_write_trace(dev_addr_t *buf, dev_addr_t target);
+int CARRY_WriteTrace(dev_addr_t *buf, dev_addr_t target);
 
 // reserve buffer, write message headers and set buffer fields
 // to its default values. Field carry_flags can be one off CARRY_FLAG_xx,
 // when tharget is different than
 // When some error occure then return 0
-mac_buf_t *carry_prepare_buf_to(dev_addr_t target);
+mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target);
 
 // prepare response to the given devive
 mac_buf_t *carry_prepare_response(const prot_packet_info_t *info);

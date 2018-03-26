@@ -8,32 +8,32 @@
 #include "mac/mac.h"
 #include "prot/carry.h"
 
-void desynchronize()
+void Desynchronize()
 {
 	unsigned int seed = HAL_GetTick();
-	port_sleep_ms(rand_r(&seed) % 100);
-	port_watchdog_refresh();
+	PORT_SleepMs(rand_r(&seed) % 100);
+	PORT_WatchdogRefresh();
 }
 
-void turn_off()
+void TurnOff()
 {
 	// log turn off to host
 	LOG_INF("turn off");
 
 	// wait for packet transmission
-	port_sleep_ms(100);
+	PORT_SleepMs(100);
 
-	transceiver_enter_deep_sleep();
-	port_led_off(LED_R1);
-	port_led_off(LED_G1);
+	TRANSCEIVER_EnterDeepSleep();
+	PORT_LedOff(LED_R1);
+	PORT_LedOff(LED_G1);
 
 	// 3 times blink leds
 	for (int i = 0; i < 3; ++i)
 	{
-		port_sleep_ms(300);
-		port_led_on(LED_R1);
-		port_sleep_ms(300);
-		port_led_off(LED_R1);
+		PORT_SleepMs(300);
+		PORT_LedOn(LED_R1);
+		PORT_SleepMs(300);
+		PORT_LedOff(LED_R1);
 	}
 
 	//disable IRQ
@@ -45,53 +45,53 @@ void turn_off()
 	HAL_PWR_EnableBkUpAccess();
 	BOOTLOADER_MAGIC_REG = BOOTLOADER_MAGIC_REG_GO_SLEEP;
 	HAL_PWR_DisableBkUpAccess();
-	port_reboot();
+	PORT_Reboot();
 	while (1)
 		;
 }
 
-void battery_control()
+void BatteryControl()
 {
 	static unsigned int last_batt_measure_time = 0;
-	if (port_tick_ms() - last_batt_measure_time > 5000)
+	if (PORT_TickMs() - last_batt_measure_time > 5000)
 	{
-		port_battery_measure();
-		last_batt_measure_time = port_tick_ms();
+		PORT_BatteryMeasure();
+		last_batt_measure_time = PORT_TickMs();
 
-		if (2400 < port_battery_voltage() && port_battery_voltage() < 3100)
+		if (2400 < PORT_BatteryVoltage() && PORT_BatteryVoltage() < 3100)
 		{
-			turn_off();
+			TurnOff();
 		}
 	}
 }
 
-void ranging_control()
+void RangingControl()
 {
 }
 
-void uwb_main()
+void UwbMain()
 {
 
 	if (BOOTLOADER_MAGIC_REG == BOOTLOADER_MAGIC_REG_GO_SLEEP)
 	{
 		while (1)
 		{
-			port_enter_stop_mode();
+			PORT_EnterStopMode();
 		}
 	}
 
-	settings_init();
-	desynchronize();
+	SETTINGS_Init();
+	Desynchronize();
 
-	port_init();
-	mac_init();
-	carry_init();
+	PORT_Init();
+	MAC_Init();
+	CARRY_Init();
 
 	while (1)
 	{
-		port_led_off(LED_STAT);
-		port_led_off(LED_ERR);
-		battery_control();
-		ranging_control();
+		PORT_LedOff(LED_STAT);
+		PORT_LedOff(LED_ERR);
+		BatteryControl();
+		RangingControl();
 	}
 }

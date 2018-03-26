@@ -16,9 +16,10 @@ typedef struct
     prot_parser_cb cb;
 } prot_cb_t;
 
-extern const prot_cb_t prot_cb_tab[];;
+extern const prot_cb_t prot_cb_tab[];
 extern const int prot_cb_len;
 
-void bin_parse();
+uint8_t BIN_ParseSingle(mac_buf_t *buf, const prot_packet_info_t *info);
+void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, uint8_t size);
 
 #endif // _PROT_PARSER_H

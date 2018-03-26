@@ -50,6 +50,6 @@ typedef struct {
 extern settings_t settings;
 extern settings_otp_t const *settings_otp;
 
-void settings_init();
+void SETTINGS_Init();
 
 #endif

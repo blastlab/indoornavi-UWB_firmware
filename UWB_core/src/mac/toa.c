@@ -9,7 +9,7 @@ void toa_state(toa_core_t *toa, toa_state_t state) { toa->state = state; }
 void toa_add_measure(dev_addr_t addr, int distance)
 {
   int16_t cRSSI, cFPP, cSNR;
-  transceiver_read_diagnostic(&cRSSI, &cFPP, &cSNR);
+  TRANSCEIVER_ReadDiagnostic(&cRSSI, &cFPP, &cSNR);
   LOG_INF("measure id:%X dist:%d rssi:%d", addr, distance, cRSSI);
 }
 

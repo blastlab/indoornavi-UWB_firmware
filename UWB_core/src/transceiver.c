@@ -5,31 +5,31 @@ int transceiver_plen = 0;
 int transceiver_pac = 0;
 int transceiver_sfd = 0;
 
-static void _transceiver_fill_txconfig(transceiver_settings_t *ts);
-static void _transceiver_init_globals_from_set(transceiver_settings_t *ts,
+static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts);
+static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
                                                bool set_default_pac);
 
-int transceiver_init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
+int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
 {
   int ret;
 
   // set global variables correct with transceiver settings and update pac size
   if (settings.transceiver.dwt_txconfig.power == 0)
   {
-    _transceiver_fill_txconfig(&settings.transceiver);
-    _transceiver_init_globals_from_set(&settings.transceiver, 1);
+    _TRANSCEIVER_FillTxConfig(&settings.transceiver);
+    _TRANSCEIVER_InitGlobalsFromSet(&settings.transceiver, 1);
   }
   else
   {
-    _transceiver_init_globals_from_set(&settings.transceiver, 0);
+    _TRANSCEIVER_InitGlobalsFromSet(&settings.transceiver, 0);
   }
 
   // reset device
-  reset_DW1000();
-  port_sleep_ms(5);
+  PORT_ResetTransceiver();
+  PORT_SleepMs(5);
 
   // set spi low rate and check connection
-  spi_speed_slow(true);
+  PORT_SpiSpeedSlow(true);
   ret = dwt_readdevid();
   TRANSCEIVER_ASSERT(ret == DWT_DEVICE_ID);
 
@@ -38,7 +38,7 @@ int transceiver_init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
   TRANSCEIVER_ASSERT(ret == DWT_SUCCESS);
 
   // set spi rate high and check connection
-  spi_speed_slow(false);
+  PORT_SpiSpeedSlow(false);
   ret = dwt_readdevid();
   TRANSCEIVER_ASSERT(ret == DWT_DEVICE_ID);
 
@@ -76,12 +76,12 @@ int transceiver_init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
   }
 
   // turn on default rx mode
-  transceiver_default_rx();
+  TRANSCEIVER_DefaultRx();
 
   return 0;
 }
 
-void transceiver_set_cb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
+void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
                         dwt_cb_t rxerr_cb)
 {
   // connect interrupts
@@ -93,7 +93,7 @@ void transceiver_set_cb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
   dwt_setcallbacks(tx_cb, rx_cb, rxto_cb, rxerr_cb);
 }
 
-void transceiver_default_rx()
+void TRANSCEIVER_DefaultRx()
 {
   if (settings.transceiver.low_power_mode)
   {
@@ -103,7 +103,7 @@ void transceiver_default_rx()
   }
 }
 
-void transceiver_enter_deep_sleep()
+void TRANSCEIVER_EnterDeepSleep()
 {
   dwt_forcetrxoff();
   dwt_setleds(0);
@@ -111,22 +111,22 @@ void transceiver_enter_deep_sleep()
   dwt_entersleep();
 }
 
-void transceiver_wake_up(uint8_t *buf, int len)
+void TRANSCEIVER_WakeUp(uint8_t *buf, int len)
 {
   TRANSCEIVER_ASSERT(len >= 200);
-  spi_speed_slow(true);
+  PORT_SpiSpeedSlow(true);
 
   // Need to keep chip select line low for at least 500us
   int ret = dwt_spicswakeup(buf, len);
   TRANSCEIVER_ASSERT(ret == DWT_SUCCESS);
-  spi_speed_slow(true);
+  PORT_SpiSpeedSlow(true);
 
   //wt_configuretxrf(&settings.transceiver.dwt_txconfig);
   dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
   dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
 }
 
-int64_t transceiver_get_rx_timestamp(void)
+int64_t TRANSCEIVER_GetRxTimestamp(void)
 {
   uint8_t ts_tab[5];
   int64_t ts = 0;
@@ -140,7 +140,7 @@ int64_t transceiver_get_rx_timestamp(void)
   return ts;
 }
 
-int64_t transceiver_get_tx_timestamp(void)
+int64_t TRANSCEIVER_GetTxTimestamp(void)
 {
   uint8_t ts_tab[5];
   int64_t ts = 0;
@@ -154,7 +154,7 @@ int64_t transceiver_get_tx_timestamp(void)
   return ts;
 }
 
-int64_t transceiver_get_time()
+int64_t TRANSCEIVER_GetTime()
 {
   uint8_t ts_tab[5];
   int64_t ts = 0;
@@ -168,7 +168,7 @@ int64_t transceiver_get_time()
   return ts;
 }
 
-void transceiver_read_diagnostic(int16_t *cRSSI, int16_t *cFPP, int16_t *cSNR)
+void TRANSCEIVER_ReadDiagnostic(int16_t *cRSSI, int16_t *cFPP, int16_t *cSNR)
 {
   dwt_rxdiag_t diag;
   dwt_readdiagnostics(&diag);
@@ -199,7 +199,7 @@ void transceiver_read_diagnostic(int16_t *cRSSI, int16_t *cFPP, int16_t *cSNR)
   }
 }
 
-int transceiver_send(const void *buf, unsigned int len)
+int TRANSCEIVER_Send(const void *buf, unsigned int len)
 {
   TRANSCEIVER_ASSERT(buf != 0);
   const bool ranging_frame = false;
@@ -209,7 +209,7 @@ int transceiver_send(const void *buf, unsigned int len)
   return dwt_starttx(DWT_START_TX_IMMEDIATE);
 }
 
-int transceiver_send_ranging(const void *buf, unsigned int len, uint8_t flags)
+int TRANSCEIVER_SendRanging(const void *buf, unsigned int len, uint8_t flags)
 {
   TRANSCEIVER_ASSERT(buf != 0);
   const bool ranging_frame = true;
@@ -219,12 +219,12 @@ int transceiver_send_ranging(const void *buf, unsigned int len, uint8_t flags)
   return dwt_starttx(flags);
 }
 
-void transceiver_read(void *buf, unsigned int len)
+void TRANSCEIVER_Read(void *buf, unsigned int len)
 {
   dwt_readrxdata(buf, len, 0);
 }
 
-int transceiver_estimate_tx_time_us(unsigned int len)
+int TRANSCEIVER_EstimateTxTimeUs(unsigned int len)
 {
   const uint16_t data_block_size = 330;
   const uint16_t reed_solomon_bits = 48;
@@ -258,7 +258,7 @@ int transceiver_estimate_tx_time_us(unsigned int len)
   return (int)(1e6 * tx_time);
 }
 
-static void _transceiver_fill_txconfig(transceiver_settings_t *ts)
+static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts)
 {
   int ch = ts->dwt_config.chan;
   // tx data, depends on channel
@@ -285,7 +285,7 @@ static void _transceiver_fill_txconfig(transceiver_settings_t *ts)
   }
 }
 
-static void _transceiver_init_globals_from_set(transceiver_settings_t *ts,
+static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
                                                bool set_default_pac)
 {
   TRANSCEIVER_ASSERT(ts != 0);

@@ -28,7 +28,7 @@ bool settings_is_otp_erased()
   return i < sizeof(settings_otp_t);
 }
 
-void settings_init() {
+void SETTINGS_Init() {
 	// variable settings
   settings = _startup_settings;
 

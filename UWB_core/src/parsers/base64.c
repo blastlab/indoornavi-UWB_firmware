@@ -8,7 +8,7 @@
 #include "base64.h"
 
 // char in ASCII to unsigned char in dec
-static unsigned char base64_ctoi(unsigned char c) {
+static unsigned char BASE64_CtoI(unsigned char c) {
   if (c >= 'A' && c <= 'Z') {
     return c - 'A';
   } else if (c >= 'a' && c <= 'z') {
@@ -27,7 +27,7 @@ static unsigned char base64_ctoi(unsigned char c) {
 }
 
 // convert unsigned char in dec to base64 ASCII
-static unsigned char base64_itoc(unsigned char s) {
+static unsigned char BASE64_ItoC(unsigned char s) {
   if (s < 26)
     return s + 'A';
   else if (s < 52) {
@@ -43,7 +43,7 @@ static unsigned char base64_itoc(unsigned char s) {
 }
 
 // return 1 if it is end of base64 char
-static unsigned char base64_endc(unsigned char c) {
+static unsigned char BASE64_EndC(unsigned char c) {
   if (c == '=' || c == ' ' || c == 0) {
     return 1;
   } else {
@@ -52,7 +52,7 @@ static unsigned char base64_endc(unsigned char c) {
 }
 
 // return base64 text size (without null terminator) based on given binary size
-int base64_textSize(unsigned int binSize) {
+int BASE64_TextSize(unsigned int binSize) {
   binSize = (binSize % 3) == 0 ? (binSize / 3) : (binSize / 3 + 1);
   return binSize * 4;
 }
@@ -60,7 +60,7 @@ int base64_textSize(unsigned int binSize) {
 // from bin to base64
 // return dst buffer size
 // function add terminating 0 at the end of dst
-int base64_encode(unsigned char *dst, const unsigned char *src,
+int BASE64_Encode(unsigned char *dst, const unsigned char *src,
                   unsigned short srcSize) {
 #ifdef BASE64_TEST
   assert_pram(dst != src);
@@ -74,7 +74,7 @@ int base64_encode(unsigned char *dst, const unsigned char *src,
     unsigned int r = ((unsigned int)a << 16) + ((unsigned int)b << 8) + c;
     --s;
     for (signed char i = 18; i >= 0; i -= 6) {
-      *dst = base64_itoc((r >> i) & 0x3F);
+      *dst = BASE64_ItoC((r >> i) & 0x3F);
       ++dst;
       if (++s >= srcSize) {
         break;
@@ -95,24 +95,24 @@ int base64_encode(unsigned char *dst, const unsigned char *src,
 // from base64 to bin
 // return size of bytes in dst buffer without terminating zero
 // function decode src buff to \0 char or to first occurence of '='
-int base64_decode(unsigned char *dst, const unsigned char *src,
+int BASE64_Decode(unsigned char *dst, const unsigned char *src,
                   unsigned short dstBufCapacity) {
   unsigned char *base_dst = dst;
   unsigned char tmp[4];
   register int i;
-  for (register int d = 0; base64_endc(src[0]) == 0; d += 3, src += 4) {
+  for (register int d = 0; BASE64_EndC(src[0]) == 0; d += 3, src += 4) {
     // przekonweruj ascii do bin, nie przechodzac przez znak konca napisu
     for (i = 0; i < 4; ++i) {
-      tmp[i] = base64_ctoi(src[i]);
+      tmp[i] = BASE64_CtoI(src[i]);
     }
 
     // decode
     *(dst++) = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
-    if (base64_endc(src[2])) {
+    if (BASE64_EndC(src[2])) {
       break;
     } else {
       *(dst++) = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
-      if (base64_endc(src[3])) {
+      if (BASE64_EndC(src[3])) {
         break; // end of characters
       } else {
         *(dst++) = ((tmp[2] & 0x3) << 6) + tmp[3];

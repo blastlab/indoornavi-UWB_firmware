@@ -8,7 +8,7 @@
 
 static char buf[LOG_BUF_LEN + 1];
 
-int log_text(char type, const char *frm, ...) {
+int LOG_Text(char type, const char *frm, ...) {
   int n, f;
   va_list arg;
   va_start(arg, frm);
@@ -38,16 +38,16 @@ int log_text(char type, const char *frm, ...) {
   return n;
 }
 
-int log_bin(char type, const void *bin, int size) {
+int LOG_Bin(char type, const void *bin, int size) {
   int f;
   f = 0;
   buf[f++] = type;
   buf[f++] = ' ';
-  if (base64_textSize(size) + f >= LOG_BUF_LEN) {
+  if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
     log_text('E', "logbin: too big binary file! FC:%xh", ((uint8_t *)bin)[0]);
     return 0;
   } else {
-    f += base64_encode((unsigned char *)(buf + f), bin, size);
+    f += BASE64_Encode((unsigned char *)(buf + f), bin, size);
     buf[f++] = '\n';
     CDC_Transmit_FS((uint8_t *)buf, f);
     return f;

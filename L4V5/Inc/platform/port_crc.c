@@ -6,19 +6,19 @@
  */
 #include "port.h"
 
-void crc_init()
+void PORT_CrcInit()
 {
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_CRC);
   LL_CRC_SetPolynomialCoef(CRC, 0x1DB7);
   LL_CRC_SetPolynomialSize(CRC, LL_CRC_POLYLENGTH_16B);
 }
 
-void port_crc_reset()
+void PORT_CrcReset()
 {
 	LL_CRC_SetInitialData(CRC, 0xFFFF);
 }
 
-uint16_t port_crc_feed(const void *data, int size)
+uint16_t PORT_CrcFeed(const void *data, int size)
 {
 	const uint8_t *dPtr = (uint8_t*)data;
   for (; size > 3; dPtr += 4, size -= 4) {

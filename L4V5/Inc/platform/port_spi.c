@@ -24,7 +24,7 @@
 #define DW_DMACH_TX DMA1_Channel3
 #endif
 
-void spi_speed_slow(bool slow) {
+void PORT_SpiSpeedSlow(bool slow) {
   if (!slow) {
     LL_SPI_SetBaudRatePrescaler(DW_SPI, LL_SPI_BAUDRATEPRESCALER_DIV2);
   } else {
@@ -142,7 +142,7 @@ int spi_read(uint16_t headerLength, const uint8_t *headerBuffer,
 
 #else
 
-void spi_init() {
+void PORT_SpiInit() {
   const uint32_t conf = LL_DMA_MODE_NORMAL | LL_DMA_PRIORITY_VERYHIGH |
                         LL_DMA_PERIPH_NOINCREMENT | LL_DMA_MEMORY_INCREMENT |
                         LL_DMA_PDATAALIGN_BYTE | // peripherial data size

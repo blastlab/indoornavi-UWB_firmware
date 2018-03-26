@@ -7,16 +7,16 @@
 
 #include "port.h"
 
-void port_sleep_ms(unsigned int time_ms) {
-  int end = time_ms + port_tick_ms();
-  while (end - (int)port_tick_ms() > 0) {
-    port_watchdog_refresh();
+void PORT_SleepMs(unsigned int time_ms) {
+  int end = time_ms + PORT_TickMs();
+  while (end - (int)PORT_TickMs() > 0) {
+    PORT_WatchdogRefresh();
   }
 }
 
-unsigned int port_tick_ms() { return HAL_GetTick(); }
+unsigned int PORT_TickMs() { return HAL_GetTick(); }
 
 // get high resosolution clock tick
-unsigned int port_tick_hr() { return 0; }
+unsigned int PORT_TickHr() { return 0; }
 
-unsigned int port_freq_hr() { return HAL_RCC_GetSysClockFreq(); }
+unsigned int PORT_FreqHr() { return HAL_RCC_GetSysClockFreq(); }
