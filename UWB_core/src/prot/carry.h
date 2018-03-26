@@ -3,12 +3,14 @@
 
 #include <string.h> // memcpy
 
+#include "../mac/mac.h"
+#include "../settings.h"
 #include "prot_const.h"
-#include "mac/mac.h"
-#include "settings.h"
 
-#include "carry_settings.h"
 #include "carry_const.h"
+#include "carry_settings.h"
+
+#include "../parsers/bin_parser.h"
 
 // protocol struct
 typedef struct __packed
@@ -18,7 +20,7 @@ typedef struct __packed
     dev_addr_t src_addr;
     unsigned char flag_hops;
     dev_addr_t hops[0];
-} carry_packet_t;
+} FC_CARRY_s;
 
 #define CARRY_HEAD_MIN_LEN (1 + 1 + sizeof(dev_addr_t) + 1)
 
@@ -48,25 +50,20 @@ typedef struct
 } carry_instance_t;
 
 // initialize module data
-void carry_init();
+void CARRY_Init();
 
 // write trace to target, including target address
 // target address is the last one
 // return number of written addresses or 0 when target is unknown
-int carry_write_trace(dev_addr_t *buf, dev_addr_t target);
+int CARRY_WriteTrace(dev_addr_t *buf, dev_addr_t target);
 
 // reserve buffer, write message headers and set buffer fields
 // to its default values. Field carry_flags can be one off CARRY_FLAG_xx,
 // when tharget is different than
 // When some error occure then return 0
-void carry_prepare(mac_buf_t *buf, dev_addr_t target, unsigned char carry_flags);
+mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target);
 
-// add packet to the transmit queue
-void carry_send(mac_buf_t *packet, bool require_ack);
-
-// events handlers:
-
-// handle incoming message
-extern prot_parser_cb carry_parser;
+// prepare response to the given devive
+mac_buf_t *carry_prepare_response(const prot_packet_info_t *info);
 
 #endif // _CARRY_H

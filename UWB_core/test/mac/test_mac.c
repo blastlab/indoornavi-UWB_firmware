@@ -1,10 +1,11 @@
 #include "unity.h"
 #include "mac.h"
 
+#include "logs.h"
+
 #include "mock_transceiver.h"
 #include "mock_port.h"
 settings_t settings = DEF_SETTINGS;
-
 #define TEST_ASSERT_M(expr) TEST_ASSERT_MESSAGE(expr, #expr)
 
 void setUp(void)
