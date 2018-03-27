@@ -10,11 +10,13 @@
 
 #include <string.h> // memcpy, memcmp
 
-#include "carry.h"
-#include "gitversion.h" // version minor/major
+#include "../mac/carry.h"
+#include "../mac/mac_const.h"     // prot_packet_info_t
+#include "../parsers/bin_const.h" // FC_FU
+#include "gitversion.h"           // version minor/major
 #include "iassert.h"
 #include "platform/port.h"
-#include "prot_const.h" // FC_FIRMWARE_UPGRADE, prot_packet_info_t
+
 
 #define FU_ASSERT(expre) IASSERT(expre)
 
@@ -103,21 +105,26 @@ typedef struct {
 // - Construction -
 // [FC:1][frameLen:1][opcode:1][version:4][firmwareCRC:2][size:4][frameCRC:2]
 // - frameLen 		- length of while frame, from address of frameLen
-//									to the end of frame
-//CRC,
+//									to the end of
+//frame
+// CRC,
 // equal to 12.
 // - opcode 			- set to FU_OPCODE_SOT
 // - version			- [lowest::older] byte of new firmware version
 // - firmwareCRC 	- CRC calculated only from complete raw firmware data
-//									calculated in this
-//same
+//									calculated in
+//this
+// same
 // way as for each frame
-// - size 				- big endian, size in bytes of complete raw
+// - size 				- big endian, size in bytes of complete
+// raw
 // firmware data
-// - frameCRC			-	16 bit of CRC calculated on data from frameLen
+// - frameCRC			-	16 bit of CRC calculated on data from
+// frameLen
 // to
-//									the end of offset, based
-//on FU_CRC_POLY
+//									the end of offset,
+//based
+// on FU_CRC_POLY
 //
 //
 // -- DEFAULT/Data frame -- Host->Device
@@ -125,16 +132,23 @@ typedef struct {
 // - Construction -
 // [frameLen:1][opcode:1][version:1][offset:2][data:n][frameCRC:2]
 // - frameLen 		- length of while frame, from address of frameLen
-//									to the end of frame CRC
+//									to the end of frame
+//CRC
 // - opcode 			- set to FU_OPCODE_DATA
 // - version			- version of new firmware
 // - offset				- offset in memory for transmitted data.
-// 									Offset is expressed in FU_BLOCK_SIZE unit
-// - data					- raw byte data, number of them can be readed
-//									as frameLen-FU_PROT_HEAD_SIZE-2 (for CRC),
-//									number of data should be multiple of FU_BLOCK_SIZE
-// - frameCRC			-	16 bit of CRC calculated on data from frameLen
-//									to the end of offset, based on FU_CRC_POLY
+// 									Offset is expressed in
+// FU_BLOCK_SIZE unit
+// - data					- raw byte data, number of them can be
+// readed
+//									as
+//frameLen-FU_PROT_HEAD_SIZE-2 (for CRC),
+//									number of data should be
+//multiple of FU_BLOCK_SIZE
+// - frameCRC			-	16 bit of CRC calculated on data from
+// frameLen
+//									to the end of offset,
+//based on FU_CRC_POLY
 //
 //
 //
@@ -143,7 +157,8 @@ typedef struct {
 // - Construction -
 // [frameLen:1][opcode:1][version:1][extra:2][frameCRC:2]
 // - frameLen 		- length of while frame, from address of frameLen
-//									to the end of frame CRC. Equal to 6
+//									to the end of frame CRC.
+//Equal to 6
 // - opcode 			- set to FU_OPCODE_ACK
 // - version			- lowest byte of current firmware version
 // - extra				- this field shouldn't be modified in
@@ -158,11 +173,13 @@ typedef struct {
 // - Construction -
 // [frameLen:1][opcode:1][version:1][extra:2][frameCRC:2]
 // - frameLen 		- length of while frame, from address of frameLen
-//									to the end of rame CRC. Equal to 6
+//									to the end of rame CRC.
+//Equal to 6
 // - opcode 			- set to FU_OPCODE_EOT
 // - version			- lowest byte of current firmware version
 // - extra				- this field shouldn't be modified in
-//									EOT frame
+//									EOT
+//frame
 //
 //
 //
@@ -171,7 +188,8 @@ typedef struct {
 // - Construction -
 // [frameLen:1][opcode:1][version:1][errorCode:2][frameCRC:2]
 // - frameLen 		- length of while frame, from address of frameLen
-//									to the end of frame CRC. Equal to 8
+//									to the end of frame CRC.
+//Equal to 8
 // - opcode 			- set to FU_OPCODE_ABORT
 // - version			- lowest byte of current firmware version
 // - errorCode		- FU_ERR_code enumerate
@@ -183,7 +201,8 @@ typedef struct {
 // - Construction -
 // [frameLen:1][opcode:1][version:4][frameCRC:2]
 // - frameLen 		- length of while frame, from address of frameLen
-//									to the end of frame CRC. Equal to 6
+//									to the end of frame CRC.
+//Equal to 6
 // - opcode 			- set to FU_OPCODE_ASK_VER
 // - version			- BigEndian, lowest byte of current firmware
 // version

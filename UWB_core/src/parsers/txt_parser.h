@@ -3,7 +3,7 @@
 
 #include <ctype.h> // tolower
 
-#include "../prot/carry.h"
+#include "../mac/carry.h"
 #include "bin_const.h"
 #include "bin_struct.h"
 
@@ -35,7 +35,7 @@ int TXT_AtoI(const txt_buf_t *buf, cchar *ptr, int base);
 int TXT_GetParam(const txt_buf_t *buf, cchar *cmd, int base);
 
 // return true if @buf.cmd starts with @cmd
-bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd);
+bool TXT_StartsWith(const txt_buf_t *buf, cchar *cmd);
 
 // parse command
 void TXT_Parse(const txt_buf_t *buf);

@@ -8,6 +8,7 @@
 #define CARRY_FLAG_TARGET_MASK (3 << 6)
 // bit 5, 4
 #define CARRY_FLAG_ACK_REQ (1 << 4)
+#define CARRY_FLAG_REROUTE (2 << 4)
 //
 #define CARRY_HOPS_NUM_MASK (0x07)
 #define CARRY_MAX_HOPS 8

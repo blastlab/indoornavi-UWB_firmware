@@ -97,9 +97,16 @@ void TRANSCEIVER_DefaultRx()
 {
   if (settings.transceiver.low_power_mode)
   {
+  	int on_pac = 2;
+  	int off_time_us = 20;
+  	TRANSCEIVER_ASSERT(transceiver_plen + transceiver_pac < off_time_us);
+  	TRANSCEIVER_ASSERT(0 <= off_time_us);
+  	TRANSCEIVER_ASSERT(off_time_us < 16);
+  	dwt_setsniffmode(1, 2, off_time_us);
   }
   else
   {
+  	dwt_rxenable(DWT_START_RX_IMMEDIATE);
   }
 }
 

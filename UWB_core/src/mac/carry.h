@@ -5,7 +5,6 @@
 
 #include "../mac/mac.h"
 #include "../settings.h"
-#include "prot_const.h"
 
 #include "carry_const.h"
 #include "carry_settings.h"
@@ -15,11 +14,9 @@
 // protocol struct
 typedef struct __packed
 {
-    unsigned char FC;
-    unsigned char len;
-    dev_addr_t src_addr;
     unsigned char flag_hops;
-    dev_addr_t hops[0];
+    dev_addr_t src_addr;
+    dev_addr_t hops[0]; // destination .. next hop
 } FC_CARRY_s;
 
 #define CARRY_HEAD_MIN_LEN (1 + 1 + sizeof(dev_addr_t) + 1)
@@ -47,6 +44,8 @@ typedef struct
 typedef struct
 {
     carry_target_t target[CARRY_MAX_TARGETS];
+    bool isConnectedToServer;
+    dev_addr_t toSinkId;
 } carry_instance_t;
 
 // initialize module data
@@ -63,7 +62,13 @@ int CARRY_WriteTrace(dev_addr_t *buf, dev_addr_t target);
 // When some error occure then return 0
 mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target);
 
+// find or create buffer to the target device
+mac_buf_t *CARRY_GetBufTo(dev_addr_t target);
+
 // prepare response to the given devive
 mac_buf_t *carry_prepare_response(const prot_packet_info_t *info);
+
+// function called from MAC module after receiving frame
+void CARRY_ParseMessage(buf);
 
 #endif // _CARRY_H

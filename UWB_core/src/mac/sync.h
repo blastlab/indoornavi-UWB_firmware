@@ -4,11 +4,10 @@
 #include <math.h>
 #include <string.h>
 
-
 #include "../iassert.h"
-#include "../prot/prot_const.h"
 #include "../settings.h"
 #include "../transceiver.h"
+#include "mac_const.h"
 #include "toa.h"
 
 #define SYNC_ASSERT(expr) IASSERT(expr)
@@ -55,9 +54,11 @@ typedef struct {
 } sync_instance_t;
 
 int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info);
-int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info);
+/*int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info);
 int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info);
 
-#define SYNC_CALLBACKS FC_SYNC_POLL_cb, FC_SYNC_RESP_cb, FC_SYNC_FIN_cb,
-
+#define SYNC_RX_CALLBACKS FC_SYNC_POLL_cb, FC_SYNC_RESP_cb, FC_SYNC_FIN_cb,*/
+int SYNC_RxCb(const void *data, const prot_packet_info_t *info);
+int SYNC_RxToCb();
+int SYNC_TxCb(int64_t TsDwTx);
 #endif

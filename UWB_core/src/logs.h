@@ -15,6 +15,6 @@
 int LOG_Text(char type, const char *frm, ...);
 
 // implement in platform/log.c
-int LOG_Bin(char type, const void* bin, int size);
+int LOG_Bin(const void* bin, int size);
 
 #endif // _LOGS_H

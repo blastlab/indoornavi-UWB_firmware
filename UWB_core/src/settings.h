@@ -3,7 +3,7 @@
 
 #include "gitversion.h"
 #include "mac/mac_settings.h"
-#include "prot/carry_settings.h"
+#include "mac/carry_settings.h"
 #include "transceiver_settings.h"
 
 #define H_MAJOR(x) (0x1F & (x >> 3))

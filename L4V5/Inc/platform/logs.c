@@ -41,10 +41,10 @@ int LOG_Text(char type, const char *frm, ...) {
   return n;
 }
 
-int LOG_Bin(char type, const void *bin, int size) {
+int LOG_Bin(const void *bin, int size) {
   int f;
   f = 0;
-  buf[f++] = type;
+  buf[f++] = 'B';
   buf[f++] = ' ';
   if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
     LOG_Text('E', "logbin: too big binary file! FC:%xh", ((uint8_t *)bin)[0]);
