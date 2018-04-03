@@ -1,7 +1,7 @@
 #ifndef _MAC_H
 #define _MAC_H
+#include "../parsers/bin_const.h"
 #include "logs.h"
-#include "prot/prot_const.h"
 #include "transceiver.h"
 
 #include "mac/mac_const.h"
@@ -22,7 +22,7 @@ typedef struct {
   union {
     unsigned char buf[MAC_BUF_LEN];
     struct _packed {
-      unsigned char control;
+      unsigned char control[2];
       unsigned char seq_num;
       pan_dev_addr_t pan;
       dev_addr_t dst;
@@ -33,6 +33,7 @@ typedef struct {
   };
   unsigned char *dPtr;
   mac_buf_state state;
+  int rx_len;
   unsigned char isRangingFrame;
   short retransmit_fail_cnt;
   unsigned int last_update_time;
@@ -41,6 +42,7 @@ typedef struct {
 typedef struct {
   int slot_number;
   mac_buf_t buf[MAC_BUF_CNT];
+  uint8_t seq_num;
   mac_buf_t rx_buf;
   short buf_get_ind;
   unsigned int sync_offset;
@@ -67,6 +69,9 @@ mac_buf_t *MAC_Buffer();
 // return length of already written frame
 int MAC_BufLen(const mac_buf_t *buf);
 
+// low level function, used only by carry module
+void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target);
+
 // reserve buffer and fill mac protocol fields
 // @param address to target device in range of radio - without hops
 // @param true if it can be appended to some other packet to this target
@@ -81,7 +86,7 @@ void MAC_Send(mac_buf_t *buf, bool ack_require);
 
 // change dst and src address, send according to flags, buf will be released
 // after transmission
-int MAC_SendRangingResp(mac_buf_t *buf, uint8_t transceiver_flags);
+int MAC_SendRanging(mac_buf_t *buf, uint8_t transceiver_flags);
 
 // return time in ms from last received packed
 unsigned int MAC_UsFromRx();

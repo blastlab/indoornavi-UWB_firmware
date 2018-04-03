@@ -2,7 +2,9 @@
 
 carry_instance_t carry;
 
-void CARRY_Init(bool isConnectedToServer) {}
+void CARRY_Init(bool isConnectedToServer) {
+  carry.isConnectedToServer = isConnectedToServer;
+}
 
 // return pointer to target or zero
 carry_target_t *_CARRY_FindTarget(dev_addr_t target) {
@@ -54,11 +56,9 @@ int CARRY_WriteTrace(dev_addr_t *buf, dev_addr_t target) {
 FC_CARRY_s *_CARRY_ProtFill(mac_buf_t *buf) {
   CARRY_ASSERT(buf != 0);
   FC_CARRY_s *prot = (FC_CARRY_s *)buf->dPtr;
-  prot->FC = FC_CARRY;
-  prot->len = CARRY_HEAD_MIN_LEN;
   prot->src_addr = settings.mac.addr;
   prot->flag_hops = CARRY_FLAG_TARGET_DEV;
-  buf->dPtr += prot->len;
+  buf->dPtr += sizeof(FC_CARRY_s);
   return prot;
 }
 
@@ -70,9 +70,40 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target) {
     int len = CARRY_WriteTrace(&ppacket->hops[0], target);
     // do not overwrite trace to this target
     if (len > 0) {
-      ppacket->len += len;
       buf->dPtr += len;
     }
   }
   return buf;
+}
+
+void CARRY_ParseMessage(mac_buf_t *buf) {
+  FC_CARRY_s *pcarry = (FC_CARRY_s *)&buf->frame.data[0];
+  uint8_t hops_num = pcarry->flag_hops & CARRY_HOPS_NUM_MASK;
+  uint8_t target = pcarry->flag_hops & CARRY_FLAG_TARGET_MASK;
+
+  bool toSink = (target == CARRY_FLAG_TARGET_SERVER) ||
+                (target == CARRY_FLAG_TARGET_SINK);
+  bool toMe =
+      target == CARRY_FLAG_TARGET_DEV && pcarry->hops[0] == settings.mac.addr;
+  toMe |= target == CARRY_FLAG_TARGET_SINK && settings.mac.role == RTLS_SINK;
+  toMe |= (pcarry->flag_hops & CARRY_FLAG_REROUTE) &&
+          pcarry->hops[0] == settings.mac.addr;
+
+  uint8_t *dataPointer =
+      (uint8_t *)&pcarry->hops[0] + hops_num * sizeof(pcarry->hops[0]);
+  uint8_t dataSize = buf->buf + buf->rx_len - dataPointer;
+
+  if (toMe) {
+    prot_packet_info_t info;
+    info.carry = (struct FC_CARRY_s *)pcarry;
+    info.direct_src = pcarry->src_addr;
+    BIN_Parse(buf, &info, dataSize);
+  }
+  if (target == CARRY_FLAG_TARGET_SERVER && carry.isConnectedToServer) {
+    LOG_Bin(buf, dataSize);
+  } else if (toSink) {
+    MAC_FillFrameTo(buf, carry.toSinkId);
+    buf->dPtr = dataPointer + dataSize;
+    MAC_Send(buf, pcarry->flag_hops & CARRY_FLAG_ACK_REQ);
+  }
 }

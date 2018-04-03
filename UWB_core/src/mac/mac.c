@@ -1,5 +1,6 @@
 #include "mac.h"
 #include "../settings.h"
+#include "carry.h"
 
 // global mac instance
 mac_instance_t mac;
@@ -30,6 +31,7 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
 
   if (buf->isRangingFrame) {
     // try ranging callback
+    ret = SYNC_TxCb(tx_ts);
   }
 
   // try send next data frame
@@ -39,32 +41,44 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
 }
 
 void MAC_RxCb(const dwt_cb_data_t *data) {
-  int ret = 0;
-
   PORT_LedOn(LED_STAT);
   mac.last_rx_ts = PORT_TickHr();
   mac_buf_t *buf = MAC_Buffer();
+  prot_packet_info_t info;
+  memset(&info, 0, sizeof(info));
+
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
-
-    if (data->rx_flags & DWT_CB_DATA_RX_FLAG_RNG) {
-      // process ranging
+    buf->rx_len = data->datalength;
+    info.direct_src = buf->frame.src;
+    if (buf->frame.control[0] & FR_CR_MAC) {
+      // int ret = SYNC_UpdateNeightbour()
+      SYNC_RxCb(buf->frame.data, &info);
+    } else if (buf->frame.control[0] & FR_CR_DATA) {
+      CARRY_ParseMessage(buf);
     } else {
-      // parse data
+      LOG_ERR("This kind of frame is not supported: %x", buf->frame.control[0]);
     }
   } else {
     LOG_ERR("No buff for rx_cb");
   }
 }
 
+// timeout error -> check ranging, maybe ACK or default RX
 void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
   PORT_LedOn(LED_ERR);
+  int ret = SYNC_RxToCb();
+  if (ret == 0) {
+    // TOA_RxToCb();
+  }
 }
 
+// error during receiving frame
 void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
+  LOG_ERR("Rx error status:%X", data->status);
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
@@ -108,12 +122,11 @@ void MAC_TryTransmitFrameInSlot(int64_t time) {
   } else {
     ret = TRANSCEIVER_Send(buf->buf, len);
   }
+  buf->last_update_time = mac_port_buff_time();
   // check result
   if (ret == 0) {
-    buf->last_update_time = mac_port_buff_time();
     buf->state = buf->state == WAIT_FOR_TX_ACK ? WAIT_FOR_ACK : FREE;
   } else {
-    buf->last_update_time = mac_port_buff_time();
     ++buf->retransmit_fail_cnt;
     if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
       buf->state = FREE;
@@ -163,9 +176,6 @@ mac_buf_t *_MAC_BufGetOldestToTx() {
 
 // reserve buffer
 mac_buf_t *MAC_Buffer() {
-  int oldest_index = 0;
-  int current_time = mac_port_buff_time();
-  int oldest_time = current_time - mac.buf[0].last_update_time;
   mac_buf_t *buf = &mac.buf[mac.buf_get_ind];
 
   // next buffer buffer is FREE so return them
@@ -174,36 +184,37 @@ mac_buf_t *MAC_Buffer() {
     _MAC_BufferReset(buf);
     return buf;
   }
-  printf("search\n");
+
   // else search for empty buffer
   for (int i = 0; i < MAC_BUF_CNT; ++i) {
-    printf("i");
-    int buff_age = current_time - mac.buf[i].last_update_time;
     if (mac.buf[i].state == FREE) {
       buf = &mac.buf[i];
       _MAC_BufferReset(buf);
       return buf;
-    } else if (buff_age > oldest_time) {
-      oldest_index = i;
-      oldest_time = buff_age;
     }
   }
 
-  UNUSED(oldest_index);
-  // // else get the oldest one
-  // MAC_LOG_ERR("MAC_Buffer() overload");
-  // buf = mac.buf[oldest_index];
-  // _MAC_Buffer_reset(buf);
-  // return buf;
-
+  // else search for old buffer
+  mac_buff_time_t now = mac_port_buff_time();
+  for (int i = 0; i < MAC_BUF_CNT; ++i) {
+    mac_buff_time_t age = now - buf[i].last_update_time;
+    if (age > settings.mac.max_buf_inactive_time) {
+      _MAC_BufferReset(&buf[i]);
+      return buf;
+    }
+  }
   // else return null
   return 0;
 }
 
 void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target) {
   MAC_ASSERT(buf != 0);
-  buf->frame.src = settings.mac.addr;
+  buf->frame.control[0] = FR_CR_DATA;
+  buf->frame.control[1] = FR_CRH_DA_SHORT | FR_CRH_SA_SHORT | FR_CRH_FVER0;
+  buf->frame.seq_num = ++mac.seq_num;
+  buf->frame.pan = settings.mac.pan;
   buf->frame.dst = target;
+  buf->frame.src = settings.mac.addr;
   buf->dPtr = &buf->frame.data[0];
 }
 
@@ -216,8 +227,11 @@ mac_buf_t *MAC_BufferPrepare(dev_addr_t target, bool can_append) {
       if (buf->state == WAIT_FOR_TX || buf->state == WAIT_FOR_TX_ACK) {
         // do not use mac_fill_frame_to, becouse the buff is already partially
         // filled
-        buf->state = BUSY;
-        return buf;
+        FC_CARRY_s *carry = (FC_CARRY_s *)&buf->frame.data[0];
+        if (carry->hops[0] == target) {
+          buf->state = BUSY;
+          return buf;
+        }
       }
     }
   }
@@ -242,6 +256,10 @@ void MAC_Free(mac_buf_t *buff) {
   int i = ((char *)buff - (char *)mac.buf) / sizeof(*buff);
   MAC_ASSERT(i < MAC_BUF_CNT);
   mac.buf[i].state = FREE;
+  // where it last allocated buffer, then decrement buf_get_ind
+  if (mac.buf_get_ind == (i + 1) % MAC_BUF_CNT) {
+    mac.buf_get_ind = i;
+  }
 }
 
 // add frame to the transmit queue
@@ -256,10 +274,11 @@ void MAC_Send(mac_buf_t *buf, bool ack_require) {
 }
 
 // add frame to the transmit queue
-int MAC_SendRangingResp(mac_buf_t *buf, uint8_t transceiver_flags) {
+int MAC_SendRanging(mac_buf_t *buf, uint8_t transceiver_flags) {
   MAC_ASSERT(buf != 0);
   int len = MAC_BufLen(buf);
   buf->isRangingFrame = true;
+  buf->frame.control[0] = FR_CR_MAC;
   buf->frame.dst = buf->frame.src;
   buf->frame.src = settings.mac.addr;
   int ret = TRANSCEIVER_SendRanging(buf->buf, len, transceiver_flags);
