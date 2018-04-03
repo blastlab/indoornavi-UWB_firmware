@@ -8,6 +8,7 @@
 *gitversion.h
 *.mxproject
 *.xml
+*.scratch
 
 .metadata
 bin/
