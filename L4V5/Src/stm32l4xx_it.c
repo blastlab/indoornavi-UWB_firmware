@@ -36,13 +36,12 @@
 #include "stm32l4xx_it.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "decadriver/deca_device_api.h"
+#include "mac/sync.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_FS;
-extern LPTIM_HandleTypeDef hlptim1;
-extern LPTIM_HandleTypeDef hlptim2;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
 
@@ -69,7 +68,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+	IASSERT("HardFault" == 0);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -194,6 +193,11 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
+	do
+	{
+		HAL_GPIO_WritePin(DW_CS_GPIO_Port,DW_CS_Pin,GPIO_PIN_SET);
+		dwt_isr();
+	} while(HAL_GPIO_ReadPin(DW_IRQ_GPIO_Port, DW_IRQ_Pin) == GPIO_PIN_SET);
 
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
@@ -266,7 +270,6 @@ void LPTIM1_IRQHandler(void)
   /* USER CODE BEGIN LPTIM1_IRQn 0 */
 
   /* USER CODE END LPTIM1_IRQn 0 */
-  HAL_LPTIM_IRQHandler(&hlptim1);
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
   /* USER CODE END LPTIM1_IRQn 1 */
@@ -280,9 +283,8 @@ void LPTIM2_IRQHandler(void)
   /* USER CODE BEGIN LPTIM2_IRQn 0 */
 
   /* USER CODE END LPTIM2_IRQn 0 */
-  HAL_LPTIM_IRQHandler(&hlptim2);
   /* USER CODE BEGIN LPTIM2_IRQn 1 */
-
+  MAC_YourSlotIsr();
   /* USER CODE END LPTIM2_IRQn 1 */
 }
 

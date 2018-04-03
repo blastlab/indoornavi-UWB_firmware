@@ -63,14 +63,9 @@ __ALIGN_BEGIN static const uint8_t pKeyAES[16] __ALIGN_END = {
                             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                             0x00,0x00,0x00,0x00,0x00,0x00};
 
-LPTIM_HandleTypeDef hlptim1;
-LPTIM_HandleTypeDef hlptim2;
-
 RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi3;
-
-TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
@@ -111,7 +106,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	//todo: SCB->VTOR = (int) (FU_GetCurrentFlashBase());
+	SCB->VTOR = (int) (FU_GetCurrentFlashBase());
 	UNUSED(MX_WWDG_Init);
 	UNUSED(MX_RTC_Init);
 
@@ -263,11 +258,11 @@ static void MX_NVIC_Init(void)
   HAL_NVIC_SetPriority(USART1_IRQn, 9, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* LPTIM1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(LPTIM1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
+  NVIC_SetPriority(LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(LPTIM1_IRQn);
   /* LPTIM2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(LPTIM2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(LPTIM2_IRQn);
+  NVIC_SetPriority(LPTIM2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(LPTIM2_IRQn);
 }
 
 /* ADC1 init function */
@@ -338,19 +333,24 @@ static void MX_CRC_Init(void)
 static void MX_LPTIM1_Init(void)
 {
 
-  hlptim1.Instance = LPTIM1;
-  hlptim1.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
-  hlptim1.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV32;
-  hlptim1.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
-  hlptim1.Init.OutputPolarity = LPTIM_OUTPUTPOLARITY_HIGH;
-  hlptim1.Init.UpdateMode = LPTIM_UPDATE_IMMEDIATE;
-  hlptim1.Init.CounterSource = LPTIM_COUNTERSOURCE_INTERNAL;
-  hlptim1.Init.Input1Source = LPTIM_INPUT1SOURCE_GPIO;
-  hlptim1.Init.Input2Source = LPTIM_INPUT2SOURCE_GPIO;
-  if (HAL_LPTIM_Init(&hlptim1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_LPTIM1);
+
+  LL_LPTIM_SetClockSource(LPTIM1, LL_LPTIM_CLK_SOURCE_INTERNAL);
+
+  LL_LPTIM_SetPrescaler(LPTIM1, LL_LPTIM_PRESCALER_DIV32);
+
+  LL_LPTIM_SetPolarity(LPTIM1, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
+
+  LL_LPTIM_SetUpdateMode(LPTIM1, LL_LPTIM_UPDATE_MODE_IMMEDIATE);
+
+  LL_LPTIM_SetCounterMode(LPTIM1, LL_LPTIM_COUNTER_MODE_INTERNAL);
+
+  LL_LPTIM_TrigSw(LPTIM1);
+
+  LL_LPTIM_SetInput1Src(LPTIM1, LL_LPTIM_INPUT1_SRC_GPIO);
+
+  LL_LPTIM_SetInput2Src(LPTIM1, LL_LPTIM_INPUT2_SRC_GPIO);
 
 }
 
@@ -358,19 +358,22 @@ static void MX_LPTIM1_Init(void)
 static void MX_LPTIM2_Init(void)
 {
 
-  hlptim2.Instance = LPTIM2;
-  hlptim2.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
-  hlptim2.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV64;
-  hlptim2.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
-  hlptim2.Init.OutputPolarity = LPTIM_OUTPUTPOLARITY_HIGH;
-  hlptim2.Init.UpdateMode = LPTIM_UPDATE_IMMEDIATE;
-  hlptim2.Init.CounterSource = LPTIM_COUNTERSOURCE_INTERNAL;
-  hlptim2.Init.Input1Source = LPTIM_INPUT1SOURCE_GPIO;
-  hlptim2.Init.Input2Source = LPTIM_INPUT2SOURCE_GPIO;
-  if (HAL_LPTIM_Init(&hlptim2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+  /* Peripheral clock enable */
+  LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_LPTIM2);
+
+  LL_LPTIM_SetClockSource(LPTIM2, LL_LPTIM_CLK_SOURCE_INTERNAL);
+
+  LL_LPTIM_SetPrescaler(LPTIM2, LL_LPTIM_PRESCALER_DIV64);
+
+  LL_LPTIM_SetPolarity(LPTIM2, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
+
+  LL_LPTIM_SetUpdateMode(LPTIM2, LL_LPTIM_UPDATE_MODE_IMMEDIATE);
+
+  LL_LPTIM_SetCounterMode(LPTIM2, LL_LPTIM_COUNTER_MODE_INTERNAL);
+
+  LL_LPTIM_TrigSw(LPTIM2);
+
+  LL_LPTIM_SetInput1Src(LPTIM2, LL_LPTIM_INPUT1_SRC_GPIO);
 
 }
 
@@ -544,23 +547,19 @@ static void MX_SPI3_Init(void)
 static void MX_TIM6_Init(void)
 {
 
-  TIM_MasterConfigTypeDef sMasterConfig;
+  LL_TIM_InitTypeDef TIM_InitStruct;
 
-  htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 0;
-  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 0;
-  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
 
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+  TIM_InitStruct.Prescaler = 0;
+  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+  TIM_InitStruct.Autoreload = 0;
+  LL_TIM_Init(TIM6, &TIM_InitStruct);
+
+  LL_TIM_SetTriggerOutput(TIM6, LL_TIM_TRGO_RESET);
+
+  LL_TIM_DisableMasterSlaveMode(TIM6);
 
 }
 

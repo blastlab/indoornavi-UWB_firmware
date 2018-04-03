@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "prot/FU.h"
+#include "uwb_main.h"
 
 void Desynchronize() {
   unsigned int seed = HAL_GetTick();
@@ -84,5 +84,6 @@ void UwbMain() {
     PORT_LedOff(LED_ERR);
     BatteryControl();
     RangingControl();
+  	PORT_WatchdogRefresh();
   }
 }
