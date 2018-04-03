@@ -37,7 +37,7 @@
 
 /* USER CODE BEGIN 0 */
 #include "decadriver/deca_device_api.h"
-#include "mac/sync.h"
+#include "mac/mac.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -268,7 +268,7 @@ void USART1_IRQHandler(void)
 void LPTIM1_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM1_IRQn 0 */
-
+	LL_LPTIM_ClearFLAG_ARRM(LPTIM1);
   /* USER CODE END LPTIM1_IRQn 0 */
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
@@ -281,7 +281,7 @@ void LPTIM1_IRQHandler(void)
 void LPTIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM2_IRQn 0 */
-
+	LL_LPTIM_ClearFLAG_ARRM(LPTIM2);
   /* USER CODE END LPTIM2_IRQn 0 */
   /* USER CODE BEGIN LPTIM2_IRQn 1 */
   MAC_YourSlotIsr();

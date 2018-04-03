@@ -64,6 +64,9 @@ int PORT_BatteryVoltage();
 
 // TIME
 
+// run timers when device is fully initialised
+void PORT_TimeStartTimers();
+
 // nop
 void PORT_SleepMs(unsigned int time_ms);
 
@@ -75,6 +78,12 @@ unsigned int PORT_TickHr();
 
 // get high resolution clock frequency
 unsigned int PORT_FreqHr();
+
+// update slot timer for one iteration
+void PORT_SlotTimerSetUsLeft(uint32 us);
+
+// set slot timer period
+void PORT_SetSlotTimerPeriodUs(uint32 us);
 
 // CRC
 

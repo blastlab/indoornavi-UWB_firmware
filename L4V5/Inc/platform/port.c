@@ -12,6 +12,7 @@ void PORT_Init()
 	PORT_BatteryInit();
 	PORT_WatchdogInit();
 	PORT_CrcInit();
+	PORT_TimeInit();
 }
 
 void PORT_WatchdogInit() {

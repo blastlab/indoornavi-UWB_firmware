@@ -79,6 +79,8 @@ void UwbMain() {
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
 
+  PORT_TimeStartTimers();
+
   while (1) {
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
