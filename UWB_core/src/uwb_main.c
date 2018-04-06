@@ -6,6 +6,9 @@
  */
 
 #include "uwb_main.h"
+#include "mac/mac.h"
+#include "parsers/bin_struct.h"
+
 
 void Desynchronize() {
   unsigned int seed = HAL_GetTick();
@@ -38,17 +41,15 @@ void TurnOff() {
   // wait forever
   // przeprowadz reset aby wylaczyc WWDG, a nastepnie
   // przejdz do trybu oszczednosci energii
-  HAL_PWR_EnableBkUpAccess();
-  BOOTLOADER_MAGIC_REG = BOOTLOADER_MAGIC_REG_GO_SLEEP;
-  HAL_PWR_DisableBkUpAccess();
+  PORT_BkpRegisterWrite(STATUS_MAGIC_REG, STATUS_MAGIC_NUMBER_GO_SLEEP);
   PORT_Reboot();
   while (1)
     ;
 }
 
 void CheckSleepMode() {
-  uint32_t magic_reg_val = PORT_BkpRegisterRead(BOOTLOADER_MAGIC_REG);
-  if (magic_reg_val == BOOTLOADER_MAGIC_REG_GO_SLEEP) {
+  uint32_t status_reg_val = PORT_BkpRegisterRead(STATUS_MAGIC_REG);
+  if (status_reg_val == STATUS_MAGIC_NUMBER_GO_SLEEP) {
     while (1) {
       PORT_EnterStopMode();
     }
@@ -58,12 +59,26 @@ void CheckSleepMode() {
 void BatteryControl() {
   static unsigned int last_batt_measure_time = 0;
   if (PORT_TickMs() - last_batt_measure_time > 5000) {
-    PORT_BatteryMeasure();
     last_batt_measure_time = PORT_TickMs();
 
+    PORT_BatteryMeasure();
     if (2400 < PORT_BatteryVoltage() && PORT_BatteryVoltage() < 3100) {
       TurnOff();
     }
+  }
+}
+
+void BeaconSender() {
+  static unsigned int last_beacon_time = INT32_MAX;
+  if (PORT_TickMs() - last_beacon_time > 1000) {
+    last_beacon_time = PORT_TickMs();
+    FC_BEACON_s packet;
+    packet.FC = FC_BEACON;
+    packet.len = sizeof(packet);
+    packet.serial = settings_otp->serial;
+    mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+    MAC_Write(buf, &packet, packet.len);
+    MAC_Send(buf, false);
   }
 }
 
@@ -86,6 +101,7 @@ void UwbMain() {
     PORT_LedOff(LED_ERR);
     BatteryControl();
     RangingControl();
-  	PORT_WatchdogRefresh();
+    BeaconSender();
+    PORT_WatchdogRefresh();
   }
 }

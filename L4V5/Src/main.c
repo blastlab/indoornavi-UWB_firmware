@@ -111,7 +111,6 @@ int main(void)
 	UNUSED(MX_WWDG_Init);
 	UNUSED(MX_RTC_Init);
 
-	__HAL_DBGMCU_FREEZE_IWDG();
 	__HAL_DBGMCU_FREEZE_WWDG();
 
   /* USER CODE END 1 */
