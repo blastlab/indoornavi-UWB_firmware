@@ -92,6 +92,7 @@ void PORT_Reboot() {
   // it help from usb timeout error from the host side
   USB_StopDevice(USB);
   USB_DevDisconnect(USB);
+  for(volatile int i = 99999; i > 0; --i); // disabled irq safe delay
   PORT_SleepMs(10); // to be sure
   NVIC_SystemReset();
 }

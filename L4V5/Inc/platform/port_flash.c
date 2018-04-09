@@ -10,7 +10,7 @@
 // save value in reset-safe backup register
 void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
 {
-	PORT_ASSERT(reg > (uint32_t)&RTC->BKP0R);
+	PORT_ASSERT((uint32_t)reg > (uint32_t)&RTC->BKP0R);
 	HAL_PWR_EnableBkUpAccess();
 	*reg = value;
 	HAL_PWR_DisableBkUpAccess();

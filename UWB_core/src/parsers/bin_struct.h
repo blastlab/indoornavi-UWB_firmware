@@ -8,6 +8,15 @@
 
 typedef struct __packed {
   uint8_t FC, len;
+} FC_TURN_ON_s;
+
+typedef struct __packed {
+  uint8_t FC, len;
+  uint8_t reason;
+} FC_TURN_OFF_s;
+
+typedef struct __packed {
+  uint8_t FC, len;
   uint64_t serial;
 } FC_BEACON_s;
 

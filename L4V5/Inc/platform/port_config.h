@@ -13,11 +13,20 @@
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
+
+#define LOG_USB_EN 1
+#define LOG_SD_EN 0
+#define LOG_USB_UART 0
+
+// define how many high resolution clock tick is in one us
+#define PORT_TICKS_HR_PER_US 1000
+
 #define DW_EXTI_IRQn EXTI0_IRQn
 
 #define BOOTLOADER_MAGIC_NUMBER (0xBECA95)
-#define BOOTLOADER_MAGIC_REG (RTC->BKP0R)
-#define BOOTLOADER_MAGIC_REG_GO_SLEEP (0x12345678)
+#define BOOTLOADER_MAGIC_REG ((uint32_t*)&RTC->BKP0R)
+#define STATUS_MAGIC_REG ((uint32_t*)&RTC->BKP1R)
+#define STATUS_MAGIC_NUMBER_GO_SLEEP (0x12345678)
 
 // leds
 #define LED_G1 1

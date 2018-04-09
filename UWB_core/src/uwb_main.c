@@ -10,6 +10,38 @@
 #include "parsers/bin_struct.h"
 
 
+void SendTurnOnMessage()
+{
+	FC_TURN_ON_s packet;
+  packet.FC = FC_TURN_ON;
+  packet.len = sizeof(packet);
+  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+  MAC_Write(buf, &packet, packet.len);
+  MAC_Send(buf, false);
+}
+
+void SendTurnOffMessage(uint8_t reason)
+{
+	FC_TURN_OFF_s packet;
+  packet.FC = FC_TURN_OFF;
+  packet.len = sizeof(packet);
+  packet.reason = reason;
+  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+  MAC_Write(buf, &packet, packet.len);
+  MAC_Send(buf, false);
+}
+
+void SendBeaconMessage()
+{
+  FC_BEACON_s packet;
+  packet.FC = FC_BEACON;
+  packet.len = sizeof(packet);
+  packet.serial = settings_otp->serial;
+  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+  MAC_Write(buf, &packet, packet.len);
+  MAC_Send(buf, false);
+}
+
 void Desynchronize() {
   unsigned int seed = HAL_GetTick();
   PORT_SleepMs(rand_r(&seed) % 100);
@@ -19,6 +51,7 @@ void Desynchronize() {
 void TurnOff() {
   // log turn off to host
   LOG_INF("turn off");
+  SendTurnOffMessage(0);
 
   // wait for packet transmission
   PORT_SleepMs(100);
@@ -72,20 +105,14 @@ void BeaconSender() {
   static unsigned int last_beacon_time = INT32_MAX;
   if (PORT_TickMs() - last_beacon_time > 1000) {
     last_beacon_time = PORT_TickMs();
-    FC_BEACON_s packet;
-    packet.FC = FC_BEACON;
-    packet.len = sizeof(packet);
-    packet.serial = settings_otp->serial;
-    mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-    MAC_Write(buf, &packet, packet.len);
-    MAC_Send(buf, false);
+    SendBeaconMessage();
   }
 }
 
 void RangingControl() {}
 
 void UwbMain() {
-  CheckSleepMode();
+  //CheckSleepMode();
   SETTINGS_Init();
   Desynchronize();
 
@@ -93,13 +120,15 @@ void UwbMain() {
   MAC_Init();
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
+  FU_AcceptFirmware();
 
   PORT_TimeStartTimers();
+  SendTurnOnMessage();
 
   while (1) {
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
-    BatteryControl();
+    //BatteryControl();
     RangingControl();
     BeaconSender();
     PORT_WatchdogRefresh();
