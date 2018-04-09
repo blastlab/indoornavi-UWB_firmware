@@ -97,6 +97,27 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
+void IMU_write_register(uint8_t addr, uint8_t val)
+{
+	uint8_t data[] = { addr, val };
+	while(HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY);
+	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi3, &data[0], sizeof(data), HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
+}
+
+void IMU_read_register(uint8_t addr, uint8_t *val)
+{
+	*val = 0;
+	uint8_t m_addr = addr | 0b10000000;
+	while(HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY);
+	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi3, &m_addr, 1, HAL_MAX_DELAY);
+	HAL_SPI_Receive(&hspi3, val, 1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
+}
+
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -154,6 +175,27 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+
+	uint8_t data[16] = { 0 };
+
+	HAL_Delay(100);
+	IMU_write_register(0x6b, 0b10000000);	// PWR_MGMT_1 register; reset
+	HAL_Delay(100);
+	IMU_write_register(0x6b, 0b00000000);	// PWR_MGMT_1 register; unreset
+
+	IMU_read_register(0x6b, &data[0]);
+	if (data[0] & (1<<7))
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	IMU_write_register(0x6b, 0b00001001);	// PWR_MGMT_1 register; waking up, setting clock configuration and turning off temp. meas.
+	IMU_write_register(0x6a, 0b00010000);	// USER_CTRL register; disabling I2C
+
+	IMU_read_register(0x6b, &data[1]);
+	IMU_read_register(0x6a, &data[2]);
+
+
   UwbMain();
   /* USER CODE END 2 */
 
@@ -194,6 +236,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+  RCC_OscInitStruct.PLL.PLLM = 1;
   RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
@@ -537,17 +580,17 @@ static void MX_SPI3_Init(void)
   hspi3.Instance = SPI3;
   hspi3.Init.Mode = SPI_MODE_MASTER;
   hspi3.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi3.Init.DataSize = SPI_DATASIZE_4BIT;
+  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi3.Init.NSS = SPI_NSS_SOFT;
-  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi3.Init.CRCPolynomial = 7;
   hspi3.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi3.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  hspi3.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
   if (HAL_SPI_Init(&hspi3) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
