@@ -14,7 +14,10 @@
 #define MASK_40BIT (0xffffffffffL)
 
 // setup
-int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr);
+int TRANSCEIVER_Init();
+
+// set device address
+void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr);
 
 // connect event callbacks
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,

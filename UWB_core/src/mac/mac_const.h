@@ -31,7 +31,7 @@ typedef enum {
 typedef unsigned short dev_addr_t;
 typedef unsigned short pan_dev_addr_t;
 #define ADDR_BROADCAST 0xffff
-#define ADDR_ANCHOR_FLAG	0x0001
+#define ADDR_ANCHOR_FLAG	0x8000
 
 #ifndef CORTEX_M
 #ifndef __packed

@@ -15,9 +15,12 @@ void MAC_RxToCb(const dwt_cb_data_t *data);
 void MAC_RxErrCb(const dwt_cb_data_t *data);
 
 void MAC_Init() {
-  // set local address
+  // init transceiver
+  TRANSCEIVER_Init();
+
+  // get local address
   if (settings.mac.addr == ADDR_BROADCAST) {
-    settings.mac.addr = (dev_addr_t)settings_otp->serial;
+    settings.mac.addr = (dev_addr_t)dwt_getpartid();
   }
 
   // apply anchor address flag
@@ -27,8 +30,8 @@ void MAC_Init() {
     settings.mac.addr |= ADDR_ANCHOR_FLAG;
   }
 
-  // init transceiver
-  TRANSCEIVER_Init(settings.mac.pan, settings.mac.addr);
+  // set address and irq callbacks in transceiver
+  TRANSCEIVER_SetAddr(settings.mac.pan, settings.mac.addr);
   TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
 
   // slot timers

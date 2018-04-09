@@ -9,7 +9,7 @@ static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts);
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
                                             bool set_default_pac);
 
-int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr) {
+int TRANSCEIVER_Init() {
   int ret;
 
   // set global variables correct with transceiver settings and update pac size
@@ -50,10 +50,6 @@ int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr) {
     dwt_loadopsettabfromotp(DWT_OPSET_64LEN);
   }
 
-  // set device addresses
-  dwt_setaddress16(dev_addr);
-  dwt_setpanid(pan_addr);
-
   // Apply default antenna delay value. See NOTE 1 below.
   dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
   dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
@@ -82,6 +78,12 @@ void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
                   0;
   dwt_setinterrupt(isr_flags, 1);
   dwt_setcallbacks(tx_cb, rx_cb, rxto_cb, rxerr_cb);
+}
+
+void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
+{
+  dwt_setaddress16(dev_addr);
+  dwt_setpanid(pan_addr);
 }
 
 void TRANSCEIVER_DefaultRx() {
