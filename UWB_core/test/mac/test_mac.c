@@ -17,17 +17,22 @@ FAKE_VALUE_FUNC(int, SYNC_RxCb, const void *, const prot_packet_info_t *);
 FAKE_VALUE_FUNC(int, SYNC_TxCb, int64_t);
 FAKE_VOID_FUNC(CARRY_ParseMessage, mac_buf_t *);
 
+// private function
+mac_buf_t *_MAC_BufGetOldestToTx();
+
+mac_buff_time_t time_mock_value() {
+  static mac_buff_time_t i = 0;
+  return i++;
+}
+
 void setUp(void) {
+  PORT_TickHr_fake.custom_fake = time_mock_value;
   for (int i = 0; i < MAC_BUF_CNT; ++i) {
     mac.buf[i].state = FREE;
   }
 }
 
 void tearDown(void) {}
-
-void test_mac_NeedToImplement(void) {
-  TEST_IGNORE_MESSAGE("Need to Implement mac");
-}
 
 void test_MAC_Read_write_zero_len() {
   const char data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -76,7 +81,7 @@ void test_MAC_Buffer_overflow() {
   }
 }
 
-void test_MAC_YourSlotIsr_send_frame() {
+void test_MAC_BufGetOldestToTx_return_buf() {
   uint8_t data[] = {1, 2, 3, 4, 5, 6};
   data[1] = sizeof(data);
 
@@ -86,7 +91,8 @@ void test_MAC_YourSlotIsr_send_frame() {
   MAC_Send(buf, false);
 
   TEST_ASSERT(buf->state == WAIT_FOR_TX);
+  TEST_ASSERT_NOT_EQUAL(0, _MAC_BufGetOldestToTx());
 
-  TRANSCEIVER_GetTime_fake.return_val = 0;
-  MAC_YourSlotIsr();
+  buf->state = FREE;
+  TEST_ASSERT(0 == _MAC_BufGetOldestToTx());
 }

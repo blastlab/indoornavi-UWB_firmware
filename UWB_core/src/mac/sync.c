@@ -99,19 +99,48 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
       dt != 0.0 ? ((float)drift) / ((float)dt) : neig->time_coeffP_raw[1];
   neig->time_coeffP_raw[0] =
       isnanf(neig->time_coeffP_raw[0]) ? 0 : neig->time_coeffP_raw[0];
+  neig->time_coeffP[0] = SYNC_CalcTimeCoeff(neig);
   // neig->timeDriftSum += drift;
   neig->update_ts = loc_time;
 }
 
-void SYNC_UpdateLocalTimeParams() {
-  // todo:
+// only for UpdateLocalTimeParams
+int64_t MAC_ToSlotsTime(int64_t transceiver_raw_time);
+
+void SYNC_UpdateLocalTimeParams(uint64_t transceiver_raw_time) {
+  // todo: update SYNC hr time
+  // try update local
+  if (transceiver_raw_time - sync.local_obj.update_ts > 20 * UUS_TO_DWT_TIME) {
+    float sum_P = 0;
+    int cnt = 0;
+    int64_t offset = 0;
+    for (int i = 0; i < SYNC_MAC_NEIGHTBOURS; ++i) {
+      if (sync.neightbour[i].update_ts) {
+        sum_P += sync.neightbour[i].time_coeffP[0];
+        offset += sync.neightbour[i].time_offset; // 63b / 40b = 23b
+        ++cnt;
+      }
+    }
+    SYNC_UpdateNeightbour(&sync.local_obj, offset / cnt,
+                          sync.local_obj.time_offset, 0);
+    float a = 0.5;
+    sync.local_obj.time_coeffP[0] =
+        a * sync.local_obj.time_coeffP[0] + (1.0f - a) * sum_P / cnt;
+  }
+  // update MAC slot timer
+  int64_t slot_time = MAC_ToSlotsTime(transceiver_raw_time);
+  int left_time =
+      settings.mac.slot_number * settings.mac.slot_time_us - slot_time;
+  PORT_SlotTimerSetUsLeft(left_time * DWT_TIME_UNITS * 1.0e6f);
 }
 
+// complex syncronisation processing
 void SYNC_Update(sync_neightbour_t *neig, int64_t ext_time, int64_t loc_time,
                  int tof_dw) {
   SYNC_UpdateNeightbour(neig, ext_time, loc_time, tof_dw);
-  SYNC_UpdateLocalTimeParams();
+  SYNC_UpdateLocalTimeParams(loc_time);
 
+  // add distance to measure table
   if (tof_dw > 0 && settings.mac.raport_anchor_anchor_distance) {
     int distance = TOA_TofToCm(tof_dw * DWT_TIME_UNITS);
     TOA_AddMeasure(neig->addr, distance);

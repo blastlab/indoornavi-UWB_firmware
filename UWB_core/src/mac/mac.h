@@ -45,7 +45,7 @@ typedef struct {
   uint8_t seq_num;
   mac_buf_t rx_buf;
   short buf_get_ind;
-  unsigned int sync_offset;
+  int64_t slot_time_offset;
   mac_buf_t *buf_under_tx;
   unsigned int last_rx_ts;
 } mac_instance_t;

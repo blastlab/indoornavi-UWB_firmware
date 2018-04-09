@@ -6,14 +6,15 @@
 #include "logs.h"
 #include "mac.h"
 #include "mock_deca_device_api.h"
+#include "mock_port.h"
 #include "mock_transceiver.h"
 #include "toa.h"
 
-FAKE_VALUE_FUNC(uint32_t, PORT_TickHr);
-FAKE_VALUE_FUNC(uint32_t, PORT_FreqHr);
+settings_otp_t _settings_otp;
+settings_otp_t const *settings_otp = &_settings_otp;
+
 FAKE_VALUE_FUNC(int, _TOA_GetRangeBias, uint8, int, uint8, int);
-FAKE_VOID_FUNC(PORT_LedOn, int);
-FAKE_VOID_FUNC(PORT_LedOff, int);
+FAKE_VOID_FUNC(CARRY_ParseMessage, mac_buf_t *);
 
 settings_t settings = DEF_SETTINGS;
 sync_instance_t sync;
