@@ -18,9 +18,9 @@ typedef enum {
 } rtls_role;
 
 typedef struct {
-  int fin_dly;
-  int resp_dly[TOA_MAX_DEV_IN_POLL];
-  int guard_time;
+  int fin_dly_us;
+  int resp_dly_us[TOA_MAX_DEV_IN_POLL];
+  int guard_time_us;
 } toa_settings_t;
 
 typedef struct {
@@ -47,7 +47,7 @@ typedef struct {
     .addr = ADDR_BROADCAST, .pan = 0xDECA, .slot_time_us = _DEF_SLOT_TIME,     \
     .slot_guard_time_us = 200, .slot_number = _DEF_SLON_CNT,                   \
     .slots_sum_time_us = _DEF_SLOT_SUM_TIME, .max_frame_fail_cnt = 3,          \
-    .max_buf_inactive_time = 2 * _DEF_SLOT_SUM_TIME, .role = RTLS_TAG,         \
+    .max_buf_inactive_time = 2 * _DEF_SLOT_SUM_TIME, .role = RTLS_ANCHOR,      \
     .raport_anchor_anchor_distance = true,                                     \
   }
 

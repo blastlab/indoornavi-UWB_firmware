@@ -18,6 +18,8 @@
   MAC_Free(#name);                                                             \
   }
 
+#define MAC_HEAD_LENGTH (2+1+sizeof(pan_dev_addr_t)+2*sizeof(dev_addr_t))
+
 typedef struct {
   union {
     unsigned char buf[MAC_BUF_LEN];
@@ -50,12 +52,12 @@ typedef struct {
   unsigned int last_rx_ts;
 } mac_instance_t;
 
+
+// used by mac, externally implemented
+void listener_isr(const dwt_cb_data_t *data);
+
 // initialize mac and transceiver
 void MAC_Init();
-
-// should be called from the frame transmitted isr
-// @param is last frame tx timestamp in dw unit time
-int mac_transmitted_isr(int64_t tx_timestamp);
 
 // should be called at the beginning of your slot time
 void MAC_YourSlotIsr();

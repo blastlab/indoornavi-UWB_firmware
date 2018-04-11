@@ -71,22 +71,33 @@ int TRANSCEIVER_Init() {
 
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
                        dwt_cb_t rxerr_cb) {
+  int err_flags =
+      DWT_INT_RPHE |   // receiver PHY header error
+      DWT_INT_RFCE |   // receiver CRC error
+      DWT_INT_RFSL |   // sync lost
+      DWT_INT_RXOVRR | // receiver overrun
+      DWT_INT_RXPTO |  // preamble detection timeout
+      DWT_INT_SFDT |   // start frame delimiter timeout
+      DWT_INT_ARFE |   // frame rejected (due to frame filtering configuration)
+      0;
   // connect interrupts
   int isr_flags = DWT_INT_TFRS | // frame send
                   DWT_INT_RFCG | // received frame crc good
                   DWT_INT_RFTO | // receive frame timeout
-                  0;
+                  err_flags | 0;
   dwt_setinterrupt(isr_flags, 1);
   dwt_setcallbacks(tx_cb, rx_cb, rxto_cb, rxerr_cb);
 }
 
-void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
-{
+void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr) {
   dwt_setaddress16(dev_addr);
   dwt_setpanid(pan_addr);
 }
 
 void TRANSCEIVER_DefaultRx() {
+  dwt_setrxtimeout(0);
+  dwt_rxenable(DWT_START_RX_IMMEDIATE);
+  return;
   if (settings.transceiver.low_power_mode) {
     int on_pac = 2;
     int off_time_us = 20;
@@ -244,23 +255,23 @@ static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts) {
   // tx data, depends on channel
   const uint8_t PGdly[] = {0, 0xC9, 0xC2, 0xC5, 0x95, 0xC0, 0, 0x93};
   ts->dwt_txconfig.PGdly = PGdly[ch];
-  //todo: use power value below maximum
-//  const int TXpower16d[] = {0,          0x75757575, 0x75757575, 0x6F6F6F6F,
-//                            0x5F5F5F5F, 0x48484848, 0,          0x92929292};
-//  const int TXpower64d[] = {0,          0x67676767, 0x67676767, 0x8B8B8B8B,
-//                            0x9A9A9A9A, 0x85858585, 0,          0xD1D1D1D1};
-//  const int TXpower16e[] = {0,          0x15355575, 0x15355575, 0x0F2F4F6F,
-//                            0x1F1F3F5F, 0x0E082848, 0,          0x32527292};
-//  const int TXpower64e[] = {0,          0x07274767, 0x07274767, 0x2B4B6B8B,
-//                            0x3A5A7A9A, 0x25456585, 0,          0x5171B1D1};
-//
-//  // when data rate == 6M8 then smart power en should be enabled
-//  const bool prf_is_16M = ts->dwt_config.prf == DWT_PRF_16M;
-//  if (ts->dwt_config.dataRate == DWT_BR_6M8) {
-//    ts->dwt_txconfig.power = prf_is_16M ? TXpower16d[ch] : TXpower64d[ch];
-//  } else {
-//    ts->dwt_txconfig.power = prf_is_16M ? TXpower16e[ch] : TXpower64e[ch];
-//  }
+  // todo: use power value below maximum
+  //  const int TXpower16d[] = {0,          0x75757575, 0x75757575, 0x6F6F6F6F,
+  //                            0x5F5F5F5F, 0x48484848, 0,          0x92929292};
+  //  const int TXpower64d[] = {0,          0x67676767, 0x67676767, 0x8B8B8B8B,
+  //                            0x9A9A9A9A, 0x85858585, 0,          0xD1D1D1D1};
+  //  const int TXpower16e[] = {0,          0x15355575, 0x15355575, 0x0F2F4F6F,
+  //                            0x1F1F3F5F, 0x0E082848, 0,          0x32527292};
+  //  const int TXpower64e[] = {0,          0x07274767, 0x07274767, 0x2B4B6B8B,
+  //                            0x3A5A7A9A, 0x25456585, 0,          0x5171B1D1};
+  //
+  //  // when data rate == 6M8 then smart power en should be enabled
+  //  const bool prf_is_16M = ts->dwt_config.prf == DWT_PRF_16M;
+  //  if (ts->dwt_config.dataRate == DWT_BR_6M8) {
+  //    ts->dwt_txconfig.power = prf_is_16M ? TXpower16d[ch] : TXpower64d[ch];
+  //  } else {
+  //    ts->dwt_txconfig.power = prf_is_16M ? TXpower16e[ch] : TXpower64e[ch];
+  //  }
 }
 
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,

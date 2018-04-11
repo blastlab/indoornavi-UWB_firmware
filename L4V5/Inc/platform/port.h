@@ -5,14 +5,11 @@
 #include "stm32l4xx_hal.h"
 #include "usbd_cdc_if.h"
 
-
-#define HARDWARE_MAJOR 0
-#define HARDWARE_MINOR 1
-#define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))
-#define HARDWARE_OTP_ADDR 0x1FFF7000
-
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
+
+// debug configuration
+#define DBG 1
 
 // extra initialization for port modules
 void PORT_Init();
@@ -58,8 +55,8 @@ unsigned int PORT_TickMs();
 // get high resolution clock - CPU tick counter
 unsigned int PORT_TickHr();
 
-// get high resolution clock frequency
-unsigned int PORT_FreqHr();
+// convert high resolution clock time units to us
+unsigned int PORT_TickHrToUs(unsigned int delta);
 
 // update slot timer for one iteration
 void PORT_SlotTimerSetUsLeft(uint32 us);

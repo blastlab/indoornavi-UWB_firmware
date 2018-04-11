@@ -1,6 +1,7 @@
 #include "mac.h"
 #include "../settings.h"
 #include "carry.h"
+#include "sync.h"
 
 // global mac instance
 mac_instance_t mac;
@@ -31,8 +32,15 @@ void MAC_Init() {
   }
 
   // set address and irq callbacks in transceiver
-  TRANSCEIVER_SetAddr(settings.mac.pan, settings.mac.addr);
-  TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
+  if(settings.mac.role == RTLS_LISTENER) {
+		TRANSCEIVER_SetCb(0, listener_isr, MAC_RxToCb, MAC_RxErrCb);
+  } else {
+		TRANSCEIVER_SetAddr(settings.mac.pan, settings.mac.addr);
+		TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
+  }
+
+  // initialize synchronization engine
+  SYNC_Init();
 
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
@@ -71,14 +79,20 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
     buf->rx_len = data->datalength;
     info.direct_src = buf->frame.src;
-    if (buf->frame.control[0] & FR_CR_MAC) {
-      // int ret = SYNC_UpdateNeightbour()
-      SYNC_RxCb(buf->frame.data, &info);
-    } else if (buf->frame.control[0] & FR_CR_DATA) {
-      CARRY_ParseMessage(buf);
-    } else {
-      LOG_ERR("This kind of frame is not supported: %x", buf->frame.control[0]);
+
+    if (buf->frame.dst == ADDR_BROADCAST || buf->frame.dst == settings.mac.addr) {
+      if (buf->frame.control[0] & FR_CR_MAC) {
+        // int ret = SYNC_UpdateNeightbour()
+        SYNC_RxCb(buf->frame.data, &info);
+      } else if (buf->frame.control[0] & FR_CR_DATA) {
+        TRANSCEIVER_DefaultRx();
+        CARRY_ParseMessage(buf);
+      } else {
+        LOG_ERR("This kind of frame is not supported: %x", buf->frame.control[0]);
+        TRANSCEIVER_DefaultRx();
+      }
     }
+    MAC_Free(buf);
   } else {
     LOG_ERR("No buff for rx_cb");
   }
@@ -87,9 +101,12 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
 // timeout error -> check ranging, maybe ACK or default RX
 void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
+	LOG_DBG("MAC_RxTxCb");
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
   if (ret == 0) {
+  	dwt_setrxtimeout(0);
+  	TRANSCEIVER_DefaultRx();
     // TOA_RxToCb();
   }
 }
@@ -109,7 +126,6 @@ int64_t MAC_ToSlotsTime(int64_t transceiver_raw_time) {
 }
 
 void MAC_YourSlotIsr() {
-  // LOG_DBG("Slot ISR");
   int64_t time = TRANSCEIVER_GetTime();
   mac.slot_time_offset = time;
   MAC_TryTransmitFrameInSlot(time);
@@ -152,6 +168,7 @@ void MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
 
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
+    TRANSCEIVER_DefaultRx();
     return;
   }
   int len = MAC_BufLen(buf);
@@ -321,10 +338,8 @@ int MAC_SendRanging(mac_buf_t *buf, uint8_t transceiver_flags) {
 }
 
 unsigned int MAC_UsFromRx() {
-  float diff = PORT_TickHr() - mac.last_rx_ts;
-  diff *= 1e6;
-  diff /= PORT_FreqHr();
-  return (unsigned int)diff;
+  uint32_t diff = PORT_TickHr() - mac.last_rx_ts;
+  return PORT_TickHrToUs(diff);
 }
 
 unsigned char MAC_Read8(mac_buf_t *frame) {

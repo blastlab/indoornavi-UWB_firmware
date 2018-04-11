@@ -10,9 +10,6 @@
 #define LPTIM_SLEEP LPTIM1
 #define LPTIM_SLOT LPTIM2
 
-// define how many high resolution clock tick is in one us
-#define PORT_TICKS_HR_PER_US 1000
-
 void PORT_TimeInit() {
   // sleep timer
   // f = 32kHz / 32 = 1kHz
@@ -27,6 +24,25 @@ void PORT_TimeInit() {
   LL_LPTIM_EnableIT_ARRM(LPTIM_SLOT);
   LL_LPTIM_SetAutoReload(LPTIM_SLOT, 1000);
   LL_LPTIM_Enable(LPTIM_SLOT);
+
+  // HR timer
+  // enable Debug Timer for rtls processing time measurement
+#if defined(__CORTEX_M) && DBG
+  // Disable TRC
+  CoreDebug->DEMCR &= ~CoreDebug_DEMCR_TRCENA_Msk; // ~0x01000000;
+  // Enable TRC */
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // 0x01000000;
+  // Disable clock cycle counter
+  DWT->CTRL &= ~DWT_CTRL_CYCCNTENA_Msk; //~0x00000001;
+  // Enable  clock cycle counter
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk; // 0x00000001;
+  // Reset the clock cycle counter value */
+  DWT->CYCCNT = 0;
+  // 3 NO OPERATION instructions
+  __ASM volatile("NOP");
+  __ASM volatile("NOP");
+  __ASM volatile("NOP");
+#endif
 }
 
 void PORT_TimeStartTimers() {
@@ -45,9 +61,11 @@ unsigned int PORT_TickMs() { return HAL_GetTick(); }
 
 // get high resosolution clock tick
 
-unsigned int PORT_TickHr() { return HAL_GetTick(); }
+unsigned int PORT_TickHr() { return DWT->CYCCNT; }
 
-unsigned int PORT_FreqHr() { return HAL_RCC_GetSysClockFreq(); }
+unsigned int PORT_TickHrToUs(unsigned int delta) {
+	return (uint64_t)(delta) * 1e6 / HAL_RCC_GetSysClockFreq();
+ }
 
 // update slot timer for one iteration, @us is us to the next IT
 void PORT_SlotTimerSetUsLeft(uint32 us) {
