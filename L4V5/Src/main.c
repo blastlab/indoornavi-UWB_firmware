@@ -156,6 +156,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   PORT_imuWomConfig();
+//  PORT_imuFifoConfig();
   while(1);
 
   UwbMain();
