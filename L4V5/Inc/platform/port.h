@@ -119,4 +119,11 @@ int PORT_FlashErase(void *flash_addr, uint32_t length);
 // write new data to previously erased flash memory
 int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
+// IMU
+
+// Imu initialization with configuration for Wake-on-Motion feature
+void PORT_imuWomConfig(void);
+
+void PORT_imuIRQHandler(void);
+
 #endif

@@ -97,27 +97,6 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
-void IMU_write_register(uint8_t addr, uint8_t val)
-{
-	uint8_t data[] = { addr, val };
-	while(HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY);
-	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi3, &data[0], sizeof(data), HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
-}
-
-void IMU_read_register(uint8_t addr, uint8_t *val)
-{
-	*val = 0;
-	uint8_t m_addr = addr | 0b10000000;
-	while(HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY);
-	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi3, &m_addr, 1, HAL_MAX_DELAY);
-	HAL_SPI_Receive(&hspi3, val, 1, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
-}
-
-
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -176,25 +155,8 @@ int main(void)
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
 
-	uint8_t data[16] = { 0 };
-
-	HAL_Delay(100);
-	IMU_write_register(0x6b, 0b10000000);	// PWR_MGMT_1 register; reset
-	HAL_Delay(100);
-	IMU_write_register(0x6b, 0b00000000);	// PWR_MGMT_1 register; unreset
-
-	IMU_read_register(0x6b, &data[0]);
-	if (data[0] & (1<<7))
-	{
-		_Error_Handler(__FILE__, __LINE__);
-	}
-
-	IMU_write_register(0x6b, 0b00001001);	// PWR_MGMT_1 register; waking up, setting clock configuration and turning off temp. meas.
-	IMU_write_register(0x6a, 0b00010000);	// USER_CTRL register; disabling I2C
-
-	IMU_read_register(0x6b, &data[1]);
-	IMU_read_register(0x6a, &data[2]);
-
+  PORT_imuWomConfig();
+  while(1);
 
   UwbMain();
   /* USER CODE END 2 */
@@ -775,6 +737,9 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 
