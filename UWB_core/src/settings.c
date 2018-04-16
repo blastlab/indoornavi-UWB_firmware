@@ -25,7 +25,7 @@ bool settings_is_otp_erased()
   }
 
   // return true if otp is erased, false otherwise
-  return i < sizeof(settings_otp_t);
+  return i >= sizeof(settings_otp_t);
 }
 
 void SETTINGS_Init() {

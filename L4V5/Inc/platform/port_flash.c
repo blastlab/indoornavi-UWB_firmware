@@ -8,21 +8,19 @@
 
 
 // save value in reset-safe backup register
-void PORT_BkpRegisterWrite(uint32_t reg, uint32_t value)
+void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
 {
-	PORT_ASSERT(reg > (uint32_t)&RTC->BKP0R);
-	uint32_t *ptr = (uint32_t *)reg;
+	PORT_ASSERT((uint32_t)reg > (uint32_t)&RTC->BKP0R);
 	HAL_PWR_EnableBkUpAccess();
-	*ptr = value;
+	*reg = value;
 	HAL_PWR_DisableBkUpAccess();
 }
 
 // read value from reset-safe backup register
-uint32_t PORT_BkpRegisterRead(uint32_t reg)
+uint32_t PORT_BkpRegisterRead(uint32_t *reg)
 {
-	PORT_ASSERT(reg > (uint32_t)&RTC->BKP0R);
-	uint32_t *ptr = (uint32_t *)reg;
-	return *ptr;
+	PORT_ASSERT((uint32_t)reg > (uint32_t)&RTC->BKP0R);
+	return *reg;
 }
 
 // czysci rejon strony flasha pod nowy firmware

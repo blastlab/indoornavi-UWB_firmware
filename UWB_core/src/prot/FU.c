@@ -318,9 +318,9 @@ void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info) {
 
 void FU_AcceptFirmware()
 {
-	if(PORT_BkpRegisterRead((uint32_t)&BOOTLOADER_MAGIC_REG) != BOOTLOADER_MAGIC_NUMBER)
+	if(PORT_BkpRegisterRead(BOOTLOADER_MAGIC_REG) != BOOTLOADER_MAGIC_NUMBER)
 	{
-		PORT_BkpRegisterWrite((uint32_t)&BOOTLOADER_MAGIC_REG, BOOTLOADER_MAGIC_NUMBER);
+		PORT_BkpRegisterWrite(BOOTLOADER_MAGIC_REG, BOOTLOADER_MAGIC_NUMBER);
 	}
 }
 

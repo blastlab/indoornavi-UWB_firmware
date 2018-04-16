@@ -13,9 +13,8 @@ typedef struct {
   cchar *cmd;
   cchar *const start;
   cchar *const end;
+  int cnt;
 } txt_buf_t;
-
-extern txt_buf_t txt_buf;
 
 typedef void (*txt_parser_cb)(const txt_buf_t *buf,
                               const prot_packet_info_t *info);
@@ -40,4 +39,9 @@ bool TXT_StartsWith(const txt_buf_t *buf, cchar *cmd);
 // parse command
 void TXT_Parse(const txt_buf_t *buf);
 
+// take input to data parser, ignore \r and split by \n
+void TXT_Input(const char *str, int len);
+
+// look for any new text message to parse
+void TXT_Control();
 #endif // _TXT_PARSER_H

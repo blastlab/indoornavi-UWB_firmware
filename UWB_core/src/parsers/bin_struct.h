@@ -1,9 +1,24 @@
 #ifndef _BIN_STRUCT_H
 #define _BIN_STRUCT_H
 
-#include <stdint.h>
 #include "../mac/mac_const.h"
 #include "bin_const.h"
+#include <stdint.h>
+
+
+typedef struct __packed {
+  uint8_t FC, len;
+} FC_TURN_ON_s;
+
+typedef struct __packed {
+  uint8_t FC, len;
+  uint8_t reason;
+} FC_TURN_OFF_s;
+
+typedef struct __packed {
+  uint8_t FC, len;
+  uint64_t serial;
+} FC_BEACON_s;
 
 typedef struct __packed {
   uint8_t FC, len;

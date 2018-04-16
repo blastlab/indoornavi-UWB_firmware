@@ -140,6 +140,14 @@ int spi_read(uint16_t headerLength, const uint8_t *headerBuffer,
   return 0;
 }
 
+void PORT_WakeupTransceiver(void)
+{
+	LL_GPIO_ResetOutputPin(DW_CS_GPIO_Port, DW_CS_Pin);
+	PORT_SleepMs(1);
+	LL_GPIO_SetPinOutputType(DW_CS_GPIO_Port, DW_CS_Pin);
+	PORT_SleepMs(7); //wait 7ms for DW1000 XTAL to stabilise
+}
+
 #else
 
 void PORT_SpiInit() {
@@ -266,4 +274,11 @@ int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
   return 0;
 }
 
+void PORT_WakeupTransceiver(void)
+{
+	DW_CS_GPIO_Port->BRR = DW_CS_Pin;
+	PORT_SleepMs(1);
+	DW_CS_GPIO_Port->BSRR = DW_CS_Pin;
+	PORT_SleepMs(7); //wait 7ms for DW1000 XTAL to stabilise
+}
 #endif

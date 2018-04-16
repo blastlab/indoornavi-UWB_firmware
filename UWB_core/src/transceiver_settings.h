@@ -21,7 +21,7 @@ typedef struct
     .ant_dly_rx = 16436,                       \
     .ant_dly_tx = 16436,                       \
     .low_power_mode = 0,                       \
-    .dwt_config.chan = 2,                      \
+    .dwt_config.chan = 5,                      \
     .dwt_config.prf = DWT_PRF_64M,             \
     .dwt_config.txPreambLength = DWT_PLEN_128, \
     .dwt_config.rxPAC = DWT_PAC32,             \
