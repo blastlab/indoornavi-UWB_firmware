@@ -8,7 +8,7 @@ mac_instance_t mac;
 
 mac_buf_t *_MAC_BufGetOldestToTx();
 void _MAC_BufferReset(mac_buf_t *buf);
-void MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time);
+int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time);
 
 void MAC_TxCb(const dwt_cb_data_t *data);
 void MAC_RxCb(const dwt_cb_data_t *data);
@@ -35,7 +35,7 @@ void MAC_Init() {
   if(settings.mac.role == RTLS_LISTENER) {
 		TRANSCEIVER_SetCb(0, listener_isr, MAC_RxToCb, MAC_RxErrCb);
   } else {
-		TRANSCEIVER_SetAddr(settings.mac.pan, settings.mac.addr);
+		//TRANSCEIVER_SetAddr(settings.mac.pan, settings.mac.addr);
 		TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
   }
 
@@ -64,7 +64,14 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
 
   // try send next data frame
   if (ret == 0) {
-    MAC_TryTransmitFrameInSlot(tx_ts);
+    ret = MAC_TryTransmitFrameInSlot(tx_ts);
+  }
+
+  // or turn on default rx mode
+  if(ret == 0) {
+		dwt_forcetrxoff();
+		dwt_rxreset();
+		TRANSCEIVER_DefaultRx();
   }
 }
 
@@ -105,8 +112,9 @@ void MAC_RxToCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
   if (ret == 0) {
-  	dwt_setrxtimeout(0);
-  	TRANSCEIVER_DefaultRx();
+  	dwt_rxenable(DWT_START_RX_IMMEDIATE);
+  	//dwt_setrxtimeout(0);
+  	//TRANSCEIVER_DefaultRx();
     // TOA_RxToCb();
   }
 }
@@ -116,6 +124,7 @@ void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
   LOG_ERR("Rx error status:%X", data->status);
+  TRANSCEIVER_DefaultRx();
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
@@ -129,6 +138,7 @@ void MAC_YourSlotIsr() {
   int64_t time = TRANSCEIVER_GetTime();
   mac.slot_time_offset = time;
   MAC_TryTransmitFrameInSlot(time);
+  //dwt_rxenable(DWT_START_RX_IMMEDIATE);
 }
 
 // private function, called when buf should be send now as a frame in slot
@@ -158,29 +168,32 @@ void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 }
 
 // calc slot time and send try send packet if it is yours time
-void MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
+int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
   // calc time from begining of yours slot
   int64_t slot_time = MAC_ToSlotsTime(transceiver_raw_time);
   if (0 < slot_time || slot_time > settings.mac.slot_time_us) {
-    TRANSCEIVER_DefaultRx();
-    return;
+    return 0;
   }
 
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
-    TRANSCEIVER_DefaultRx();
-    return;
+    return 0;
   }
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
   uint32_t end_us = settings.mac.slot_time_us - settings.mac.slot_guard_time_us;
   if (slot_time + tx_est_time > end_us) {
-    TRANSCEIVER_DefaultRx();
-    return;
+    return 0;
   }
 
+  if(transceiver_raw_time == mac.slot_time_offset) {
+  	dwt_rxreset();
+  	dwt_forcetrxoff();
+  }
   // when you have enouth time to send next message, then do it
   _MAC_TransmitFrameInSlot(buf, len);
+  TRANSCEIVER_DefaultRx();
+  return 1;
 }
 
 // call this function when ACK arrive

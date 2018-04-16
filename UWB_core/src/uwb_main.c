@@ -10,6 +10,90 @@
 #include "parsers/bin_struct.h"
 #include "parsers/txt_parser.h"
 
+void SendTurnOnMessage();
+void SendTurnOffMessage(uint8_t reason);
+void SendBeaconMessage();
+void Desynchronize();
+void CheckSleepMode();
+void TurnOff();
+void BatteryControl();
+void diagnostic();
+
+void BatteryControl() {
+  static unsigned int last_batt_measure_time = 0;
+  if (PORT_TickMs() - last_batt_measure_time > 5000) {
+    last_batt_measure_time = PORT_TickMs();
+
+    PORT_BatteryMeasure();
+    /*if (2400 < PORT_BatteryVoltage() && PORT_BatteryVoltage() < 3100) {
+      TurnOff();
+    }*/
+    LOG_DBG("mV:%d", PORT_BatteryVoltage());
+  }
+}
+
+void BeaconSender() {
+  static unsigned int last_beacon_time = INT32_MAX;
+  if (PORT_TickMs() - last_beacon_time > 1000) {
+  	if(settings.mac.role != RTLS_LISTENER) {
+			last_beacon_time = PORT_TickMs();
+			SendBeaconMessage();
+  	}
+  }
+}
+
+void RangingControl() {
+  static unsigned int last_time = INT32_MAX;
+  if (PORT_TickMs() - last_time > 500) {
+    last_time = PORT_TickMs();
+
+    if(settings.mac.role == RTLS_SINK) {
+			dev_addr_t addr = 0x0010;
+			FC_SYNC_POLL_s packet;
+			packet.FC = FC_SYNC_POLL;
+			packet.len = sizeof(packet);
+			packet.num_poll_anchor = 1;
+			packet.poll_addr[0] = addr;
+			packet.len += packet.num_poll_anchor * sizeof(packet.poll_addr[0]);
+			mac_buf_t *buf = MAC_BufferPrepare(addr, false);
+			MAC_Write(buf, &packet, packet.len);
+			MAC_Send(buf, false);
+    }
+  }
+}
+
+void UwbMain() {
+  //CheckSleepMode();
+  SETTINGS_Init();
+  Desynchronize(); // base on device address
+
+  if(settings.mac.role == RTLS_DEFAULT) {
+  	settings.mac.role = RTLS_LISTENER;
+  }
+
+  PORT_Init();
+  MAC_Init();
+  CARRY_Init(settings.mac.role == RTLS_SINK);
+  FU_Init(settings.mac.role == RTLS_SINK);
+  FU_AcceptFirmware();
+
+  PORT_TimeStartTimers();
+  SendTurnOnMessage();
+
+  while (1) {
+    PORT_LedOff(LED_STAT);
+    PORT_LedOff(LED_ERR);
+    BatteryControl();
+    RangingControl();
+    BeaconSender();
+    TXT_Control();
+    PORT_WatchdogRefresh();
+    //PORT_SleepMs(10);
+    //diagnostic();
+  }
+}
+
+
 
 void SendTurnOnMessage()
 {
@@ -41,6 +125,7 @@ void SendBeaconMessage()
   mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
   MAC_Write(buf, &packet, packet.len);
   MAC_Send(buf, false);
+  LOG_DBG("I send beacon - %X %c", settings.mac.addr, (char)settings.mac.role);
 }
 
 void Desynchronize() {
@@ -90,48 +175,7 @@ void CheckSleepMode() {
   }
 }
 
-void BatteryControl() {
-  static unsigned int last_batt_measure_time = 0;
-  if (PORT_TickMs() - last_batt_measure_time > 5000) {
-    last_batt_measure_time = PORT_TickMs();
 
-    PORT_BatteryMeasure();
-    /*if (2400 < PORT_BatteryVoltage() && PORT_BatteryVoltage() < 3100) {
-      TurnOff();
-    }*/
-    LOG_DBG("mV:%d", PORT_BatteryVoltage());
-  }
-}
-
-void BeaconSender() {
-  static unsigned int last_beacon_time = INT32_MAX;
-  if (PORT_TickMs() - last_beacon_time > 1000) {
-  	if(settings.mac.role != RTLS_LISTENER) {
-			last_beacon_time = PORT_TickMs();
-			SendBeaconMessage();
-  	}
-  }
-}
-
-void RangingControl() {
-  static unsigned int last_time = INT32_MAX;
-  if (PORT_TickMs() - last_time > 500) {
-    last_time = PORT_TickMs();
-
-    if(settings.mac.role == RTLS_SINK) {
-			dev_addr_t addr = 0x0010;
-			FC_SYNC_POLL_s packet;
-			packet.FC = FC_SYNC_POLL;
-			packet.len = sizeof(packet);
-			packet.num_poll_anchor = 1;
-			packet.poll_addr[0] = addr;
-			packet.len += packet.num_poll_anchor * sizeof(packet.poll_addr[0]);
-			mac_buf_t *buf = MAC_BufferPrepare(addr, false);
-			MAC_Write(buf, &packet, packet.len);
-			MAC_Send(buf, false);
-    }
-  }
-}
 
 #include "decadriver/deca_regs.h"
 #include "stdarg.h"
@@ -165,47 +209,5 @@ void diagnostic() {
   	LOG_DBG(buf);
   	dwt_write32bitoffsetreg(SYS_STATUS_ID, SYS_STATUS_OFFSET, SYS_STATUS_ALL_RX_ERR);
   	PORT_SleepMs(1);
-  }
-}
-
-void UwbMain() {
-  //CheckSleepMode();
-  SETTINGS_Init();
-  Desynchronize(); // base on device address
-
-  if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_SINK;
-  }
-
-  PORT_Init();
-  MAC_Init();
-  CARRY_Init(settings.mac.role == RTLS_SINK);
-  FU_Init(settings.mac.role == RTLS_SINK);
-  FU_AcceptFirmware();
-
-  /*while(1) {
-  	PORT_SleepMs(500);
-    FC_BEACON_s packet;
-    packet.FC = FC_BEACON;
-    packet.len = sizeof(packet);
-    packet.serial = settings_otp->serial;
-    mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-    MAC_Write(buf, &packet, packet.len);
-    TRANSCEIVER_Send(buf->buf, MAC_BufLen(buf));
-  }*/
-
-  PORT_TimeStartTimers();
-  SendTurnOnMessage();
-
-  while (1) {
-    PORT_LedOff(LED_STAT);
-    PORT_LedOff(LED_ERR);
-    BatteryControl();
-    RangingControl();
-    BeaconSender();
-    TXT_Control();
-    PORT_WatchdogRefresh();
-
-    //diagnostic();
   }
 }

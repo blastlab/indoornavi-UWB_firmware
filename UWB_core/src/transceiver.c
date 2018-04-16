@@ -1,4 +1,5 @@
 #include "transceiver.h"
+#include "decadriver/deca_regs.h"
 
 int transceiver_br = 0;
 int transceiver_plen = 0;
@@ -8,9 +9,12 @@ int transceiver_sfd = 0;
 static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts);
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
                                             bool set_default_pac);
+static int TRANSCEIVER_CalcSfdTo();
+static int TRANSCEIVER_CalcPGdly(int ch);
 
 int TRANSCEIVER_Init() {
   int ret;
+  dwt_config_t *conf = &settings.transceiver.dwt_config;
 
   // set global variables correct with transceiver settings and update pac size
   if (settings.transceiver.dwt_txconfig.power == 0) {
@@ -18,6 +22,26 @@ int TRANSCEIVER_Init() {
     _TRANSCEIVER_InitGlobalsFromSet(&settings.transceiver, 1);
   } else {
     _TRANSCEIVER_InitGlobalsFromSet(&settings.transceiver, 0);
+  }
+
+  // check if sfdTO is correct
+  if (conf->sfdTO == 0) {
+    conf->sfdTO = TRANSCEIVER_CalcSfdTo();
+  }
+  if(settings.transceiver.dwt_txconfig.PGdly == 0) {
+    settings.transceiver.dwt_txconfig.PGdly = TRANSCEIVER_CalcPGdly(conf->chan);
+  }
+
+  PORT_SpiSpeedSlow(true);
+  ret = dwt_readdevid();
+
+  // clear the sleep bit - so that after the hard reset below
+  // the DW does not go into sleep
+  if (ret != DWT_DEVICE_ID) {
+    PORT_WakeupTransceiver(); // device is asleep
+    ret = dwt_readdevid();
+    TRANSCEIVER_ASSERT(ret == DWT_DEVICE_ID);
+    dwt_softreset();
   }
 
   // reset device
@@ -64,6 +88,8 @@ int TRANSCEIVER_Init() {
   }
 
   // turn on default rx mode
+  dwt_setrxtimeout(0);
+  dwt_setpreambledetecttimeout(0);
   TRANSCEIVER_DefaultRx();
 
   return 0;
@@ -71,21 +97,18 @@ int TRANSCEIVER_Init() {
 
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
                        dwt_cb_t rxerr_cb) {
-  int err_flags =
-      DWT_INT_RPHE |   // receiver PHY header error
-      DWT_INT_RFCE |   // receiver CRC error
-      DWT_INT_RFSL |   // sync lost
-      DWT_INT_RXOVRR | // receiver overrun
-      DWT_INT_RXPTO |  // preamble detection timeout
-      DWT_INT_SFDT |   // start frame delimiter timeout
-      DWT_INT_ARFE |   // frame rejected (due to frame filtering configuration)
-      0;
+	int tx_flags = SYS_STATUS_ALL_TX | SYS_STATUS_ALL_DBLBUFF;
+	int rx_flags = SYS_STATUS_ALL_RX_GOOD;
+  int err_flags = SYS_STATUS_ALL_RX_ERR | SYS_STATUS_ALL_RX_TO;
+	/*DWT_INT_RPHE |   // receiver PHY header error
+	DWT_INT_RFCE |   // receiver CRC error
+	DWT_INT_RFSL |   // sync lost
+	DWT_INT_RXOVRR | // receiver overrun
+	DWT_INT_RXPTO |  // preamble detection timeout
+	DWT_INT_SFDT |   // start frame delimiter timeout
+	DWT_INT_ARFE |   // frame rejected (due to frame filtering configuration)*/
   // connect interrupts
-  int isr_flags = DWT_INT_TFRS | // frame send
-                  DWT_INT_RFCG | // received frame crc good
-                  DWT_INT_RFTO | // receive frame timeout
-                  err_flags | 0;
-  dwt_setinterrupt(isr_flags, 1);
+  dwt_setinterrupt(tx_flags | rx_flags | err_flags, 1);
   dwt_setcallbacks(tx_cb, rx_cb, rxto_cb, rxerr_cb);
 }
 
@@ -96,6 +119,8 @@ void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr) {
 
 void TRANSCEIVER_DefaultRx() {
   dwt_setrxtimeout(0);
+  dwt_setpreambledetecttimeout(0);
+  dwt_setlowpowerlistening(false);
   dwt_rxenable(DWT_START_RX_IMMEDIATE);
   return;
   if (settings.transceiver.low_power_mode) {
@@ -272,6 +297,7 @@ static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts) {
   //  } else {
   //    ts->dwt_txconfig.power = prf_is_16M ? TXpower16e[ch] : TXpower64e[ch];
   //  }
+  ts->dwt_txconfig.power = 0x0E080222; // todo: uzywac mniejszej mocy default
 }
 
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
@@ -328,4 +354,19 @@ static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
   }
 
   transceiver_pac = pac[ts->dwt_config.rxPAC];
+}
+
+static int TRANSCEIVER_CalcSfdTo() {
+  TRANSCEIVER_ASSERT(transceiver_sfd > 0);
+  TRANSCEIVER_ASSERT(transceiver_plen > 0);
+  TRANSCEIVER_ASSERT(transceiver_pac > 0);
+  return 1 + transceiver_plen + transceiver_sfd - transceiver_pac;
+}
+
+static int TRANSCEIVER_CalcPGdly(int ch) {
+  TRANSCEIVER_ASSERT(ch > 0);
+  TRANSCEIVER_ASSERT(ch != 6);
+  TRANSCEIVER_ASSERT(ch < 8);
+  const int PGdly[] = {0, 0xC9, 0xC2, 0xC5, 0x95, 0xC0, 0, 0x93};
+  return PGdly[ch];
 }
