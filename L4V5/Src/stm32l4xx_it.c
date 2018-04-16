@@ -284,7 +284,9 @@ void LPTIM2_IRQHandler(void)
 	LL_LPTIM_ClearFLAG_ARRM(LPTIM2);
   /* USER CODE END LPTIM2_IRQn 0 */
   /* USER CODE BEGIN LPTIM2_IRQn 1 */
+	decaIrqStatus_t st = decamutexon();
   MAC_YourSlotIsr();
+  decamutexoff(st);
   /* USER CODE END LPTIM2_IRQn 1 */
 }
 

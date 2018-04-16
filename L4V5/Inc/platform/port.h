@@ -23,6 +23,9 @@ void PORT_LedOff(int LED_x);
 // reset dw 1000 device by polling RST pin down for at least 500us
 void PORT_ResetTransceiver();
 
+// wake up DW1000 device by setting CS low at least 500 us
+void PORT_WakeupTransceiver(void);
+
 // reset STM
 void PORT_Reboot();
 

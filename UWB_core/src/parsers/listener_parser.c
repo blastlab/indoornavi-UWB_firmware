@@ -20,8 +20,16 @@ void listener_parse(mac_buf_t *buf) {
 	const char *descriptor = 0;
 
 	switch(buf->frame.data[0]) {
-	LISTENER_CASE(descriptor, FC_CARRY);
 	LISTENER_CASE(descriptor, FC_BEACON);
+	LISTENER_CASE(descriptor, FC_TURN_ON);
+	LISTENER_CASE(descriptor, FC_TURN_OFF);
+	LISTENER_CASE(descriptor, FC_DEV_ACCEPTED);
+	LISTENER_CASE(descriptor, FC_CARRY);
+	LISTENER_CASE(descriptor, FC_FU);
+	LISTENER_CASE(descriptor, FC_VERSION_ASK);
+	LISTENER_CASE(descriptor, FC_VERSION_RESP);
+	LISTENER_CASE(descriptor, FC_STAT_ASK);
+	LISTENER_CASE(descriptor, FC_STAT_RESP);
 	LISTENER_CASE(descriptor, FC_SYNC_POLL);
 	LISTENER_CASE(descriptor, FC_SYNC_RESP);
 	LISTENER_CASE(descriptor, FC_SYNC_FIN);
