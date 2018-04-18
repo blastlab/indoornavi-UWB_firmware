@@ -53,6 +53,9 @@ typedef struct {
   sync_neightbour_t neightbour[5];
 } sync_instance_t;
 
+void SYNC_Init();
+
+int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
 int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info);
 /*int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info);
 int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info);

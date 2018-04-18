@@ -15,8 +15,8 @@ typedef struct {
   prot_parser_cb cb;
 } prot_cb_t;
 
-uint8_t BIN_ParseSingle(mac_buf_t *buf, const prot_packet_info_t *info);
-void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, uint8_t size);
+uint8_t BIN_ParseSingle(const uint8_t *buf, const prot_packet_info_t *info);
+void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, int size);
 void BIN_TxCb(int64_t Ts);
 void BIN_RxTimeoutCb();
 

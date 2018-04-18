@@ -3,7 +3,10 @@
 // private function from calib file
 int _TOA_GetRangeBias(uint8 chan, int range, uint8 prf, int smartTxPower);
 
-void TOA_State(toa_core_t *toa, toa_state_t state) { toa->state = state; }
+void TOA_State(toa_core_t *toa, toa_state_t state) {
+	toa->prev_state = toa->state;
+	toa->state = state;
+}
 
 // add new measure to measures table
 void TOA_AddMeasure(dev_addr_t addr, int distance) {

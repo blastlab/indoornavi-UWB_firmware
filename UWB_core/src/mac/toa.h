@@ -24,7 +24,7 @@ typedef enum {
 
 typedef struct
 {
-  toa_state_t state;
+  toa_state_t state, prev_state;
   int64_t TsPollTx;
   uint32_t TsPollRx;
   uint32_t TsRespTx, TsRespRx[TOA_MAX_DEV_IN_POLL];
