@@ -155,8 +155,8 @@ int main(void)
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
 
-  PORT_imuWomConfig();
-//  PORT_imuFifoConfig();
+//  PORT_imuWomConfig();
+  PORT_imuFifoConfig();
   while(1);
 
   UwbMain();

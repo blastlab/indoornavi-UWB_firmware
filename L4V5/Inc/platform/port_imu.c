@@ -45,11 +45,16 @@ void PORT_imuSetGyroOffset(void)
 {
 	uint8_t data[6] = { 0 };
 	PORT_imuReadRegister(0x43, &data[0], 6);	// reading GYRO's values, setting the offset
-	for(uint8_t i = 0; i < 6; i += 2)
-	{
-	  PORT_imuWriteRegister(0x13 + i, (int8_t)((-1*(int16_t)((data[i] << 8) | data[i + 1])) >> 8));
-	  PORT_imuWriteRegister(0x14 + i, (int8_t)((-1*(int16_t)((data[i] << 8) | data[i + 1])) & 0xFF));
-	}
+	int8_t offs_offs = 1;
+	int16_t offs = -2*(data[0] << 8 | data[1]) - offs_offs; // -17;
+	PORT_imuWriteRegister(0x13, (int8_t)(offs >> 8));
+	PORT_imuWriteRegister(0x14, (int8_t)offs);
+	offs = -2*(data[2] << 8 | data[3]) - offs_offs; // -107;
+	PORT_imuWriteRegister(0x15, (int8_t)(offs >> 8));
+	PORT_imuWriteRegister(0x16, (int8_t)offs);
+	offs = -2*(data[4] << 8 | data[5]) - offs_offs; // 6;
+	PORT_imuWriteRegister(0x17, (int8_t)(offs >> 8));
+	PORT_imuWriteRegister(0x18, (int8_t)offs);
 }
 
 void PORT_imuReadAllConfig(void)
@@ -81,7 +86,8 @@ void PORT_imuWomConfig(void)
 	PORT_imuWriteRegister(0x6b, 0b00101001);	// PWR_MGMT_1 register; enabling low-power cycle mode for accelerometer
 }
 
-double x_degrees;
+double x_degrees, y_degrees, z_degrees;
+uint16_t fifo_count = 0;
 #define SAMPLE_RATE_DIV 0b00000010
 #define SAMPLE_F		(double)(1000.0/(1 + SAMPLE_RATE_DIV))
 
@@ -100,11 +106,13 @@ void PORT_imuFifoConfig(void)
 	PORT_imuWriteRegister(0x37, 0b00000000);		// INT_PIN_CFG register;
 	HAL_Delay(100);
 	PORT_imuSetGyroOffset();
+
 	PORT_imuWriteRegister(0x38, 0b00010000);		// INT_ENABLE register; enabling FIFO overflow interrupt on accelerometer
 	PORT_imuWriteRegister(0x6a, 0b01010100);		// USER_CTRL register; enabling and resetting FIFO
 
 	x_degrees = 0;
-	uint16_t fifo_count = 0;
+	y_degrees = 0;
+	z_degrees = 0;
 	uint8_t dat[2] = { 0 };
 	uint8_t fifo_data[1440] = { 0 };
 
@@ -119,7 +127,12 @@ void PORT_imuFifoConfig(void)
 			for(uint16_t i = 6; i < (1440 - 12); i+=12)
 			{
 				x_degrees += (double)((int16_t)((fifo_data[i] << 8) | fifo_data[i + 1]) + (int16_t)((fifo_data[i + 12] << 8) | fifo_data[i + 13]))/SAMPLE_F/2.0;
+				y_degrees += (double)((int16_t)((fifo_data[i + 2] << 8) | fifo_data[i + 3]) + (int16_t)((fifo_data[i + 14] << 8) | fifo_data[i + 15]))/SAMPLE_F/2.0;
+				z_degrees += (double)((int16_t)((fifo_data[i + 4] << 8) | fifo_data[i + 5]) + (int16_t)((fifo_data[i + 16] << 8) | fifo_data[i + 17]))/SAMPLE_F/2.0;
 			}
+			PORT_imuReadRegister(0x72, &dat[0], 1);
+			PORT_imuReadRegister(0x73, &dat[1], 1);
+			fifo_count = ((0b00011111 & dat[0]) << 8) | dat[1];
 		}
 	}
 }
