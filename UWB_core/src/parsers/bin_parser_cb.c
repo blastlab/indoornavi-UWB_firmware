@@ -22,6 +22,10 @@ void _BIN_Finalize(uint8_t FC, const void *data, uint8_t len,
   }
 }
 
+void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
+	LOG_DBG("Device turn on %X", info->direct_src);
+}
+
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 	LOG_DBG("Beacon from %X", info->direct_src);
 }
@@ -39,6 +43,7 @@ void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info) {
 }
 
 const prot_cb_t prot_cb_tab[] = {
+		{FC_TURN_ON, FC_TURN_ON_cb},
 		{FC_BEACON, FC_BEACON_cb},
     {FC_SYNC_POLL, FC_SYNC_POLL_BIN_cb},
     {FC_CARRY, 0},

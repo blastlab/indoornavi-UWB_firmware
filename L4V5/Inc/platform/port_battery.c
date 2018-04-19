@@ -44,7 +44,8 @@ void PORT_BatteryMeasure() {
 #else
   HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_RESET);
 #endif
-  HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch);
+  HAL_ADC_Stop(&ADC_HADC_VBAT); // raczej niepotrzebne, testy do HardFault
+  HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch); //todo: HardFault
   HAL_ADC_Start(&ADC_HADC_VBAT);
   // it is also delay
   if (HAL_ADC_PollForConversion(&ADC_HADC_VBAT, 10) == HAL_OK) {
@@ -69,7 +70,7 @@ void PORT_BatteryMeasure() {
 #endif
 
   // convert to mV
-  VDDA = (3.0f * (*VREFINT_CAL_ADDR) / adcInt);
+  VDDA = adcInt > 0 ? (3.0f * (*VREFINT_CAL_ADDR) / adcInt) : 0;
   nap = (int)(1.51f * VDDA * adcBat / 4.096f) +
         90; // +90mV jest sprawdzane empirycznie
   // uwb_log(LOG_INFO, "myNap:%d mV:%d", nap, (int)mV);
