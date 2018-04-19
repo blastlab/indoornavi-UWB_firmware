@@ -30,8 +30,8 @@ int TOA_FindAddrIndexInResp(toa_core_t *toa, dev_addr_t addr) {
 int TOA_CalcTofDwTu(toa_core_t *toa, int resp_ind) {
   const uint32_t TsErr = 0;
   if (toa->TsPollTx == TsErr || toa->TsPollRx == TsErr ||
-      toa->TsRespTx == TsErr || toa->TsRespRx[resp_ind] ||
-      toa->TsFinTx == TsErr || toa->TsFinRx) {
+      toa->TsRespTx == TsErr || toa->TsRespRx[resp_ind] == TsErr ||
+      toa->TsFinTx == TsErr || toa->TsFinRx == TsErr) {
     return 0;
   }
   float Ra, Rb, Da, Db, den, t;
@@ -40,7 +40,7 @@ int TOA_CalcTofDwTu(toa_core_t *toa, int resp_ind) {
   Da = (float)((uint32_t)(toa->TsFinTx - toa->TsRespRx[resp_ind]));
   Db = (float)((uint32_t)(toa->TsRespTx - toa->TsPollRx));
   den = (Ra + Rb + Da + Db);
-  t = ((Ra * Rb - Da * Db) / den * DWT_TIME_UNITS);
+  t = ((Ra * Rb - Da * Db) / den);
   return t;
 }
 

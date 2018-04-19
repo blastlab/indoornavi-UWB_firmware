@@ -34,7 +34,7 @@ void BatteryControl() {
 
 void BeaconSender() {
   static unsigned int last_beacon_time = INT32_MAX;
-  if (PORT_TickMs() - last_beacon_time > 1000) {
+  if (PORT_TickMs() - last_beacon_time > 3000) {
   	if(settings.mac.role != RTLS_LISTENER) {
 			last_beacon_time = PORT_TickMs();
 			SendBeaconMessage();
@@ -47,17 +47,10 @@ void RangingControl() {
   if (PORT_TickMs() - last_time > 500) {
     last_time = PORT_TickMs();
 
-    if(settings.mac.role == RTLS_SINK) {
-			dev_addr_t addr = 0x0010;
-			FC_SYNC_POLL_s packet;
-			packet.FC = FC_SYNC_POLL;
-			packet.len = sizeof(packet);
-			packet.num_poll_anchor = 1;
-			packet.poll_addr[0] = addr;
-			packet.len += packet.num_poll_anchor * sizeof(packet.poll_addr[0]);
-			mac_buf_t *buf = MAC_BufferPrepare(addr, false);
-			MAC_Write(buf, &packet, packet.len);
-			MAC_Send(buf, false);
+		dev_addr_t addr = 0x8012;
+    if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
+    	SYNC_SendPoll(addr, &addr, 1);
+			LOG_DBG("POLL to %X in queue", addr);
     }
   }
 }
@@ -68,7 +61,7 @@ void UwbMain() {
   Desynchronize(); // base on device address
 
   if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_LISTENER;
+  	settings.mac.role = RTLS_SINK;
   }
 
   PORT_Init();
@@ -83,7 +76,7 @@ void UwbMain() {
   while (1) {
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
-    BatteryControl();
+    //BatteryControl(); //todo: HardFault
     RangingControl();
     BeaconSender();
     TXT_Control();
@@ -97,12 +90,14 @@ void UwbMain() {
 
 void SendTurnOnMessage()
 {
-	FC_TURN_ON_s packet;
-  packet.FC = FC_TURN_ON;
-  packet.len = sizeof(packet);
-  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-  MAC_Write(buf, &packet, packet.len);
-  MAC_Send(buf, false);
+	if(settings.mac.role != RTLS_LISTENER) {
+		FC_TURN_ON_s packet;
+		packet.FC = FC_TURN_ON;
+		packet.len = sizeof(packet);
+		mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+		MAC_Write(buf, &packet, packet.len);
+		MAC_Send(buf, false);
+	}
 }
 
 void SendTurnOffMessage(uint8_t reason)

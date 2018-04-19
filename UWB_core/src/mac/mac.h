@@ -48,7 +48,7 @@ typedef struct {
   mac_buf_t rx_buf;
   short buf_get_ind;
   int64_t slot_time_offset;
-  mac_buf_t *buf_under_tx;
+  bool frame_under_tx_is_ranging;
   unsigned int last_rx_ts;
 } mac_instance_t;
 
@@ -73,6 +73,13 @@ int MAC_BufLen(const mac_buf_t *buf);
 
 // low level function, used only by carry module
 void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target);
+
+// set frame type in 802.15.4 protocol, posiible:
+//  FR_CR_MAC
+//  FR_CR_DATA
+//  FR_CR_ACK
+//  FR_CR_BEACON
+void MAC_SetFrameType(mac_buf_t *buf, uint8_t type);
 
 // reserve buffer and fill mac protocol fields
 // @param address to target device in range of radio - without hops

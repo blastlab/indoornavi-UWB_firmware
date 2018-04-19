@@ -20,6 +20,40 @@ while(0)
 
 #define MOVE_ARRAY_ELEM(ARR_EL, N) ARR_EL[N] = ARR_EL[N - 1]
 
+void SYNC_Init() {
+  toa_settings_t *tset = &settings.mac.sync_dly;
+  const int rx_to_tx_delay = 30; // us
+  const float spi_speed = 20e6;  // Hz
+  const int POLL_PROCESSING_TIME_US = 270;
+  const int RESP_PROCESSING_TIME_US = 200;
+
+  tset->guard_time_us = 50; // us
+  tset->rx_after_tx_offset_us = tset->guard_time_us + TRANSCEIVER_EstimateTxTimeUs(0);
+
+  // add here 2 bytes for CRC
+  int basePollLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_POLL_s) + (2);
+  basePollLen += sizeof(dev_addr_t) * TOA_MAX_DEV_IN_POLL;
+  const int respLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_RESP_s) + (2);
+  const int baseFinLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_FIN_s) + (2);
+  int len;
+
+  for (int i = 0; i < TOA_MAX_DEV_IN_POLL; ++i) {
+    len = basePollLen;
+    tset->resp_dly_us[i] = POLL_PROCESSING_TIME_US;
+    tset->resp_dly_us[i] += 1e6 * len / spi_speed;
+    tset->resp_dly_us[i] += rx_to_tx_delay + tset->guard_time_us;
+    tset->resp_dly_us[i] += TRANSCEIVER_EstimateTxTimeUs(len);
+    tset->resp_dly_us[i] += i * (TRANSCEIVER_EstimateTxTimeUs(respLen) +
+                                 RESP_PROCESSING_TIME_US + tset->guard_time_us);
+  }
+
+  len = baseFinLen + TOA_MAX_DEV_IN_POLL * 5;
+  tset->fin_dly_us = RESP_PROCESSING_TIME_US;
+  tset->fin_dly_us += 1e6 * len / spi_speed;
+  tset->fin_dly_us += rx_to_tx_delay + tset->guard_time_us;
+  tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
+}
+
 int64_t SYNC_GlobTime(int64_t dw_ts) {
   int dt = dw_ts - sync.local_obj.update_ts;
   int64_t res = dw_ts + sync.local_obj.time_offset;
@@ -137,8 +171,8 @@ void SYNC_UpdateLocalTimeParams(uint64_t transceiver_raw_time) {
 // complex syncronisation processing
 void SYNC_Update(sync_neightbour_t *neig, int64_t ext_time, int64_t loc_time,
                  int tof_dw) {
-  SYNC_UpdateNeightbour(neig, ext_time, loc_time, tof_dw);
-  SYNC_UpdateLocalTimeParams(loc_time);
+  //SYNC_UpdateNeightbour(neig, ext_time, loc_time, tof_dw);
+  //SYNC_UpdateLocalTimeParams(loc_time);
 
   // add distance to measure table
   if (tof_dw > 0 && settings.mac.raport_anchor_anchor_distance) {
@@ -164,12 +198,15 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
   memcpy(&packet.poll_addr[0], &anchors[0], anc_addr_len);
   MAC_Write(buf, &packet, packet.len);
 
+  sync.toa.resp_ind = 0;
+  sync.toa.anc_in_poll_cnt = anc_cnt;
+  sync.toa.initiator = settings.mac.addr;
   sync.toa.addr_tab[0] = dst;
   memcpy(&sync.toa.addr_tab[1], anchors, anc_addr_len);
 
-  // send this frame in your slot but with ranging flage
+  // send this frame in your slot (through queue) but with ranging flage
+  // mac module should set DWT_RESPONSE_EXPECTED flag before transmission
   buf->isRangingFrame = true;
-  buf->frame.control[0] = FR_CR_MAC;
   TOA_State(&sync.toa, TOA_POLL_WAIT_TO_SEND);
   MAC_Send(buf, false);
   return 0;
@@ -177,12 +214,16 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
 
 int SYNC_SendResp(int64_t PollDwRxTs) {
   toa_settings_t *tset = &settings.mac.sync_dly;
-  int resp_dly = tset->resp_dly[sync.toa.resp_ind];
+  int resp_dly_us = tset->resp_dly_us[sync.toa.resp_ind];
 
-  sync.toa.TsRespTx = TOA_SetTxTime(PollDwRxTs, resp_dly);
+  sync.toa.TsRespTx = TOA_SetTxTime(PollDwRxTs, resp_dly_us);
   sync.toa.TsRespTx = SYNC_GlobTime(sync.toa.TsRespTx);
 
   mac_buf_t *buf = MAC_BufferPrepare(sync.toa.initiator, false);
+  if (buf == 0) {
+    TOA_State(&sync.toa, TOA_IDLE);
+    return 0;
+  }
   FC_SYNC_RESP_s packet = {
       .FC = FC_SYNC_RESP,
       .len = sizeof(FC_SYNC_RESP_s),
@@ -191,10 +232,10 @@ int SYNC_SendResp(int64_t PollDwRxTs) {
   };
   MAC_Write(buf, &packet, packet.len);
 
-  int tx_to_rx_dly = tset->resp_dly[sync.toa.anc_in_poll_cnt];
-  tx_to_rx_dly += tset->fin_dly - tset->guard_time - resp_dly;
-  dwt_setrxaftertxdelay(tx_to_rx_dly * DWT_TIME_UNITS);
-  dwt_setrxtimeout(2 * settings.mac.sync_dly.guard_time);
+  int tx_to_rx_dly_us = tset->resp_dly_us[sync.toa.anc_in_poll_cnt-1];
+  tx_to_rx_dly_us += tset->fin_dly_us - resp_dly_us;
+  dwt_setrxaftertxdelay(tx_to_rx_dly_us - tset->rx_after_tx_offset_us);
+  dwt_setrxtimeout(settings.mac.sync_dly.guard_time_us + tset->rx_after_tx_offset_us);
 
   TOA_State(&sync.toa, TOA_RESP_WAIT_TO_SEND);
   const int tx_flags = DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED;
@@ -203,9 +244,9 @@ int SYNC_SendResp(int64_t PollDwRxTs) {
 
 int SYNC_SendFinal() {
   toa_settings_t *tset = &settings.mac.sync_dly;
-  int fin_dly = tset->resp_dly[sync.toa.anc_in_poll_cnt];
-  fin_dly += tset->fin_dly;
-  int64_t TsFinTx = TOA_SetTxTime(sync.toa.TsPollTx, fin_dly);
+  int fin_dly_us = tset->resp_dly_us[sync.toa.anc_in_poll_cnt-1];
+  fin_dly_us += tset->fin_dly_us;
+  int64_t TsFinTx = TOA_SetTxTime(sync.toa.TsPollTx, fin_dly_us);
 
   mac_buf_t *buf = MAC_BufferPrepare(sync.toa.addr_tab[0], false);
   FC_SYNC_FIN_s packet = {
@@ -213,7 +254,9 @@ int SYNC_SendFinal() {
       .len = sizeof(FC_SYNC_FIN_s),
       .tree_level = sync.tree_level,
       .slot_num = mac.slot_number,
+			.TsPollTx = sync.toa.TsPollTx,
   };
+  // calc global time in place to keep 40B resolution
   TOA_Write40bValue(&packet.TsFinTxBuf[0], SYNC_GlobTime(TsFinTx));
 
   int resp_rx_ts_len = sizeof(*packet.TsRespRx) * sync.toa.anc_in_poll_cnt;
@@ -244,7 +287,16 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info) {
   // chech if it is full sync to you
   sync.toa.resp_ind = TOA_FindAddrIndexInResp(&sync.toa, settings.mac.addr);
   if (sync.toa.resp_ind < sync.toa.anc_in_poll_cnt) {
-    SYNC_SendResp(rx_ts);
+    int ret = SYNC_SendResp(rx_ts);
+    if (ret != 0) {
+      LOG_DBG("Sync POLL->RESP tx timeout (%d)", MAC_UsFromRx());
+    } else {
+      int dly = settings.mac.sync_dly.resp_dly_us[sync.toa.resp_ind];
+      int lag = MAC_UsFromRx();
+      int tx_us = TRANSCEIVER_EstimateTxTimeUs(sizeof(FC_SYNC_RESP_s));
+      SYNC_TRACE("SYNC RESP sent to %X (%d>%d+%d)", sync.toa.initiator, dly, lag,
+              tx_us);
+    }
   } else {
     // indicate that last poll wasn't to you
     sync.toa.resp_ind = TOA_MAX_DEV_IN_POLL;
@@ -254,17 +306,30 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info) {
 
 int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info) {
   TOA_State(&sync.toa, TOA_RESP_REC);
-  FC_SYNC_FIN_s *packet = (FC_SYNC_FIN_s *)data;
-  SYNC_ASSERT(packet->FC == FC_SYNC_FIN);
+  FC_SYNC_RESP_s *packet = (FC_SYNC_RESP_s *)data;
+  SYNC_ASSERT(packet->FC == FC_SYNC_RESP);
   PROT_CHECK_LEN(FC_SYNC_RESP, packet->len, sizeof(FC_SYNC_RESP_s));
   int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
   sync.toa.TsRespRx[sync.toa.resp_ind++] = SYNC_GlobTime(rx_ts);
   if (sync.toa.resp_ind >= sync.toa.anc_in_poll_cnt) {
-    SYNC_SendFinal();
+    int ret = SYNC_SendFinal();
+    if (ret != 0) {
+      SYNC_TRACE("Sync RESP->FIN tx timeout (%d)", MAC_UsFromRx());
+    } else {
+      int dly = settings.mac.sync_dly.fin_dly_us;
+      int lag = MAC_UsFromRx();
+      int tx_us = TRANSCEIVER_EstimateTxTimeUs(sizeof(FC_SYNC_RESP_s));
+      SYNC_TRACE("SYNC FIN sent to %X (%d>%d+%d)", sync.toa.addr_tab[0], dly, lag,
+              tx_us);
+    }
   } else {
-    TOA_EnableRxBeforeFin(&sync.toa, &settings.mac.sync_dly,
-                          sync.toa_ts_poll_rx_raw);
+    int ret = TOA_EnableRxBeforeFin(&sync.toa, &settings.mac.sync_dly,
+                                    sync.toa_ts_poll_rx_raw);
+    if (ret != 0) {
+    	SYNC_TRACE("Sync RESP->RESP rx timeout (%d, %d)", MAC_UsFromRx(),
+              sync.toa.resp_ind);
+    }
   }
   return 0;
 }
@@ -285,20 +350,29 @@ int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info) {
   }
 
   // read timestamps
+  uint64_t TsFinTx40b =TOA_Read40bValue(packet->TsFinTxBuf);
+  memcpy(sync.toa.TsRespRx, packet->TsRespRx, sizeof(packet->TsRespRx[0])*sync.toa.anc_in_poll_cnt);
+  sync.toa.TsFinTx = TsFinTx40b;
   sync.toa.TsPollTx = packet->TsPollTx;
-  sync.toa.TsRespRx[sync.toa.resp_ind] = packet->TsRespRx[sync.toa.resp_ind];
   sync.toa.TsFinRx = SYNC_GlobTime(TRANSCEIVER_GetRxTimestamp());
-  int64_t ext_time = TOA_Read40bValue(packet->TsFinTxBuf);
+
+  int64_t ext_time = TsFinTx40b;
   int64_t loc_time = sync.toa.TsFinRx;
 
   if (sync.toa.resp_ind < TOA_MAX_DEV_IN_POLL) {
     // when it was to you
     int tof_dw = TOA_CalcTofDwTu(&sync.toa, sync.toa.resp_ind);
     SYNC_Update(neig, ext_time, loc_time, tof_dw);
+    LOG_DBG("Dist %d", TOA_TofToCm(tof_dw * DWT_TIME_UNITS));
   } else {
     // todo: sync_brief(&sync.toa, neig);
     SYNC_Update(neig, ext_time, loc_time, 0);
+    LOG_DBG("Dist err");
   }
+
+  // turn on receiver after FIN callback
+  dwt_forcetrxoff();
+  TRANSCEIVER_DefaultRx();
   return 0;
 }
 
@@ -330,16 +404,21 @@ int SYNC_TxCb(int64_t TsDwTx) {
   case TOA_POLL_WAIT_TO_SEND:
     TOA_State(&sync.toa, TOA_POLL_SENT);
     sync.toa.TsPollTx = SYNC_GlobTime(TsDwTx);
+    SYNC_TRACE("SYNC POLL sent");
     ret = 1;
     break;
   case TOA_RESP_WAIT_TO_SEND:
     TOA_State(&sync.toa, TOA_RESP_SENT);
     sync.toa.TsRespTx = SYNC_GlobTime(TsDwTx);
+    int resp_us = (sync.toa.TsRespTx-sync.toa.TsPollRx) / UUS_TO_DWT_TIME;
+    SYNC_TRACE("SYNC RESP sent after %dus", resp_us);
     ret = 1;
     break;
   case TOA_FIN_WAIT_TO_SEND:
     TOA_State(&sync.toa, TOA_FIN_SENT);
     sync.toa.TsFinTx = SYNC_GlobTime(TsDwTx);
+    int fin_us = (sync.toa.TsFinTx-sync.toa.TsPollTx) / UUS_TO_DWT_TIME;
+    SYNC_TRACE("SYNC FIN sent after %dus from POLL", fin_us);
     ret = 0; // to release transceiver
     break;
   default:
@@ -369,15 +448,23 @@ int SYNC_RxToCb() {
   // there is some trouble with final message transmiting
   // so abort ranging
   case TOA_RESP_SENT:
-    TOA_State(&sync.toa, TOA_IDLE);
+  	SYNC_TRACE("SYNC FIN TO after %d", (TRANSCEIVER_GetTime() - TRANSCEIVER_GetTxTimestamp()) / UUS_TO_DWT_TIME);
     ret = 2;
     break;
   default:
+  	if(sync.toa.state != TOA_IDLE) {
+  		dwt_forcetrxoff();
+  		TRANSCEIVER_DefaultRx();
+  		TOA_State(&sync.toa, TOA_IDLE);
+  	}
     break;
   }
 
   if (ret == 2) {
     // mac_default_rx_full();
+  	dwt_forcetrxoff();
+  	TRANSCEIVER_DefaultRx();
+    TOA_State(&sync.toa, TOA_IDLE);
     ret = 1;
   }
   return ret;

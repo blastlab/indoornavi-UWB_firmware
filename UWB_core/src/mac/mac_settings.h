@@ -22,6 +22,7 @@ typedef struct {
   int fin_dly_us;
   int resp_dly_us[TOA_MAX_DEV_IN_POLL];
   int guard_time_us;
+  int rx_after_tx_offset_us;
 } toa_settings_t;
 
 typedef struct {

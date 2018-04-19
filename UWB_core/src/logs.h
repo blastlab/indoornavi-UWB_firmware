@@ -2,8 +2,7 @@
 #define _LOGS_H
 
 #include <stdlib.h>
-
-#define DBG 1
+#include "platform/port.h" // define DBG
 
 #define LOG_CRIT(...) LOG_Text('C', __VA_ARGS__)
 #define LOG_ERR(...) LOG_Text('E', __VA_ARGS__)

@@ -90,7 +90,6 @@ int TRANSCEIVER_Init() {
   // turn on default rx mode
   dwt_setrxtimeout(0);
   dwt_setpreambledetecttimeout(0);
-  TRANSCEIVER_DefaultRx();
 
   return 0;
 }
@@ -233,7 +232,6 @@ int TRANSCEIVER_Send(const void *buf, unsigned int len) {
 int TRANSCEIVER_SendRanging(const void *buf, unsigned int len, uint8_t flags) {
   TRANSCEIVER_ASSERT(buf != 0);
   const bool ranging_frame = true;
-  dwt_forcetrxoff();
   dwt_writetxdata(len + 2, (uint8_t *)buf, 0);
   dwt_writetxfctrl(len + 2, 0, ranging_frame);
   return dwt_starttx(flags);

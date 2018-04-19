@@ -35,7 +35,6 @@ void MAC_Init() {
   if(settings.mac.role == RTLS_LISTENER) {
 		TRANSCEIVER_SetCb(0, listener_isr, MAC_RxToCb, MAC_RxErrCb);
   } else {
-		//TRANSCEIVER_SetAddr(settings.mac.pan, settings.mac.addr);
 		TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
   }
 
@@ -45,10 +44,13 @@ void MAC_Init() {
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
   PORT_SlotTimerSetUsLeft(100);
+
+  // turn on receiver after full low level initialization
+  // especially after connecting callbacks
+  TRANSCEIVER_DefaultRx();
 }
 
 void MAC_TxCb(const dwt_cb_data_t *data) {
-  const mac_buf_t *buf = mac.buf_under_tx;
   int64_t tx_ts = TRANSCEIVER_GetTxTimestamp();
 
   PORT_LedOn(LED_STAT);
@@ -57,9 +59,14 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
   // a ranging frame in a called callback
   int ret = 0;
 
-  if (buf->isRangingFrame) {
+  if (mac.frame_under_tx_is_ranging) {
     // try ranging callback
     ret = SYNC_TxCb(tx_ts);
+    // reset ranging settings when SYNC release transceiver
+    if(ret == 0) {
+    	mac.frame_under_tx_is_ranging = false;
+    	dwt_forcetrxoff();
+    }
   }
 
   // try send next data frame
@@ -69,9 +76,13 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
 
   // or turn on default rx mode
   if(ret == 0) {
-		dwt_forcetrxoff();
-		dwt_rxreset();
-		TRANSCEIVER_DefaultRx();
+  	// when ret is 0 then no frame has to be transmitted
+  	// and it wasn't ranging frame, so turn on receiver after tx
+  	if(ret == 0) {
+  		//
+  		dwt_forcetrxoff();
+  		TRANSCEIVER_DefaultRx();
+  	}
   }
 }
 
@@ -88,34 +99,36 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
     info.direct_src = buf->frame.src;
 
     if (buf->frame.dst == ADDR_BROADCAST || buf->frame.dst == settings.mac.addr) {
-      if (buf->frame.control[0] & FR_CR_MAC) {
+    	int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
+      if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeightbour()
         SYNC_RxCb(buf->frame.data, &info);
-      } else if (buf->frame.control[0] & FR_CR_DATA) {
+      } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
         CARRY_ParseMessage(buf);
       } else {
         LOG_ERR("This kind of frame is not supported: %x", buf->frame.control[0]);
         TRANSCEIVER_DefaultRx();
       }
+    } else {
+    	// frame not for you
+      TRANSCEIVER_DefaultRx();
     }
     MAC_Free(buf);
   } else {
     LOG_ERR("No buff for rx_cb");
+    TRANSCEIVER_DefaultRx();
   }
 }
 
 // timeout error -> check ranging, maybe ACK or default RX
 void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
-	LOG_DBG("MAC_RxTxCb");
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
   if (ret == 0) {
   	dwt_rxenable(DWT_START_RX_IMMEDIATE);
-  	//dwt_setrxtimeout(0);
-  	//TRANSCEIVER_DefaultRx();
-    // TOA_RxToCb();
+  	LOG_DBG("MAC_RxToCb");
   }
 }
 
@@ -144,10 +157,11 @@ void MAC_YourSlotIsr() {
 // private function, called when buf should be send now as a frame in slot
 void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   int ret;
-  mac.buf_under_tx = buf;
+  // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
   if (buf->isRangingFrame) {
-    const uint8_t flags = DWT_START_RX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
-    ret = TRANSCEIVER_SendRanging(buf->buf, len, flags);
+    const uint8_t flags = DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
+    dwt_forcetrxoff();
+    ret = MAC_SendRanging(buf, flags);
   } else {
     ret = TRANSCEIVER_Send(buf->buf, len);
   }
@@ -188,11 +202,9 @@ int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
 
   if(transceiver_raw_time == mac.slot_time_offset) {
   	dwt_rxreset();
-  	dwt_forcetrxoff();
   }
   // when you have enouth time to send next message, then do it
   _MAC_TransmitFrameInSlot(buf, len);
-  TRANSCEIVER_DefaultRx();
   return 1;
 }
 
@@ -211,6 +223,8 @@ void _MAC_BufferReset(mac_buf_t *buf) {
   buf->dPtr = buf->buf;
   buf->retransmit_fail_cnt = 0;
   buf->last_update_time = mac_port_buff_time();
+  buf->isRangingFrame = false;
+  buf->rx_len = 0;
 }
 
 // get pointer to the oldest buffer with WAIT_FOR_TX or WAIT_FOR_TX_ACK
@@ -280,6 +294,12 @@ void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target) {
   buf->dPtr = &buf->frame.data[0];
 }
 
+void MAC_SetFrameType(mac_buf_t *buf, uint8_t type) {
+	MAC_ASSERT(buf != 0);
+	MAC_ASSERT(type == FR_CR_ACK || type == FR_CR_BEACON || type == FR_CR_DATA || type == FR_CR_MAC);
+  buf->frame.control[0] = (buf->frame.control[0] & ~FR_CR_TYPE_MASK) | FR_CR_MAC;
+}
+
 mac_buf_t *MAC_BufferPrepare(dev_addr_t target, bool can_append) {
   mac_buf_t *buf;
   // search buffer to this target
@@ -341,10 +361,9 @@ void MAC_Send(mac_buf_t *buf, bool ack_require) {
 int MAC_SendRanging(mac_buf_t *buf, uint8_t transceiver_flags) {
   MAC_ASSERT(buf != 0);
   int len = MAC_BufLen(buf);
-  buf->isRangingFrame = true;
-  buf->frame.control[0] = FR_CR_MAC;
-  buf->frame.dst = buf->frame.src;
+  mac.frame_under_tx_is_ranging = buf->isRangingFrame = true;
   buf->frame.src = settings.mac.addr;
+  MAC_SetFrameType(buf, FR_CR_MAC);
   int ret = TRANSCEIVER_SendRanging(buf->buf, len, transceiver_flags);
   buf->state = FREE;
   return ret;
