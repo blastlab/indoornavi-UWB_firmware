@@ -22,7 +22,7 @@ void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, int size) {
   uint8_t *t_dPtr = buf->dPtr;
 
   while (size > 0) {
-    ret = BIN_ParseSingle(buf, info);
+    ret = BIN_ParseSingle(buf->dPtr, info);
     if(ret == 0xFF) {
       LOG_ERR("unknown opcode %X", *buf->dPtr);
       ret = buf->dPtr[1]; // frame len

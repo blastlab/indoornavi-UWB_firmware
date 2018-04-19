@@ -32,10 +32,10 @@ void MAC_Init() {
   }
 
   // set address and irq callbacks in transceiver
-  if(settings.mac.role == RTLS_LISTENER) {
-		TRANSCEIVER_SetCb(0, listener_isr, MAC_RxToCb, MAC_RxErrCb);
+  if (settings.mac.role == RTLS_LISTENER) {
+    TRANSCEIVER_SetCb(0, listener_isr, MAC_RxToCb, MAC_RxErrCb);
   } else {
-		TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
+    TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
   }
 
   // initialize synchronization engine
@@ -63,9 +63,9 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
     // try ranging callback
     ret = SYNC_TxCb(tx_ts);
     // reset ranging settings when SYNC release transceiver
-    if(ret == 0) {
-    	mac.frame_under_tx_is_ranging = false;
-    	dwt_forcetrxoff();
+    if (ret == 0) {
+      mac.frame_under_tx_is_ranging = false;
+      dwt_forcetrxoff();
     }
   }
 
@@ -75,14 +75,14 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
   }
 
   // or turn on default rx mode
-  if(ret == 0) {
-  	// when ret is 0 then no frame has to be transmitted
-  	// and it wasn't ranging frame, so turn on receiver after tx
-  	if(ret == 0) {
-  		//
-  		dwt_forcetrxoff();
-  		TRANSCEIVER_DefaultRx();
-  	}
+  if (ret == 0) {
+    // when ret is 0 then no frame has to be transmitted
+    // and it wasn't ranging frame, so turn on receiver after tx
+    if (ret == 0) {
+      //
+      dwt_forcetrxoff();
+      TRANSCEIVER_DefaultRx();
+    }
   }
 }
 
@@ -98,8 +98,9 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
     buf->rx_len = data->datalength;
     info.direct_src = buf->frame.src;
 
-    if (buf->frame.dst == ADDR_BROADCAST || buf->frame.dst == settings.mac.addr) {
-    	int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
+    if (buf->frame.dst == ADDR_BROADCAST ||
+        buf->frame.dst == settings.mac.addr) {
+      int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeightbour()
         SYNC_RxCb(buf->frame.data, &info);
@@ -107,11 +108,12 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
         TRANSCEIVER_DefaultRx();
         CARRY_ParseMessage(buf);
       } else {
-        LOG_ERR("This kind of frame is not supported: %x", buf->frame.control[0]);
+        LOG_ERR("This kind of frame is not supported: %x",
+                buf->frame.control[0]);
         TRANSCEIVER_DefaultRx();
       }
     } else {
-    	// frame not for you
+      // frame not for you
       TRANSCEIVER_DefaultRx();
     }
     MAC_Free(buf);
@@ -127,8 +129,8 @@ void MAC_RxToCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
   if (ret == 0) {
-  	dwt_rxenable(DWT_START_RX_IMMEDIATE);
-  	LOG_DBG("MAC_RxToCb");
+    dwt_rxenable(DWT_START_RX_IMMEDIATE);
+    LOG_DBG("MAC_RxToCb");
   }
 }
 
@@ -151,7 +153,7 @@ void MAC_YourSlotIsr() {
   int64_t time = TRANSCEIVER_GetTime();
   mac.slot_time_offset = time;
   MAC_TryTransmitFrameInSlot(time);
-  //dwt_rxenable(DWT_START_RX_IMMEDIATE);
+  // dwt_rxenable(DWT_START_RX_IMMEDIATE);
 }
 
 // private function, called when buf should be send now as a frame in slot
@@ -200,8 +202,8 @@ int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
     return 0;
   }
 
-  if(transceiver_raw_time == mac.slot_time_offset) {
-  	dwt_rxreset();
+  if (transceiver_raw_time == mac.slot_time_offset) {
+    dwt_rxreset();
   }
   // when you have enouth time to send next message, then do it
   _MAC_TransmitFrameInSlot(buf, len);
@@ -295,9 +297,11 @@ void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target) {
 }
 
 void MAC_SetFrameType(mac_buf_t *buf, uint8_t type) {
-	MAC_ASSERT(buf != 0);
-	MAC_ASSERT(type == FR_CR_ACK || type == FR_CR_BEACON || type == FR_CR_DATA || type == FR_CR_MAC);
-  buf->frame.control[0] = (buf->frame.control[0] & ~FR_CR_TYPE_MASK) | FR_CR_MAC;
+  MAC_ASSERT(buf != 0);
+  MAC_ASSERT(type == FR_CR_ACK || type == FR_CR_BEACON || type == FR_CR_DATA ||
+             type == FR_CR_MAC);
+  buf->frame.control[0] =
+      (buf->frame.control[0] & ~FR_CR_TYPE_MASK) | FR_CR_MAC;
 }
 
 mac_buf_t *MAC_BufferPrepare(dev_addr_t target, bool can_append) {

@@ -15,14 +15,14 @@ typedef enum {
   RTLS_ANCHOR = 'A',
   RTLS_SINK = 'S',
   RTLS_LISTENER = 'L',
-	RTLS_DEFAULT = 'D'
+  RTLS_DEFAULT = 'D'
 } rtls_role;
 
 typedef struct {
-  int fin_dly_us;
+  int fin_dly_us; // tx dly after last resp
   int resp_dly_us[TOA_MAX_DEV_IN_POLL];
-  int guard_time_us;
-  int rx_after_tx_offset_us;
+  int guard_time_us;         // time margin during receive
+  int rx_after_tx_offset_us; // time distance between rx on and rx anticipation
 } toa_settings_t;
 
 typedef struct {
@@ -49,7 +49,7 @@ typedef struct {
     .addr = ADDR_BROADCAST, .pan = 0xDECA, .slot_time_us = _DEF_SLOT_TIME,     \
     .slot_guard_time_us = 200, .slot_number = _DEF_SLON_CNT,                   \
     .slots_sum_time_us = _DEF_SLOT_SUM_TIME, .max_frame_fail_cnt = 3,          \
-    .max_buf_inactive_time = 2 * _DEF_SLOT_SUM_TIME, .role = RTLS_DEFAULT,      \
+    .max_buf_inactive_time = 2 * _DEF_SLOT_SUM_TIME, .role = RTLS_DEFAULT,     \
     .raport_anchor_anchor_distance = true,                                     \
   }
 

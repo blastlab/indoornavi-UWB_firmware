@@ -18,7 +18,8 @@
   MAC_Free(#name);                                                             \
   }
 
-#define MAC_HEAD_LENGTH (2+1+sizeof(pan_dev_addr_t)+2*sizeof(dev_addr_t))
+#define MAC_HEAD_LENGTH                                                        \
+  (2 + 1 + sizeof(pan_dev_addr_t) + 2 * sizeof(dev_addr_t))
 
 typedef struct {
   union {
@@ -51,7 +52,6 @@ typedef struct {
   bool frame_under_tx_is_ranging;
   unsigned int last_rx_ts;
 } mac_instance_t;
-
 
 // used by mac, externally implemented
 void listener_isr(const dwt_cb_data_t *data);
