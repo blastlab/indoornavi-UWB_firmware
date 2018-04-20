@@ -78,12 +78,14 @@ void UwbMain() {
   MAC_Init();
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
+  ImuWomConfig();
 
   while (1) {
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
     BatteryControl();
     RangingControl();
+    ImuMotionControl();
   	PORT_WatchdogRefresh();
   }
 }

@@ -38,6 +38,7 @@
 /* USER CODE BEGIN 0 */
 #include "decadriver/deca_device_api.h"
 #include "mac/sync.h"
+#include "imu.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -262,7 +263,7 @@ void DMA1_Channel5_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
-  PORT_imuIRQHandler();
+  ImuIRQHandler();
   /* USER CODE END EXTI9_5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */

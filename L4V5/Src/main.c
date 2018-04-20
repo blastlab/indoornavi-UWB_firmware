@@ -154,11 +154,6 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-
-//  PORT_imuWomConfig();
-  PORT_imuFifoConfig();
-  while(1);
-
   UwbMain();
   /* USER CODE END 2 */
 

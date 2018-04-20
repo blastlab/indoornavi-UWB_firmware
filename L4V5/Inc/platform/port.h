@@ -121,11 +121,10 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
 // IMU
 
-// Imu initialization with configuration for Wake-on-Motion feature
-void PORT_imuWomConfig(void);
+void PORT_ImuWriteRegister(uint8_t addr, uint8_t val);
 
-void PORT_imuFifoConfig(void);
+void PORT_ImuReadRegister(uint8_t addr, uint8_t *val, uint16_t count);
 
-void PORT_imuIRQHandler(void);
+void PORT_ImuReset(void);
 
 #endif
