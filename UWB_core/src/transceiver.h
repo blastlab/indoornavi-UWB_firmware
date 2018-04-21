@@ -20,6 +20,12 @@ void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
 // turn off transmitter, receiver and other power consumptioning devices
 void TRANSCEIVER_EnterDeepSleep();
 
+// turn off transmitter, wake up on chip select
+void TRANSCEIVER_EnterSleep();
+
+// waking up the device
+void TRANSCEIVER_WakeUp(uint8_t *buf, int len);
+
 // immediately send data via transceiver
 int TRANSCEIVER_Send(const void *buf, unsigned int len);
 

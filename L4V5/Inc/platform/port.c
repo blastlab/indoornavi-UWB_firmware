@@ -16,10 +16,13 @@ void PORT_Init()
 
 void PORT_WatchdogInit() {
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_WWDG);
+  NVIC_SetPriority(WWDG_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(WWDG_IRQn);
   LL_WWDG_SetCounter(WWDG, 127);
   LL_WWDG_Enable(WWDG);
   LL_WWDG_SetPrescaler(WWDG, LL_WWDG_PRESCALER_8);
   LL_WWDG_SetWindow(WWDG, 127);
+  LL_WWDG_EnableIT_EWKUP(WWDG);
 }
 
 void PORT_WatchdogRefresh() {

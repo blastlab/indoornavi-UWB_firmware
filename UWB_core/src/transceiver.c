@@ -110,7 +110,12 @@ void TRANSCEIVER_DefaultRx()
   }
 }
 
-void TRANSCEIVER_EnterDeepSleep()
+void TRANSCEIVER_EnterDeepSleep()	// TODO
+{
+
+}
+
+void TRANSCEIVER_EnterSleep()
 {
   dwt_forcetrxoff();
   dwt_setleds(0);
