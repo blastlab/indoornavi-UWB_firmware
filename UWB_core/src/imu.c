@@ -109,12 +109,14 @@ void ImuMotionControl(void) {
 	if((PORT_TickMs() - motion_tick) > IMU_NO_MOTION_PERIOD) {
 		imu_sleep_mode = 1;
 		TRANSCEIVER_EnterSleep();
+		PORT_PrepareSleepMode();
 		while(imu_sleep_mode) {
-			__WFI();
-			PORT_WatchdogRefresh();
+			PORT_EnterSleepMode();
 		}
+		PORT_ExitSleepMode();
 		uint8_t *dummy_buf = malloc(256);
 		TRANSCEIVER_WakeUp(dummy_buf, 256);
+		TRANSCEIVER_DefaultRx();
 		free(dummy_buf);
 	}
 }

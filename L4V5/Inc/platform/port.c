@@ -104,3 +104,18 @@ void PORT_EnterStopMode() {
   PORT_LedOff(LED_G1);
   HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 }
+
+void PORT_PrepareSleepMode() {
+	PORT_LedOff(LED_R1);
+	PORT_LedOff(LED_G1);
+	HAL_PWREx_EnableLowPowerRunMode();
+}
+
+void PORT_EnterSleepMode() {
+	HAL_PWREx_EnterSTOP0Mode(PWR_STOPENTRY_WFI);
+}
+
+void PORT_ExitSleepMode() {
+	HAL_PWREx_DisableLowPowerRunMode();
+	SystemClock_Config();
+}

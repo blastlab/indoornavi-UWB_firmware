@@ -127,4 +127,12 @@ void PORT_ImuReadRegister(uint8_t addr, uint8_t *val, uint16_t count);
 
 void PORT_ImuReset(void);
 
+// SLEEP
+
+void PORT_PrepareSleepMode();
+
+void PORT_EnterSleepMode();
+
+void PORT_ExitSleepMode();
+
 #endif
