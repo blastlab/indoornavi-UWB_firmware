@@ -106,13 +106,16 @@ void PORT_PrepareSleepMode() {
 	PORT_LedOff(LED_R1);
 	PORT_LedOff(LED_G1);
 	HAL_PWREx_EnableLowPowerRunMode();
+	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, PWR_CR1_LPMS_STOP0);
+	SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 }
 
-void PORT_EnterSleepMode() {
-	HAL_PWREx_EnterSTOP0Mode(PWR_STOPENTRY_WFI);
+inline void PORT_EnterSleepMode() {
+	 __WFI();
 }
 
 void PORT_ExitSleepMode() {
+	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 	HAL_PWREx_DisableLowPowerRunMode();
 	SystemClock_Config();
 }
