@@ -26,9 +26,11 @@ typedef struct
 {
   toa_state_t state, prev_state;
   int64_t TsPollTx;
+  uint32_t TsRespRx[TOA_MAX_DEV_IN_POLL];
+  uint32_t TsFinTx;
   uint32_t TsPollRx;
-  uint32_t TsRespTx, TsRespRx[TOA_MAX_DEV_IN_POLL];
-  uint32_t TsFinTx, TsFinRx;
+  uint32_t TsRespTx;
+  uint32_t TsFinRx;
   uint8_t resp_ind;        // 0..anc_in_poll_cnt-1
   uint8_t anc_in_poll_cnt; // 1..TOA_MAX_DEV_IN_POLL
   dev_addr_t addr_tab[TOA_MAX_DEV_IN_POLL];

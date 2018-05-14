@@ -56,7 +56,7 @@ void SYNC_Init() {
 }
 
 int64_t SYNC_GlobTime(int64_t dw_ts) {
-  int dt = dw_ts - sync.local_obj.update_ts;
+  uint32_t dt = dw_ts - sync.local_obj.update_ts;
   int64_t res = dw_ts + sync.local_obj.time_offset;
   res += sync.local_obj.time_coeffP[0] * dt;
   return res & MASK_40BIT;
@@ -122,7 +122,7 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
   neig->time_offset &= MASK_40BIT;
 
   int64_t drift = ext_time + (int64_t)neig->tof_dw - neig->time_offset;
-  drift = SYNC_TrimDrift(drift - SYNC_GlobTime(loc_time));
+  drift = SYNC_TrimDrift(drift - loc_time);
 
   MOVE_ARRAY_ELEM(neig->drift, 2);
   MOVE_ARRAY_ELEM(neig->drift, 1);
@@ -218,7 +218,6 @@ int SYNC_SendResp(int64_t PollDwRxTs) {
   int resp_dly_us = tset->resp_dly_us[sync.toa.resp_ind];
 
   sync.toa.TsRespTx = TOA_SetTxTime(PollDwRxTs, resp_dly_us);
-  sync.toa.TsRespTx = SYNC_GlobTime(sync.toa.TsRespTx);
 
   mac_buf_t *buf = MAC_BufferPrepare(sync.toa.initiator, false);
   if (buf == 0) {
@@ -260,8 +259,11 @@ int SYNC_SendFinal() {
       .slot_num = mac.slot_number,
       .TsPollTx = sync.toa.TsPollTx,
   };
+  // calc time offset
+  uint64_t offset = (SYNC_GlobTime(TsFinTx) - TsFinTx) & MASK_40BIT;
+  TOA_Write40bValue(&packet.TsOffset[0], &offset);
   // calc global time in place to keep 40B resolution
-  TOA_Write40bValue(&packet.TsFinTxBuf[0], SYNC_GlobTime(TsFinTx));
+  TOA_Write40bValue(&packet.TsFinTxBuf[0], TsFinTx);
 
   int resp_rx_ts_len = sizeof(*packet.TsRespRx) * sync.toa.anc_in_poll_cnt;
   packet.len += resp_rx_ts_len;
@@ -281,7 +283,7 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info) {
   int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
   sync.toa_ts_poll_rx_raw = rx_ts;
-  sync.toa.TsPollRx = SYNC_GlobTime(rx_ts);
+  sync.toa.TsPollRx = rx_ts;
   sync.toa.initiator = info->direct_src;
   sync.toa.anc_in_poll_cnt = packet->num_poll_anchor;
   sync.toa.resp_ind = 0;
@@ -315,7 +317,7 @@ int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info) {
   PROT_CHECK_LEN(FC_SYNC_RESP, packet->len, sizeof(FC_SYNC_RESP_s));
   int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
-  sync.toa.TsRespRx[sync.toa.resp_ind++] = SYNC_GlobTime(rx_ts);
+  sync.toa.TsRespRx[sync.toa.resp_ind++] = rx_ts;
   if (sync.toa.resp_ind >= sync.toa.anc_in_poll_cnt) {
     int ret = SYNC_SendFinal();
     if (ret != 0) {
@@ -355,14 +357,15 @@ int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info) {
 
   // read timestamps
   uint64_t TsFinTx40b = TOA_Read40bValue(packet->TsFinTxBuf);
+  uint64_t TsOffset = TOA_Read40bValue(packet->TsOffset);
   int TsRespRxSize = sizeof(packet->TsRespRx[0]) * sync.toa.anc_in_poll_cnt;
   memcpy(sync.toa.TsRespRx, packet->TsRespRx, TsRespRxSize);
   sync.toa.TsFinTx = TsFinTx40b;
   sync.toa.TsPollTx = packet->TsPollTx;
-  sync.toa.TsFinRx = SYNC_GlobTime(TRANSCEIVER_GetRxTimestamp());
+  sync.toa.TsFinRx = TRANSCEIVER_GetRxTimestamp();
 
-  int64_t ext_time = TsFinTx40b;
-  int64_t loc_time = sync.toa.TsFinRx;
+  int64_t ext_time = (TsFinTx40b + TsOffset) & MASK_40BIT;
+  int64_t loc_time = SYNC_GlobTime(sync.toa.TsFinRx);
 
   if (sync.toa.resp_ind < TOA_MAX_DEV_IN_POLL) {
     // when it was to you
@@ -408,20 +411,20 @@ int SYNC_TxCb(int64_t TsDwTx) {
   switch (sync.toa.state) {
   case TOA_POLL_WAIT_TO_SEND:
     TOA_State(&sync.toa, TOA_POLL_SENT);
-    sync.toa.TsPollTx = SYNC_GlobTime(TsDwTx);
+    sync.toa.TsPollTx = TsDwTx;
     SYNC_TRACE("SYNC POLL sent");
     ret = 1;
     break;
   case TOA_RESP_WAIT_TO_SEND:
     TOA_State(&sync.toa, TOA_RESP_SENT);
-    sync.toa.TsRespTx = SYNC_GlobTime(TsDwTx);
+    sync.toa.TsRespTx = TsDwTx;
     int resp_us = (sync.toa.TsRespTx - sync.toa.TsPollRx) / UUS_TO_DWT_TIME;
     SYNC_TRACE("SYNC RESP sent after %dus", resp_us);
     ret = 1;
     break;
   case TOA_FIN_WAIT_TO_SEND:
     TOA_State(&sync.toa, TOA_FIN_SENT);
-    sync.toa.TsFinTx = SYNC_GlobTime(TsDwTx);
+    sync.toa.TsFinTx = TsDwTx;
     int fin_us = (sync.toa.TsFinTx - sync.toa.TsPollTx) / UUS_TO_DWT_TIME;
     SYNC_TRACE("SYNC FIN sent after %dus from POLL", fin_us);
     ret = 0; // to release transceiver
@@ -452,11 +455,12 @@ int SYNC_RxToCb() {
   // if status is TOA_RESP_SENT and timeout arrive, then
   // there is some trouble with final message transmiting
   // so abort ranging
-  case TOA_RESP_SENT:
+  case TOA_RESP_SENT: {
     int fin_to_dw = TRANSCEIVER_GetTime() - TRANSCEIVER_GetTxTimestamp();
     SYNC_TRACE("SYNC FIN TO after %d", fin_to_dw / UUS_TO_DWT_TIME);
     ret = 2;
     break;
+  }
   default:
     if (sync.toa.state != TOA_IDLE) {
       dwt_forcetrxoff();

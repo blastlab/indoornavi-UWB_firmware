@@ -34,6 +34,7 @@ typedef struct __packed {
   uint8_t slot_num;
   uint32_t TsPollTx;
   uint8_t TsFinTxBuf[5];
+  uint8_t TsOffset[5];
   uint32_t TsRespRx[0];
 } FC_SYNC_FIN_s;
 
