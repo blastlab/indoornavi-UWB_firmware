@@ -48,6 +48,9 @@ void MAC_Init() {
   // turn on receiver after full low level initialization
   // especially after connecting callbacks
   TRANSCEIVER_DefaultRx();
+
+  // prevent beacon sending at startup
+  MAC_BeaconTimerReset();
 }
 
 void MAC_TxCb(const dwt_cb_data_t *data) {
@@ -92,14 +95,20 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
   mac_buf_t *buf = MAC_Buffer();
   prot_packet_info_t info;
   memset(&info, 0, sizeof(info));
+  bool broadcast, unicast;
 
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
     buf->rx_len = data->datalength;
     info.direct_src = buf->frame.src;
+    broadcast = buf->frame.dst == ADDR_BROADCAST;
+    unicast = buf->frame.dst == settings.mac.addr;
 
-    if (buf->frame.dst == ADDR_BROADCAST ||
-        buf->frame.dst == settings.mac.addr) {
+    if(unicast) {
+    	MAC_BeaconTimerReset();
+    }
+
+    if (broadcast || unicast) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeightbour()
@@ -140,6 +149,22 @@ void MAC_RxErrCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_ERR);
   LOG_ERR("Rx error status:%X", data->status);
   TRANSCEIVER_DefaultRx();
+}
+
+
+// return ms from last BeconTimerReset or received unicast message
+unsigned int MAC_BeaconTimerGetMs()
+{
+	decaIrqStatus_t en = decamutexon();
+	unsigned int ret = PORT_TickMs() - mac.beacon_timer_timestamp;
+	decamutexoff(en);
+	return ret;
+}
+
+// reset beacon timer after sending a beacon message
+void MAC_BeaconTimerReset()
+{
+	mac.beacon_timer_timestamp = PORT_TickMs();
 }
 
 // get time from start of super frame in mac_get_port_sync_time units

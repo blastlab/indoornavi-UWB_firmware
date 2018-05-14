@@ -37,7 +37,7 @@ typedef struct {
   unsigned char *dPtr;
   mac_buf_state state;
   int rx_len;
-  unsigned char isRangingFrame;
+  bool isRangingFrame;
   short retransmit_fail_cnt;
   unsigned int last_update_time;
 } mac_buf_t;
@@ -51,6 +51,7 @@ typedef struct {
   int64_t slot_time_offset;
   bool frame_under_tx_is_ranging;
   unsigned int last_rx_ts;
+  unsigned int beacon_timer_timestamp;
 } mac_instance_t;
 
 // used by mac, externally implemented
@@ -58,6 +59,12 @@ void listener_isr(const dwt_cb_data_t *data);
 
 // initialize mac and transceiver
 void MAC_Init();
+
+// return ms from last BeconTimerReset or received unicast message
+unsigned int MAC_BeaconTimerGetMs();
+
+// reset beacon timer after sending a beacon message
+void MAC_BeaconTimerReset();
 
 // should be called at the beginning of your slot time
 void MAC_YourSlotIsr();

@@ -33,11 +33,10 @@ void BatteryControl() {
 }
 
 void BeaconSender() {
-  static unsigned int last_beacon_time = INT32_MAX;
-  if (PORT_TickMs() - last_beacon_time > 3000) {
+  if (MAC_BeaconTimerGetMs() > 5000) {
   	if(settings.mac.role != RTLS_LISTENER) {
-			last_beacon_time = PORT_TickMs();
 			SendBeaconMessage();
+			MAC_BeaconTimerReset();
   	}
   }
 }
@@ -73,7 +72,9 @@ void UwbMain() {
   PORT_TimeStartTimers();
   SendTurnOnMessage();
 
+  volatile int i = 0;
   while (1) {
+  	++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
     //BatteryControl(); //todo: HardFault
@@ -97,6 +98,7 @@ void SendTurnOnMessage()
 		mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 		MAC_Write(buf, &packet, packet.len);
 		MAC_Send(buf, false);
+	  LOG_DBG("I send turn on - %X %c", settings.mac.addr, (char)settings.mac.role);
 	}
 }
 
