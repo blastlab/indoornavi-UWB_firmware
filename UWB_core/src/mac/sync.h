@@ -11,7 +11,12 @@
 #include "toa.h"
 
 #define SYNC_ASSERT(expr) IASSERT(expr)
+#define SYNC_TRACE_ENABLED 0
+#if SYNC_TRACE_ENABLED
 #define SYNC_TRACE(...) LOG_DBG(__VA_ARGS__)
+#else
+#define SYNC_TRACE(...)
+#endif
 
 typedef struct __packed {
   uint8_t FC;
