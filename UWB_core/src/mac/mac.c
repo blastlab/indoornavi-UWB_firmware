@@ -321,10 +321,10 @@ void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target) {
   buf->dPtr = &buf->frame.data[0];
 }
 
-void MAC_SetFrameType(mac_buf_t *buf, uint8_t type) {
+void MAC_SetFrameType(mac_buf_t *buf, uint8_t FR_CR_type) {
   MAC_ASSERT(buf != 0);
-  MAC_ASSERT(type == FR_CR_ACK || type == FR_CR_BEACON || type == FR_CR_DATA ||
-             type == FR_CR_MAC);
+  MAC_ASSERT(FR_CR_type == FR_CR_ACK || FR_CR_type == FR_CR_BEACON || FR_CR_type == FR_CR_DATA ||
+  		FR_CR_type == FR_CR_MAC);
   buf->frame.control[0] =
       (buf->frame.control[0] & ~FR_CR_TYPE_MASK) | FR_CR_MAC;
 }

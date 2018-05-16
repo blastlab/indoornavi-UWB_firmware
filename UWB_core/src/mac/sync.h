@@ -68,8 +68,8 @@ void SYNC_Init();
 // then initialize new if there is enouth memory for it
 sync_neightbour_t* SYNC_FindOrCreateNeightbour(dev_addr_t addr, int tree_level);
 
+// Send Poll message to start SYNC process with a given anchor
 int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
-int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info);
 
 int SYNC_RxCb(const void *data, const prot_packet_info_t *info);
 int SYNC_RxToCb();

@@ -5,13 +5,13 @@
 #ifdef _CORTEX_M
 #define IASSERT (void)(0)
 #else
-//#include <assert.h>
-#include <stdio.h>
-//#define IASSERT(expr) TEST_ASSERT_MESSAGE(expr, #expr)
+void PORT_iassert_fun(const char *msg, int line);
+
 #define IASSERT(expr)                                                          \
   do {                                                                         \
-    if (!(expr))                                                               \
-      printf("=== ASSERT === " #expr "\n");                                    \
+    if (!(expr)) {                                                              \
+      PORT_iassert_fun(__FUNCTION__, __LINE__); \
+    } \
   } while (0)
 #endif
 

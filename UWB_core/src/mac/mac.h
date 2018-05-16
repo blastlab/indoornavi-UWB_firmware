@@ -86,7 +86,7 @@ void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target);
 //  FR_CR_DATA
 //  FR_CR_ACK
 //  FR_CR_BEACON
-void MAC_SetFrameType(mac_buf_t *buf, uint8_t type);
+void MAC_SetFrameType(mac_buf_t *buf, uint8_t FR_CR_type);
 
 // reserve buffer and fill mac protocol fields
 // @param address to target device in range of radio - without hops

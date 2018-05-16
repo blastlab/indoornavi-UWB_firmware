@@ -6,10 +6,8 @@
 #include "mac/carry_settings.h"
 #include "transceiver_settings.h"
 
-#define H_MAJOR(x) (0x1F & (x >> 3))
-#define H_MINOR(x) (0x07 & (x >> 0))
 #define H_VERSION_CALC(major, minor) ((major << 3) | (minor & 0x07))
-#define H_VERSION H_VERSION_CALC(HARDWARE_MAJOR, HARDWARE_MINOR)
+#define __H_VERSION__ H_VERSION_CALC(__H_MAJOR__, __H_MINOR__)
 
 typedef struct __attribute__((packed)) {
   uint8_t h_major, h_minor;
@@ -35,7 +33,7 @@ typedef struct {
 #define VERSION_SETTINGS_DEF                                                   \
 { \
   .boot_reserved = 0,\
-	.h_version = H_VERSION,\
+	.h_version = __H_VERSION__,\
 	.f_major = __F_MAJOR__,          \
   .f_minor = __F_MINOR__,\
 	.f_hash = __F_HASH__,                                \

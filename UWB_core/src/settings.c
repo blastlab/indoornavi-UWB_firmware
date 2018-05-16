@@ -1,8 +1,8 @@
 #include "settings.h"
 
 settings_otp_t _settings_otp = {
-    .h_major = HARDWARE_MAJOR,
-    .h_minor = HARDWARE_MINOR,
+    .h_major = __H_MAJOR__,
+    .h_minor = __H_MINOR__,
     .serial = 0,
 };
 

@@ -14,6 +14,9 @@
 // extra initialization for port modules
 void PORT_Init();
 
+// assert routine
+void PORT_Iassert_fun(const char *msg, int line);
+
 // turn led on
 void PORT_LedOn(int LED_x);
 
