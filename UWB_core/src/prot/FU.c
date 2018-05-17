@@ -66,7 +66,7 @@ int FU_AcceptFirmwareVersion(int Ver) {
 
 int FU_AcceptHardwareVersion(int Ver) {
   uint8_t hVer = Ver >> 24;
-  if (H_MAJOR(hVer) != H_MAJOR(settings.version.h_version)) {
+  if (H_MAJOR_CALC(hVer) != H_MAJOR_CALC(settings.version.h_version)) {
     return 0;
   } else {
     return 1;

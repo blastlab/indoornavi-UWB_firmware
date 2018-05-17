@@ -47,6 +47,7 @@ void TXT_VersionCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 
 void TXT_HangCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 {
+  LOG_DBG("HANG");
   while (1)
   {
   }

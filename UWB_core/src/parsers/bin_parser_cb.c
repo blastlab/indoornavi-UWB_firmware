@@ -29,8 +29,13 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_STAT_ASK);
   FC_STAT_s packet;
-  packet.err_cnt = 1;
-  packet.rx_cnt = 2;
+  dwt_deviceentcnts_t evnt;
+  dwt_readeventcounters(&evnt);
+  packet.tx_cnt = evnt.TXF;
+  packet.rx_cnt = evnt.CRCG;
+  packet.to_cnt = evnt.SFDTO + evnt.PTO + evnt.RTO;
+  packet.err_cnt = evnt.PHE + evnt.RSL + evnt.CRCB + evnt.OVER;
+  packet.battery_mV = PORT_BatteryVoltage();
   if(info->direct_src == ADDR_BROADCAST) {
   	PRINT_Stat(&packet, settings.mac.addr);
   } else {

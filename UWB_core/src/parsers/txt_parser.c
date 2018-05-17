@@ -114,5 +114,9 @@ void TXT_Control() {
 	if(txt_buf.cnt > 0){
 		TXT_Parse(&txt_buf);
 		--txt_buf.cnt;
+		while(txt_buf.cmd[0] != 0) {
+			INCREMENT_CYCLE(txt_buf.cmd, txt_buf.start, txt_buf.end);
+		}
+		INCREMENT_CYCLE(txt_buf.cmd, txt_buf.start, txt_buf.end);
 	}
 }
