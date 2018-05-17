@@ -123,6 +123,9 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
 
   int64_t drift = ext_time + (int64_t)neig->tof_dw - neig->time_offset;
   drift = SYNC_TrimDrift(drift - loc_time);
+  // LOG_DBG("Drift %d %d %d %d %d", MAC_BeaconTimerGetMs(), (int)drift,
+  // (int)(1000*sync.local_obj.time_coeffP[0]), (int)(neig->time_offset),
+  // (int)dt);
 
   MOVE_ARRAY_ELEM(neig->drift, 2);
   MOVE_ARRAY_ELEM(neig->drift, 1);
@@ -209,6 +212,7 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
   // mac module should set DWT_RESPONSE_EXPECTED flag before transmission
   buf->isRangingFrame = true;
   TOA_State(&sync.toa, TOA_POLL_WAIT_TO_SEND);
+  MAC_SetFrameType(buf, FR_CR_MAC);
   MAC_Send(buf, false);
   return 0;
 }
@@ -261,7 +265,7 @@ int SYNC_SendFinal() {
   };
   // calc time offset
   int64_t offset = (SYNC_GlobTime(TsFinTx) - TsFinTx) & MASK_40BIT;
-  TOA_Write40bValue(&packet.TsOffset[0], &offset);
+  TOA_Write40bValue(&packet.TsOffset[0], offset);
   // calc global time in place to keep 40B resolution
   TOA_Write40bValue(&packet.TsFinTxBuf[0], TsFinTx);
 
@@ -278,7 +282,7 @@ int SYNC_SendFinal() {
 int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info) {
   TOA_State(&sync.toa, TOA_POLL_REC);
   FC_SYNC_POLL_s *packet = (FC_SYNC_POLL_s *)data;
-  SYNC_ASSERT(packet->FC == FC_SYNC_FIN);
+  SYNC_ASSERT(packet->FC == FC_SYNC_POLL);
   PROT_CHECK_LEN(FC_SYNC_POLL, packet->len, sizeof(FC_SYNC_POLL_s));
   int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
@@ -296,6 +300,7 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info) {
     int ret = SYNC_SendResp(rx_ts);
     if (ret != 0) {
       LOG_DBG("Sync POLL->RESP tx timeout (%d)", MAC_UsFromRx());
+      TRANSCEIVER_DefaultRx();
     } else {
       SYNC_TRACE("SYNC RESP sent to %X (%d>%d+%d)", sync.toa.initiator,
                  settings.mac.sync_dly.resp_dly_us[sync.toa.resp_ind],
@@ -322,16 +327,18 @@ int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info) {
     if (ret != 0) {
       SYNC_TRACE("Sync RESP->FIN tx timeout (%d)", MAC_UsFromRx());
     } else {
-      SYNC_TRACE("SYNC FIN sent to %X (%d>%d+%d)", sync.toa.addr_tab[0],
-                 settings.mac.sync_dly.fin_dly_us, MAC_UsFromRx(),
-                 TRANSCEIVER_EstimateTxTimeUs(sizeof(FC_SYNC_RESP_s)));
+      int dly = settings.mac.sync_dly.fin_dly_us;
+      int lag = MAC_UsFromRx();
+      int tx_time = TRANSCEIVER_EstimateTxTimeUs(sizeof(FC_SYNC_RESP_s));
+      SYNC_TRACE("SYNC FIN sent to %X (%d>%d+%d)", sync.toa.addr_tab[0], dly,
+                 lag, tx_time);
     }
   } else {
     int ret = TOA_EnableRxBeforeFin(&sync.toa, &settings.mac.sync_dly,
                                     sync.toa_ts_poll_rx_raw);
     if (ret != 0) {
-      SYNC_TRACE("Sync RESP->RESP rx timeout (%d, %d)", MAC_UsFromRx(),
-                 sync.toa.resp_ind);
+      int lag = MAC_UsFromRx();
+      SYNC_TRACE("Sync RESP->RESP rx timeout (%d, %d)", lag, sync.toa.resp_ind);
     }
   }
   return 0;

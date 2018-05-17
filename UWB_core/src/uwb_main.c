@@ -43,13 +43,12 @@ void BeaconSender() {
 
 void RangingControl() {
   static unsigned int last_time = INT32_MAX;
-  if (PORT_TickMs() - last_time > 500) {
+  if (PORT_TickMs() - last_time > 50) {
     last_time = PORT_TickMs();
 
 		dev_addr_t addr = 0x8012;
     if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
     	SYNC_SendPoll(addr, &addr, 1);
-			LOG_DBG("POLL to %X in queue", addr);
     }
   }
 }
@@ -67,7 +66,6 @@ void UwbMain() {
   MAC_Init();
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
-  FU_AcceptFirmware();
 
   PORT_TimeStartTimers();
   SendTurnOnMessage();
