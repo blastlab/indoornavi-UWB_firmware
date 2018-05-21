@@ -6,6 +6,53 @@
  */
 #include "imu.h"
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void setQvals()										// DEBUG function; quaternion from YPR and conversely
+{
+	roll = 0.0f;	// X
+	pitch = 0.0f;	// Y
+	yaw = 0.0f;		// Z
+	double cy = cos(yaw * 0.5);
+	double sy = sin(yaw * 0.5);
+	double cr = cos(roll * 0.5);
+	double sr = sin(roll * 0.5);
+	double cp = cos(pitch * 0.5);
+	double sp = sin(pitch * 0.5);
+
+	SEq_1 = cy * cr * cp + sy * sr * sp;	// W
+	SEq_2 = cy * sr * cp - sy * cr * sp;	// X
+	SEq_3 = cy * cr * sp + sy * sr * cp;	// Y
+	SEq_4 = sy * cr * cp - cy * sr * sp;	// Z
+
+	roll = atan2(2.0*(SEq_1*SEq_2 + SEq_3*SEq_4), 1 - 2.0*(SEq_2*SEq_2 + SEq_3*SEq_3));
+	pitch = asin(2.0*(SEq_1*SEq_3 - SEq_4*SEq_2));
+	yaw = atan2(2.0*(SEq_2*SEq_3 + SEq_4*SEq_1), 1 - 2.0*(SEq_3*SEq_3 + SEq_4*SEq_4));
+}
+
+//void rotate_system()	// get actual accelerations from accelerometer and YPR towards the earth; using rotation matrix from https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+//{
+//	float X = -0.672f;		// acc_x
+//	float Y = 0.441f;		// acc_y
+//	float Z = 0.569f;		// acc_z
+//	float yaw = 0.609f;
+//	float pitch = 0.745f;
+//	float roll = 0.658f;
+//
+//	float cy = cos(yaw);
+//	float sy = sin(yaw);
+//	float cp = cos(pitch);
+//	float sp = sin(pitch);
+//	float cr = cos(roll);
+//	float sr = sin(roll);
+//
+//	float rx = X*cp*cy + Y*(-cr*sy + sr*sp*cy) + Z*(sr*sy + cr*sp*cy);		// actual X, Y and Z accelerations with Z as earth gradient
+//	float ry = X*cp*sy + Y*(cr*cy + sr*sp*sy) + Z*(-sr*cy + cr*sp*sy);
+//	float rz = X*(-sp) + Y*sr*cp + Z*cr*cp;
+//}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void ImuSetGyroOffset(void)
 {
 	uint8_t data[6] = { 0 };
@@ -38,7 +85,18 @@ uint16_t ImuGetFifoCount(void)
 	return ((0b00011111 & dat[0]) << 8) | dat[1];
 }
 
-void filterUpdate(float w_x_t, float w_y_t, float w_z_t, float a_x_t, float a_y_t, float a_z_t)
+static float gxFilt = 0.0;
+static float gyFilt = 0.0;
+static float filtAlpha = 0.3;
+
+static inline void accFilter(void) {
+	gxFilt = (1 - filtAlpha)*gxFilt + filtAlpha*buff_a_x;
+	buff_a_x = gxFilt;
+	gyFilt = (1 - filtAlpha)*gyFilt + filtAlpha*buff_a_y;
+	buff_a_y = gyFilt;
+}
+
+static void madgwickFilterUpdate(float w_x_t, float w_y_t, float w_z_t, float a_x_t, float a_y_t, float a_z_t)
 {
 	// Local system variables
 	float norm; 															// vector norm
@@ -106,30 +164,107 @@ void filterUpdate(float w_x_t, float w_y_t, float w_z_t, float a_x_t, float a_y_
 	SEq_4 /= norm;
 }
 
+static inline void rotateSystem(void) {
+	roll = atan2(2.0*(SEq_1*SEq_2 + SEq_3*SEq_4), 1 - 2.0*(SEq_2*SEq_2 + SEq_3*SEq_3));
+	pitch = asin(2.0*(SEq_1*SEq_3 - SEq_4*SEq_2));
+	yaw = atan2(2.0*(SEq_2*SEq_3 + SEq_4*SEq_1), 1 - 2.0*(SEq_3*SEq_3 + SEq_4*SEq_4));
+
+	float cy = cos(yaw);
+	float sy = sin(yaw);
+	float cp = cos(pitch);
+	float sp = sin(pitch);
+	float cr = cos(roll);
+	float sr = sin(roll);
+
+	r_acc_X = buff_a_x*cp*cy + buff_a_y*(-cr*sy + sr*sp*cy) + buff_a_z*(sr*sy + cr*sp*cy);		// actual X, Y and Z accelerations with Z as earth gradient
+	r_acc_Y = buff_a_x*cp*sy + buff_a_y*(cr*cy + sr*sp*sy) + buff_a_z*(-sr*cy + cr*sp*sy);
+	r_acc_Z = buff_a_x*(-sp) + buff_a_y*sr*cp + buff_a_z*cr*cp;
+}
+
+static inline void integrateValues(void) {
+//	buff_v_x = v_x;
+//	buff_v_y = v_y;
+//	v_x = v_x + 9.81*100.0*(a_x + r_acc_X)/SAMPLE_F/2.0;
+//	v_y = v_y + 9.81*100.0*(a_y + r_acc_Y)/SAMPLE_F/2.0;
+//	a_x = r_acc_X;
+//	a_y = r_acc_Y;
+//
+//	pos_x = pos_x + (buff_v_x + v_x)/SAMPLE_F/2.0;
+//	pos_y = pos_y + (buff_v_y + v_y)/SAMPLE_F/2.0;
+
+	v_x += 9.81*100.0*r_acc_X/SAMPLE_F/2.0;
+	v_y += 9.81*100.0*r_acc_Y/SAMPLE_F/2.0;
+
+	pos_x += v_x/SAMPLE_F/2.0;
+	pos_y += v_y/SAMPLE_F/2.0;
+}
+
+void setQuaternionFromAccel(void)
+{
+	uint8_t meas_data[6] = { 0 };
+	PORT_ImuReadRegister(0x3b, &meas_data[0], 6);
+	double x = (double)((int16_t)((meas_data[0] << 8) | meas_data[1]));
+	double y = (double)((int16_t)((meas_data[2] << 8) | meas_data[3]));
+	double z = (double)((int16_t)((meas_data[4] << 8) | meas_data[5]));
+
+	roll = atan2(y , z);
+	pitch = atan2((-x) , sqrt(y*y + z*z));
+	yaw = 0.0f;
+
+	double cy = cos(yaw * 0.5);
+	double sy = sin(yaw * 0.5);
+	double cr = cos(roll * 0.5);
+	double sr = sin(roll * 0.5);
+	double cp = cos(pitch * 0.5);
+	double sp = sin(pitch * 0.5);
+
+	SEq_1 = cy * cr * cp + sy * sr * sp;	// W
+	SEq_2 = cy * sr * cp - sy * cr * sp;	// X
+	SEq_3 = cy * cr * sp + sy * sr * cp;	// Y
+	SEq_4 = sy * cr * cp - cy * sr * sp;	// Z
+}
+
+static volatile uint32_t motion_tick;
+
 void ImuFifoConfig(void)
 {
-	yaw = 0.0f;
-	pitch = 0.0f;
-	roll = 0.0f;
-	SEq_1 = 0.0f;
-	SEq_2 = 0.0f;
-	SEq_3 = 0.0f;
-	SEq_4 = 1.0f;
+	motion_tick = 0;
+	imu_sleep_mode = 0;
+	a_x = 0.0f;
+	a_y = 0.0f;
+	a_z = 0.0f;
+	v_x = 0.0f;
+	v_y = 0.0f;
+	v_z = 0.0f;
+	buff_v_x = 0.0f;
+	buff_v_y = 0.0f;
+	buff_v_z = 0.0f;
+	pos_x = 0.0f;
+	pos_y = 0.0f;
+	pos_z = 0.0f;
 	PORT_ImuReset();
+															// trying to configure FIFO-sampling and motion-interrupt together
+//	PORT_ImuWriteRegister(0x20, IMU_ACCEL_WOM_THRESHOLD);	// ACCEL_WOM_X_THR register; threshold value for WoM
+//	PORT_ImuWriteRegister(0x21, IMU_ACCEL_WOM_THRESHOLD);	// ACCEL_WOM_Y_THR register;
+//	PORT_ImuWriteRegister(0x22, IMU_ACCEL_WOM_THRESHOLD);	// ACCEL_WOM_Z_THR register;
+//	PORT_ImuWriteRegister(0x69, 0b11000000);				// ACCEL_INTEL_CTRL register; setting ACCEL_INTEL_EN and ACCEL_INTEL_MODE (Wake-on-Motion detection logic)
+//	PORT_ImuWriteRegister(0x6b, 0b00101001);				// PWR_MGMT_1 register; enabling low-power cycle mode for accelerometer
+
 	PORT_ImuWriteRegister(0x6b, 0b00001001);		// PWR_MGMT_1 register; waking up, setting clock configuration and turning off temp. meas.
-	PORT_ImuWriteRegister(0x6c, 0b11000000);		// PWR_MGMT_2 register; turning on accelerometer and gyro, turning on FIFO low power mode
+	PORT_ImuWriteRegister(0x6c, 0b10000000);		// PWR_MGMT_2 register; turning on accelerometer and gyro, turning on FIFO low power mode
 	PORT_ImuWriteRegister(0x19, SAMPLE_RATE_DIV);	// SMPLRT_DIV register; dividing the sampling rate (internal sample rate = 1kHz)
 	PORT_ImuWriteRegister(0x1A, 0b01000101);		// CONFIG register;
 	PORT_ImuWriteRegister(0x1b, 0b00011000);		// GYRO_CONFIG register; -/+ 2000 dps
-	PORT_ImuWriteRegister(0x1c, 0b00000000); 		// ACCEL_CONFIG register; +/- 2G full scale select
-	PORT_ImuWriteRegister(0x1d, 0b11010000); 		// ACCEL_CONFIG2 register;
+	PORT_ImuWriteRegister(0x1c, 0b00001000); 		// ACCEL_CONFIG register; +/- 2G full scale select
+	PORT_ImuWriteRegister(0x1d, 0b11010001); 		// ACCEL_CONFIG2 register;
 	PORT_ImuWriteRegister(0x1e, 0b10010000);		// LP_MODE_CFG register;
 	PORT_ImuWriteRegister(0x23, 0b01111000);		// FIFO_EN register;
 	PORT_ImuWriteRegister(0x37, 0b00000000);		// INT_PIN_CFG register;
-	HAL_Delay(1000);
+	HAL_Delay(10);
 	ImuSetGyroOffset();
+	setQuaternionFromAccel();
 
-	PORT_ImuWriteRegister(0x38, 0b00010000);		// INT_ENABLE register; enabling FIFO overflow interrupt on accelerometer
+	PORT_ImuWriteRegister(0x38, 0b11110000);		// INT_ENABLE register; enabling FIFO overflow interrupt on accelerometer
 	PORT_ImuWriteRegister(0x6a, 0b01010100);		// USER_CTRL register; enabling and resetting FIFO
 
 	uint8_t fifo_data[SAMPLE_COUNT] = { 0 };
@@ -138,42 +273,27 @@ void ImuFifoConfig(void)
 		fifo_count = ImuGetFifoCount();
 		if(fifo_count > SAMPLE_COUNT)
 		{
+			enum { BUFFER_SIZE = SAMPLE_COUNT/12 };						// 12 bytes are taken every sample period
 			PORT_ImuReadRegister(0x74, &fifo_data[0], SAMPLE_COUNT);
 			for(uint16_t i = 0; i < SAMPLE_COUNT; i += 12)
 			{
-				a_x = (float)((int16_t)((fifo_data[i] << 8) | fifo_data[i + 1]))/8192.0f;
-				a_y = (float)((int16_t)((fifo_data[i + 2] << 8) | fifo_data[i + 3]))/8192.0f;
-				a_z = (float)((int16_t)((fifo_data[i + 4] << 8) | fifo_data[i + 5]))/8192.0f;
-				a_a = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
-				w_x = (float)((int16_t)((fifo_data[i + 6] << 8) | fifo_data[i + 7]))/16.384f;
-				w_y = (float)((int16_t)((fifo_data[i + 8] << 8) | fifo_data[i + 9]))/16.384f;
-				w_z = (float)((int16_t)((fifo_data[i + 10] << 8) | fifo_data[i + 11]))/16.384f;
-				filterUpdate(w_x*DEG_TO_RAD, w_y*DEG_TO_RAD, w_z*DEG_TO_RAD, a_x, a_y, a_z);
+				buff_a_x = (float)((int16_t)((fifo_data[i] << 8) | fifo_data[i + 1]))/4096.0f;
+				buff_a_y = (float)((int16_t)((fifo_data[i + 2] << 8) | fifo_data[i + 3]))/4096.0f;
+				buff_a_z = (float)((int16_t)((fifo_data[i + 4] << 8) | fifo_data[i + 5]))/4096.0f;
+//				buff_a_a = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
+				buff_w_x = (float)((int16_t)((fifo_data[i + 6] << 8) | fifo_data[i + 7]))/16.384f;
+				buff_w_y = (float)((int16_t)((fifo_data[i + 8] << 8) | fifo_data[i + 9]))/16.384f;
+				buff_w_z = (float)((int16_t)((fifo_data[i + 10] << 8) | fifo_data[i + 11]))/16.384f;
+
+				accFilter();
+				madgwickFilterUpdate(buff_w_x*DEG_TO_RAD, buff_w_y*DEG_TO_RAD, buff_w_z*DEG_TO_RAD, buff_a_x, buff_a_y, buff_a_z);
+				rotateSystem();
+				integrateValues();
 			}
-			yaw = atan2(2.0*(SEq_2*SEq_3 + SEq_4*SEq_1), SEq_4*SEq_4 - SEq_1*SEq_1 - SEq_2*SEq_2 + SEq_3*SEq_3);		// euler's coords
-			pitch = asin(-2.0*(SEq_1*SEq_3 - SEq_4*SEq_2));
-			roll = atan2(2.0*(SEq_1*SEq_2 + SEq_4*SEq_3), SEq_4*SEq_4 + SEq_1*SEq_1 - SEq_2*SEq_2 - SEq_3*SEq_3);
 			fifo_count = ImuGetFifoCount();
 		}
 	}
-//	while(1)		// integration with trapezoids
-//	{
-//		fifo_count = imu_get_fifo_count();
-//		if(fifo_count > SAMPLE_COUNT)
-//		{
-//			PORT_ImuReadRegister(0x74, &fifo_data[0], SAMPLE_COUNT);
-//			for(uint16_t i = 6; i < (SAMPLE_COUNT - 12); i += 12)
-//			{
-//				w_x += (double)((int16_t)((fifo_data[i] << 8) | fifo_data[i + 1]) + (int16_t)((fifo_data[i + 12] << 8) | fifo_data[i + 13]))/SAMPLE_F/2.0;
-//				w_y += (double)((int16_t)((fifo_data[i + 2] << 8) | fifo_data[i + 3]) + (int16_t)((fifo_data[i + 14] << 8) | fifo_data[i + 15]))/SAMPLE_F/2.0;
-//				w_z += (double)((int16_t)((fifo_data[i + 4] << 8) | fifo_data[i + 5]) + (int16_t)((fifo_data[i + 16] << 8) | fifo_data[i + 17]))/SAMPLE_F/2.0;
-//			}
-//			fifo_count = imu_get_fifo_count();
-//		}
-//	}
 }
-
-static volatile uint32_t motion_tick;
 
 void ImuWomConfig(void) {
 	motion_tick = 0;
@@ -212,6 +332,7 @@ void ImuMotionControl(void) {
 inline void ImuIRQHandler(void) {
 	motion_tick = PORT_TickMs();
 	imu_sleep_mode = 0;
+	HAL_GPIO_TogglePin(LED_G1_GPIO_Port, LED_G1_Pin);
 }
 
 void ImuWatchdogRefresh(void) {

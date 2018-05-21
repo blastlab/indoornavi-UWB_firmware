@@ -31,7 +31,7 @@ void PORT_ImuReadRegister(uint8_t addr, uint8_t *val, uint16_t count)
 void PORT_ImuReset(void)
 {
 	PORT_ImuWriteRegister(0x6b, 0b10000000);	// PWR_MGMT_1 register; reset
-	HAL_Delay(100);
+	HAL_Delay(10);
 	PORT_ImuWriteRegister(0x6b, 0b00000000);	// PWR_MGMT_1 register; unreset
 	uint8_t data = 0;
 	PORT_ImuReadRegister(0x6b, &data, 1);

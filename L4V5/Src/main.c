@@ -154,6 +154,7 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+  ImuFifoConfig();
   UwbMain();
   /* USER CODE END 2 */
 

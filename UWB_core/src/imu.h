@@ -12,7 +12,7 @@
 #include "transceiver.h"
 #include <math.h>
 
-#define 			IMU_ACCEL_WOM_THRESHOLD 0b00010000
+#define 			IMU_ACCEL_WOM_THRESHOLD 0b01000000
 #define				IMU_NO_MOTION_PERIOD	5000			// When the time (in milis) run out and no motion is detected, device will go to sleep
 volatile uint8_t	imu_sleep_mode;
 
@@ -26,10 +26,16 @@ uint16_t 			fifo_count;
 #define 			gyroMeasError 			3.14159265358979f * (5.0f / 180.0f) 			// gyroscope measurement error in rad/s (shown as 5 deg/s)
 #define 			beta 					sqrt(3.0f / 4.0f) * gyroMeasError 				// compute beta
 
-float a_x, a_y, a_z, a_a;
-float w_x, w_y, w_z;
+float buff_a_x, buff_a_y, buff_a_z, buff_a_a;
+float buff_w_x, buff_w_y, buff_w_z;
 float SEq_1, SEq_2, SEq_3, SEq_4;
 float yaw, pitch, roll;
+float r_acc_X, r_acc_Y, r_acc_Z;
+
+float a_x, a_y, a_z;
+float v_x, v_y, v_z;
+float buff_v_x, buff_v_y, buff_v_z;
+float pos_x, pos_y, pos_z;
 
 void ImuFifoConfig(void);
 void ImuWomConfig(void);
