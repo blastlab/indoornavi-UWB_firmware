@@ -11,12 +11,21 @@
 #include "toa.h"
 
 #define SYNC_ASSERT(expr) IASSERT(expr)
-#define SYNC_TRACE_ENABLED 0
+
+#define SYNC_TRACE_ENABLED 1
 #if SYNC_TRACE_ENABLED
 #define SYNC_TRACE(...) LOG_DBG(__VA_ARGS__)
 #else
 #include "tools.h"
 #define SYNC_TRACE(...) ALL_UNUSED(__VA_ARGS__)
+#endif
+
+#define SYNC_TRACE_TOA_ENABLED 0
+#if SYNC_TRACE_TOA_ENABLED
+#define SYNC_TRACE_TOA(...) LOG_DBG(__VA_ARGS__)
+#else
+#include "tools.h"
+#define SYNC_TRACE_TOA(...) ALL_UNUSED(__VA_ARGS__)
 #endif
 
 typedef struct __packed {
