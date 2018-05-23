@@ -15,11 +15,17 @@
 #define 			IMU_ACCEL_WOM_THRESHOLD 0b01000000
 #define				IMU_NO_MOTION_PERIOD	5000			// When the time (in milis) run out and no motion is detected, device will go to sleep
 volatile uint8_t	imu_sleep_mode;
-
 uint16_t 			fifo_count;
-#define 			SAMPLE_RATE_DIV 		0x9
+
+enum { A_DLPF_CFG = 7, DEC2_CFG = 3, ACCEL_FS_SEL = 1 };					// accel config; A_DLPF_CFG[0-7]; DEC2_CFG[0-3]; ACCEL_FS_SEL[0-3];		41st page
+enum { G_DLPF_CFG = 7, G_AVGCFG = 5, FS_SEL = 3 }; 							// gyro config;  G_DLPF_CFG[0-7]; G_AVGCFG[0-7]; FS_SEL[0-3];			42nd page
+
+#define				GYRO_DIV 				(16.384*pow(2.0, 3.0 - FS_SEL));
+#define 			ACC_DIV 				(pow(2.0, 14.0 - ACCEL_FS_SEL)/pow(2.0, DEC2_CFG));
+#define 			SAMPLE_RATE_DIV 		19
+
 #define 			SAMPLE_F				(double)(1000.0/(1 + SAMPLE_RATE_DIV))			// 100Hz sampling
-#define 			SAMPLE_COUNT			120
+#define 			SAMPLE_COUNT			36
 #define 			DEG_TO_RAD				3.14159265358979f/180.0f
 
 #define 			deltat 					(float)(1.0f/(float)SAMPLE_F)					// sampling period in seconds

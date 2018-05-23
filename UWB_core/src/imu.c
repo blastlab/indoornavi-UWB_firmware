@@ -8,8 +8,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void setQvals()										// DEBUG function; quaternion from YPR and conversely
-{
+void setQvals() {										// DEBUG function; quaternion from YPR and conversely
 	roll = 0.0f;	// X
 	pitch = 0.0f;	// Y
 	yaw = 0.0f;		// Z
@@ -53,8 +52,7 @@ void setQvals()										// DEBUG function; quaternion from YPR and conversely
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void ImuSetGyroOffset(void)
-{
+void ImuSetGyroOffset(void) {
 	uint8_t data[6] = { 0 };
 	PORT_ImuWriteRegister(0x13, 0);
 	PORT_ImuWriteRegister(0x14, 0);
@@ -63,7 +61,8 @@ void ImuSetGyroOffset(void)
 	PORT_ImuWriteRegister(0x17, 0);
 	PORT_ImuWriteRegister(0x18, 0);
 
-	PORT_SleepMs(50);
+	PORT_SleepMs(750);
+	PORT_LedOn(LED_G1);
 
 	PORT_ImuReadRegister(0x43, &data[0], 6);	// reading GYRO's values, setting the offset
 	int16_t offs = -2*(int16_t)(data[0] << 8 | data[1]);
@@ -75,10 +74,11 @@ void ImuSetGyroOffset(void)
 	offs = -2*(int16_t)(data[4] << 8 | data[5]);
 	PORT_ImuWriteRegister(0x17, (int8_t)(offs >> 8));
 	PORT_ImuWriteRegister(0x18, (int8_t)offs);
+
+	PORT_LedOff(LED_G1);
 }
 
-uint16_t ImuGetFifoCount(void)
-{
+uint16_t ImuGetFifoCount(void) {
 	uint8_t dat[2] = { 0 };
 	PORT_ImuReadRegister(0x72, &dat[0], 1);
 	PORT_ImuReadRegister(0x73, &dat[1], 1);
@@ -96,8 +96,7 @@ static inline void accFilter(void) {
 	buff_a_y = gyFilt;
 }
 
-static void madgwickFilterUpdate(float w_x_t, float w_y_t, float w_z_t, float a_x_t, float a_y_t, float a_z_t)
-{
+static void madgwickFilterUpdate(float w_x_t, float w_y_t, float w_z_t, float a_x_t, float a_y_t, float a_z_t) {
 	// Local system variables
 	float norm; 															// vector norm
 	float SEqDot_omega_1, SEqDot_omega_2, SEqDot_omega_3, SEqDot_omega_4; 	// quaternion derrivative from gyroscopes elements
@@ -199,8 +198,7 @@ static inline void integrateValues(void) {
 	pos_y += v_y/SAMPLE_F/2.0;
 }
 
-void setQuaternionFromAccel(void)
-{
+void setQuaternionFromAccel(void) {
 	uint8_t meas_data[6] = { 0 };
 	PORT_ImuReadRegister(0x3b, &meas_data[0], 6);
 	double x = (double)((int16_t)((meas_data[0] << 8) | meas_data[1]));
@@ -226,22 +224,13 @@ void setQuaternionFromAccel(void)
 
 static volatile uint32_t motion_tick;
 
-void ImuFifoConfig(void)
-{
+void ImuFifoConfig(void) {
 	motion_tick = 0;
 	imu_sleep_mode = 0;
-	a_x = 0.0f;
-	a_y = 0.0f;
-	a_z = 0.0f;
-	v_x = 0.0f;
-	v_y = 0.0f;
-	v_z = 0.0f;
-	buff_v_x = 0.0f;
-	buff_v_y = 0.0f;
-	buff_v_z = 0.0f;
-	pos_x = 0.0f;
-	pos_y = 0.0f;
-	pos_z = 0.0f;
+	a_x = 0.0f;	a_y = 0.0f;	a_z = 0.0f;
+	v_x = 0.0f;	v_y = 0.0f;	v_z = 0.0f;
+	buff_v_x = 0.0f; buff_v_y = 0.0f; buff_v_z = 0.0f;
+	pos_x = 0.0f; pos_y = 0.0f;	pos_z = 0.0f;
 	PORT_ImuReset();
 															// trying to configure FIFO-sampling and motion-interrupt together
 //	PORT_ImuWriteRegister(0x20, IMU_ACCEL_WOM_THRESHOLD);	// ACCEL_WOM_X_THR register; threshold value for WoM
@@ -250,22 +239,21 @@ void ImuFifoConfig(void)
 //	PORT_ImuWriteRegister(0x69, 0b11000000);				// ACCEL_INTEL_CTRL register; setting ACCEL_INTEL_EN and ACCEL_INTEL_MODE (Wake-on-Motion detection logic)
 //	PORT_ImuWriteRegister(0x6b, 0b00101001);				// PWR_MGMT_1 register; enabling low-power cycle mode for accelerometer
 
-	PORT_ImuWriteRegister(0x6b, 0b00001001);		// PWR_MGMT_1 register; waking up, setting clock configuration and turning off temp. meas.
-	PORT_ImuWriteRegister(0x6c, 0b10000000);		// PWR_MGMT_2 register; turning on accelerometer and gyro, turning on FIFO low power mode
-	PORT_ImuWriteRegister(0x19, SAMPLE_RATE_DIV);	// SMPLRT_DIV register; dividing the sampling rate (internal sample rate = 1kHz)
-	PORT_ImuWriteRegister(0x1A, 0b01000101);		// CONFIG register;
-	PORT_ImuWriteRegister(0x1b, 0b00011000);		// GYRO_CONFIG register; -/+ 2000 dps
-	PORT_ImuWriteRegister(0x1c, 0b00001000); 		// ACCEL_CONFIG register; +/- 2G full scale select
-	PORT_ImuWriteRegister(0x1d, 0b11010001); 		// ACCEL_CONFIG2 register;
-	PORT_ImuWriteRegister(0x1e, 0b10010000);		// LP_MODE_CFG register;
-	PORT_ImuWriteRegister(0x23, 0b01111000);		// FIFO_EN register;
-	PORT_ImuWriteRegister(0x37, 0b00000000);		// INT_PIN_CFG register;
-	HAL_Delay(10);
+	PORT_ImuWriteRegister(0x6b, 0b00001001);									// PWR_MGMT_1 register; waking up, setting clock configuration and turning off temp. meas.
+	PORT_ImuWriteRegister(0x6c, 0b10000000);									// PWR_MGMT_2 register; turning on accelerometer and gyro, turning on FIFO low power mode
+	PORT_ImuWriteRegister(0x19, SAMPLE_RATE_DIV);								// SMPLRT_DIV register; dividing the sampling rate (internal sample rate = 1kHz)
+	PORT_ImuWriteRegister(0x1A, 0b01000000 | G_DLPF_CFG);						// CONFIG register;
+	PORT_ImuWriteRegister(0x1b, 0b00000000 | (FS_SEL << 3));					// GYRO_CONFIG register;
+	PORT_ImuWriteRegister(0x1c, 0b00001000 | (ACCEL_FS_SEL << 3));				// ACCEL_CONFIG register;
+	PORT_ImuWriteRegister(0x1d, 0b11000000 | (DEC2_CFG << 4) | A_DLPF_CFG);		// ACCEL_CONFIG2 register;
+	PORT_ImuWriteRegister(0x1e, 0b10000000 | (G_AVGCFG << 4));					// LP_MODE_CFG register;
+	PORT_ImuWriteRegister(0x23, 0b01111000);									// FIFO_EN register;
+	PORT_ImuWriteRegister(0x37, 0b00000000);									// INT_PIN_CFG register;
 	ImuSetGyroOffset();
 	setQuaternionFromAccel();
 
-	PORT_ImuWriteRegister(0x38, 0b11110000);		// INT_ENABLE register; enabling FIFO overflow interrupt on accelerometer
-	PORT_ImuWriteRegister(0x6a, 0b01010100);		// USER_CTRL register; enabling and resetting FIFO
+	PORT_ImuWriteRegister(0x38, 0b00010000);		// INT_ENABLE register; enabling FIFO overflow interrupt on accelerometer; 		ENABLE WOM INT HERE!
+	PORT_ImuWriteRegister(0x6a, 0b01010100);		// USER_CTRL register; enabling and resetting FIFO								ENABLE DMP HERE! (OR NOT?)
 
 	uint8_t fifo_data[SAMPLE_COUNT] = { 0 };
 	while(1)
@@ -277,13 +265,13 @@ void ImuFifoConfig(void)
 			PORT_ImuReadRegister(0x74, &fifo_data[0], SAMPLE_COUNT);
 			for(uint16_t i = 0; i < SAMPLE_COUNT; i += 12)
 			{
-				buff_a_x = (float)((int16_t)((fifo_data[i] << 8) | fifo_data[i + 1]))/4096.0f;
-				buff_a_y = (float)((int16_t)((fifo_data[i + 2] << 8) | fifo_data[i + 3]))/4096.0f;
-				buff_a_z = (float)((int16_t)((fifo_data[i + 4] << 8) | fifo_data[i + 5]))/4096.0f;
+				buff_a_x = (float)((int16_t)((fifo_data[i] << 8) | fifo_data[i + 1]))/ACC_DIV;
+				buff_a_y = (float)((int16_t)((fifo_data[i + 2] << 8) | fifo_data[i + 3]))/ACC_DIV;
+				buff_a_z = (float)((int16_t)((fifo_data[i + 4] << 8) | fifo_data[i + 5]))/ACC_DIV;
 //				buff_a_a = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
-				buff_w_x = (float)((int16_t)((fifo_data[i + 6] << 8) | fifo_data[i + 7]))/16.384f;
-				buff_w_y = (float)((int16_t)((fifo_data[i + 8] << 8) | fifo_data[i + 9]))/16.384f;
-				buff_w_z = (float)((int16_t)((fifo_data[i + 10] << 8) | fifo_data[i + 11]))/16.384f;
+				buff_w_x = (float)((int16_t)((fifo_data[i + 6] << 8) | fifo_data[i + 7]))/GYRO_DIV;
+				buff_w_y = (float)((int16_t)((fifo_data[i + 8] << 8) | fifo_data[i + 9]))/GYRO_DIV;
+				buff_w_z = (float)((int16_t)((fifo_data[i + 10] << 8) | fifo_data[i + 11]))/GYRO_DIV;
 
 				accFilter();
 				madgwickFilterUpdate(buff_w_x*DEG_TO_RAD, buff_w_y*DEG_TO_RAD, buff_w_z*DEG_TO_RAD, buff_a_x, buff_a_y, buff_a_z);
@@ -339,9 +327,7 @@ void ImuWatchdogRefresh(void) {
 	if(imu_sleep_mode) PORT_WatchdogRefresh();
 }
 
-
-void ImuReadAllConfig(void)
-{
+void ImuReadAllConfig(void) {
 	PORT_ImuReset();
 	PORT_ImuWriteRegister(0x6b, 0b00001001);	// PWR_MGMT_1 register; waking up, setting clock configuration and turning off temp. meas.
 	PORT_ImuWriteRegister(0x6a, 0b00010000);	// USER_CTRL register; disabling I2C
