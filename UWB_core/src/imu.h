@@ -10,15 +10,15 @@
 
 #include "platform/port.h"
 #include "transceiver.h"
-#include <math.h>
+#include "mac/mac.h"
+#include "settings.h"
 
-#define 			IMU_ACCEL_WOM_THRESHOLD 0b00010000
-#define				IMU_NO_MOTION_PERIOD	5000			// When the time (in milis) run out and no motion is detected, device will go to sleep
+#define 			IMU_ACCEL_WOM_THRESHOLD 0b00001000
+#define				IMU_NO_MOTION_PERIOD	10000			// When the time (in milis) run out and no motion is detected, device will go to sleep
 volatile uint8_t	imu_sleep_mode;
 
-void ImuWomConfig(void);
-void ImuMotionControl(void);
-void ImuIRQHandler(void);
-void ImuWatchdogRefresh(void);
+void IMU_WomConfig(void);
+void IMU_MotionControl(void);
+void IMU_IrqHandler(void);
 
 #endif /* UWB_IMU_H_ */

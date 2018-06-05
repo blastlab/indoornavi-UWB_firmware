@@ -36,7 +36,6 @@ typedef struct
 
 #define VERSION_SETTINGS_DEF  \
   {                           \
-    \ 
   .boot_reserved = 0,         \
   .h_version = __H_VERSION__, \
   .f_major = __F_MAJOR__,     \

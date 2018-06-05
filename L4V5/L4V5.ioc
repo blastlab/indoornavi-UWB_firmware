@@ -122,6 +122,7 @@ NVIC.DMA1_Channel3_IRQn=true\:0\:0\:false\:false\:true\:true
 NVIC.DMA1_Channel5_IRQn=true\:0\:0\:false\:false\:true\:true
 NVIC.DebugMonitor_IRQn=true\:0\:0\:false\:false\:true\:true
 NVIC.EXTI0_IRQn=true\:5\:0\:true\:false\:true\:true
+NVIC.EXTI9_5_IRQn=true\:0\:0\:false\:false\:true\:true
 NVIC.HardFault_IRQn=true\:0\:0\:false\:false\:true\:true
 NVIC.LPTIM1_IRQn=true\:5\:0\:true\:true\:true\:2\:true
 NVIC.LPTIM2_IRQn=true\:5\:0\:true\:true\:true\:3\:true

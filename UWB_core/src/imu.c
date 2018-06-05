@@ -8,7 +8,8 @@
 
 static volatile uint32_t motion_tick;
 
-void ImuWomConfig(void) {
+void IMU_WomConfig(void) {
+	if(settings.mac.role != RTLS_TAG) return;
 	motion_tick = 0;
 	imu_sleep_mode = 0;
 	PORT_ImuReset();
@@ -26,7 +27,8 @@ void ImuWomConfig(void) {
 	PORT_ImuWriteRegister(0x6b, 0b00101001);				// PWR_MGMT_1 register; enabling low-power cycle mode for accelerometer
 }
 
-void ImuMotionControl(void) {
+void IMU_MotionControl(void) {
+	if(settings.mac.role != RTLS_TAG) return;
 	if((PORT_TickMs() - motion_tick) > IMU_NO_MOTION_PERIOD) {
 		imu_sleep_mode = 1;
 		TRANSCEIVER_EnterSleep();
@@ -37,16 +39,14 @@ void ImuMotionControl(void) {
 		PORT_ExitSleepMode();
 		uint8_t *dummy_buf = malloc(256);
 		TRANSCEIVER_WakeUp(dummy_buf, 256);
+		MAC_Init();
 		TRANSCEIVER_DefaultRx();
 		free(dummy_buf);
 	}
 }
 
-inline void ImuIRQHandler(void) {
+inline void IMU_IrqHandler(void) {
 	motion_tick = PORT_TickMs();
 	imu_sleep_mode = 0;
 }
 
-void ImuWatchdogRefresh(void) {
-	if(imu_sleep_mode) PORT_WatchdogRefresh();
-}
