@@ -37,8 +37,8 @@
 
 /* USER CODE BEGIN 0 */
 #include "decadriver/deca_device_api.h"
-#include "mac/sync.h"
 #include "imu.h"
+#include "mac/mac.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -47,7 +47,7 @@ extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
 
 /******************************************************************************/
-/*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
+/*            Cortex-M4 Processor Interruption and Exception Handlers         */
 /******************************************************************************/
 
 /**
@@ -69,7 +69,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-	IASSERT("HardFault" == 0);
+  IASSERT("HardFault" == 0);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -202,11 +202,11 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
-	do
-	{
-		HAL_GPIO_WritePin(DW_CS_GPIO_Port,DW_CS_Pin,GPIO_PIN_SET);
-		dwt_isr();
-	} while(HAL_GPIO_ReadPin(DW_IRQ_GPIO_Port, DW_IRQ_Pin) == GPIO_PIN_SET);
+  do
+  {
+    HAL_GPIO_WritePin(DW_CS_GPIO_Port, DW_CS_Pin, GPIO_PIN_SET);
+    dwt_isr();
+  } while (HAL_GPIO_ReadPin(DW_IRQ_GPIO_Port, DW_IRQ_Pin) == GPIO_PIN_SET);
 
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
@@ -223,7 +223,7 @@ void DMA1_Channel2_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel2_IRQn 0 */
 
   /* USER CODE END DMA1_Channel2_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
 
   /* USER CODE END DMA1_Channel2_IRQn 1 */
@@ -237,7 +237,7 @@ void DMA1_Channel3_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel3_IRQn 0 */
 
   /* USER CODE END DMA1_Channel3_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
 
   /* USER CODE END DMA1_Channel3_IRQn 1 */
@@ -291,7 +291,7 @@ void USART1_IRQHandler(void)
 void LPTIM1_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM1_IRQn 0 */
-
+  LL_LPTIM_ClearFLAG_ARRM(LPTIM1);
   /* USER CODE END LPTIM1_IRQn 0 */
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
@@ -304,10 +304,12 @@ void LPTIM1_IRQHandler(void)
 void LPTIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM2_IRQn 0 */
-
+  LL_LPTIM_ClearFLAG_ARRM(LPTIM2);
   /* USER CODE END LPTIM2_IRQn 0 */
   /* USER CODE BEGIN LPTIM2_IRQn 1 */
+  decaIrqStatus_t st = decamutexon();
   MAC_YourSlotIsr();
+  decamutexoff(st);
   /* USER CODE END LPTIM2_IRQn 1 */
 }
 

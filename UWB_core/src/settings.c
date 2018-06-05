@@ -1,8 +1,8 @@
 #include "settings.h"
 
 settings_otp_t _settings_otp = {
-    .h_major = HARDWARE_MAJOR,
-    .h_minor = HARDWARE_MINOR,
+    .h_major = __H_MAJOR__,
+    .h_minor = __H_MINOR__,
     .serial = 0,
 };
 
@@ -25,7 +25,7 @@ bool settings_is_otp_erased()
   }
 
   // return true if otp is erased, false otherwise
-  return i < sizeof(settings_otp_t);
+  return i >= sizeof(settings_otp_t);
 }
 
 void SETTINGS_Init() {

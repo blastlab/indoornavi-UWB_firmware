@@ -21,18 +21,38 @@ typedef struct
     .ant_dly_rx = 16436,                       \
     .ant_dly_tx = 16436,                       \
     .low_power_mode = 0,                       \
-    .dwt_config.chan = 2,                      \
+    .dwt_config.chan = 5,                      \
     .dwt_config.prf = DWT_PRF_64M,             \
     .dwt_config.txPreambLength = DWT_PLEN_128, \
-    .dwt_config.rxPAC = DWT_PAC32,             \
-    .dwt_config.txCode = 9,                    \
-    .dwt_config.rxCode = 9,                    \
+    .dwt_config.rxPAC = DWT_PAC8,              \
+    .dwt_config.txCode = 10,                    \
+    .dwt_config.rxCode = 10,                    \
     .dwt_config.nsSFD = 1,                     \
     .dwt_config.dataRate = DWT_BR_6M8,         \
-    .dwt_config.phrMode = DWT_PHRMODE_EXT,     \
-    .dwt_config.sfdTO = (129 + 64 - 32),       \
-    .dwt_txconfig.PGdly = 1,                   \
+    .dwt_config.phrMode = DWT_PHRMODE_STD,     \
+    .dwt_config.sfdTO = 0,                     \
+    .dwt_txconfig.PGdly = 0,                   \
   \
 }
 
+// tutorial:
+//  chan =
+//    2 - Fc 3993.6MHz BW 499.2MHz
+//    5 - FC 6489.6MHz BW 499.2MHz
+//
+//  rxPAC = [default]
+//    DWT_PAC8 for preamble len 64..128
+//    DWT_PAC16 for preamble len 256..512
+//    DWT_PAC32 for preamble len 1024..4096
+//
+// nsSFD = [default]
+//    0 for preable len < X
+//    1 for ptramble len >= X
+//
+// sfdTo = [default]
+//    0 for automaticaly calculate
+//    1 + plen + sfd_len - pac
+// 
+// PGdly = [default]
+//    0 for autmaticaly calculate
 #endif

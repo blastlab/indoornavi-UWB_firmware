@@ -18,6 +18,9 @@
   MAC_Free(#name);                                                             \
   }
 
+#define MAC_HEAD_LENGTH                                                        \
+  (2 + 1 + sizeof(pan_dev_addr_t) + 2 * sizeof(dev_addr_t))
+
 typedef struct {
   union {
     unsigned char buf[MAC_BUF_LEN];
@@ -34,7 +37,7 @@ typedef struct {
   unsigned char *dPtr;
   mac_buf_state state;
   int rx_len;
-  unsigned char isRangingFrame;
+  bool isRangingFrame;
   short retransmit_fail_cnt;
   unsigned int last_update_time;
 } mac_buf_t;
@@ -45,17 +48,23 @@ typedef struct {
   uint8_t seq_num;
   mac_buf_t rx_buf;
   short buf_get_ind;
-  unsigned int sync_offset;
-  mac_buf_t *buf_under_tx;
+  int64_t slot_time_offset;
+  bool frame_under_tx_is_ranging;
   unsigned int last_rx_ts;
+  unsigned int beacon_timer_timestamp;
 } mac_instance_t;
+
+// used by mac, externally implemented
+void listener_isr(const dwt_cb_data_t *data);
 
 // initialize mac and transceiver
 void MAC_Init();
 
-// should be called from the frame transmitted isr
-// @param is last frame tx timestamp in dw unit time
-int mac_transmitted_isr(int64_t tx_timestamp);
+// return ms from last BeconTimerReset or received unicast message
+unsigned int MAC_BeaconTimerGetMs();
+
+// reset beacon timer after sending a beacon message
+void MAC_BeaconTimerReset();
 
 // should be called at the beginning of your slot time
 void MAC_YourSlotIsr();
@@ -71,6 +80,13 @@ int MAC_BufLen(const mac_buf_t *buf);
 
 // low level function, used only by carry module
 void MAC_FillFrameTo(mac_buf_t *buf, dev_addr_t target);
+
+// set frame type in 802.15.4 protocol, posiible:
+//  FR_CR_MAC
+//  FR_CR_DATA
+//  FR_CR_ACK
+//  FR_CR_BEACON
+void MAC_SetFrameType(mac_buf_t *buf, uint8_t FR_CR_type);
 
 // reserve buffer and fill mac protocol fields
 // @param address to target device in range of radio - without hops

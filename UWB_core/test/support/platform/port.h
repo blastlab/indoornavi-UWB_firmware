@@ -8,6 +8,9 @@
 // extra initialization for port modules
 void PORT_Init();
 
+// assert routine
+void PORT_Iassert_fun(const char *msg, int line);
+
 // turn led on
 void PORT_LedOn(int LED_x);
 
@@ -16,6 +19,9 @@ void PORT_LedOff(int LED_x);
 
 // reset dw 1000 device by polling RST pin down for at least 500us
 void PORT_ResetTransceiver();
+
+// wakeup transceiver after sleep
+void PORT_WakeupTransceiver();
 
 // reset STM
 void PORT_Reboot();
@@ -37,6 +43,9 @@ int PORT_BatteryVoltage();
 
 // TIME
 
+// run timers when device is fully initialised
+void PORT_TimeStartTimers();
+
 // nop
 void PORT_SleepMs(unsigned int time_ms);
 
@@ -48,6 +57,12 @@ unsigned int PORT_TickHr();
 
 // get high resolution clock frequency
 unsigned int PORT_FreqHr();
+
+// update slot timer for one iteration
+void PORT_SlotTimerSetUsLeft(uint32 us);
+
+// set slot timer period
+void PORT_SetSlotTimerPeriodUs(uint32 us);
 
 // CRC
 

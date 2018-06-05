@@ -1,4 +1,5 @@
 #include "transceiver.h"
+#include "decadriver/deca_regs.h"
 
 int transceiver_br = 0;
 int transceiver_plen = 0;
@@ -7,11 +8,14 @@ int transceiver_sfd = 0;
 
 static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts);
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
-                                               bool set_default_pac);
+                                            bool set_default_pac);
+static int TRANSCEIVER_CalcSfdTo();
+static int TRANSCEIVER_CalcPGdly(int ch);
 
-int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
+int TRANSCEIVER_Init()
 {
   int ret;
+  dwt_config_t *conf = &settings.transceiver.dwt_config;
 
   // set global variables correct with transceiver settings and update pac size
   if (settings.transceiver.dwt_txconfig.power == 0)
@@ -22,6 +26,29 @@ int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
   else
   {
     _TRANSCEIVER_InitGlobalsFromSet(&settings.transceiver, 0);
+  }
+
+  // check if sfdTO is correct
+  if (conf->sfdTO == 0)
+  {
+    conf->sfdTO = TRANSCEIVER_CalcSfdTo();
+  }
+  if (settings.transceiver.dwt_txconfig.PGdly == 0)
+  {
+    settings.transceiver.dwt_txconfig.PGdly = TRANSCEIVER_CalcPGdly(conf->chan);
+  }
+
+  PORT_SpiSpeedSlow(true);
+  ret = dwt_readdevid();
+
+  // clear the sleep bit - so that after the hard reset below
+  // the DW does not go into sleep
+  if (ret != DWT_DEVICE_ID)
+  {
+    PORT_WakeupTransceiver(); // device is asleep
+    ret = dwt_readdevid();
+    TRANSCEIVER_ASSERT(ret == DWT_DEVICE_ID);
+    dwt_softreset();
   }
 
   // reset device
@@ -55,10 +82,6 @@ int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
     dwt_loadopsettabfromotp(DWT_OPSET_64LEN);
   }
 
-  // set device addresses
-  dwt_setaddress16(dev_addr);
-  dwt_setpanid(pan_addr);
-
   // Apply default antenna delay value. See NOTE 1 below.
   dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
   dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
@@ -66,53 +89,70 @@ int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
   // turn on leds and event counters
   if (settings.transceiver.low_power_mode)
   {
-    dwt_setleds(3);
-    dwt_configeventcounters(1);
-  }
-  else
-  {
     dwt_setleds(0);
     dwt_configeventcounters(0);
   }
+  else
+  {
+    dwt_setleds(3);
+    dwt_configeventcounters(1);
+  }
 
   // turn on default rx mode
-  TRANSCEIVER_DefaultRx();
+  dwt_setrxtimeout(0);
+  dwt_setpreambledetecttimeout(0);
 
   return 0;
 }
 
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
-                        dwt_cb_t rxerr_cb)
+                       dwt_cb_t rxerr_cb)
 {
+  int tx_flags = SYS_STATUS_ALL_TX | SYS_STATUS_ALL_DBLBUFF;
+  int rx_flags = SYS_STATUS_ALL_RX_GOOD;
+  int err_flags = SYS_STATUS_ALL_RX_ERR | SYS_STATUS_ALL_RX_TO;
+  /*DWT_INT_RPHE |   // receiver PHY header error
+	DWT_INT_RFCE |   // receiver CRC error
+	DWT_INT_RFSL |   // sync lost
+	DWT_INT_RXOVRR | // receiver overrun
+	DWT_INT_RXPTO |  // preamble detection timeout
+	DWT_INT_SFDT |   // start frame delimiter timeout
+	DWT_INT_ARFE |   // frame rejected (due to frame filtering configuration)*/
   // connect interrupts
-  int isr_flags = DWT_INT_TFRS | // frame send
-                  DWT_INT_RFCG | // received frame crc good
-                  DWT_INT_RFTO | // receive frame timeout
-                  0;
-  dwt_setinterrupt(isr_flags, 1);
+  dwt_setinterrupt(tx_flags | rx_flags | err_flags, 1);
   dwt_setcallbacks(tx_cb, rx_cb, rxto_cb, rxerr_cb);
+}
+
+void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr)
+{
+  dwt_setaddress16(dev_addr);
+  dwt_setpanid(pan_addr);
 }
 
 void TRANSCEIVER_DefaultRx()
 {
+  dwt_setrxtimeout(0);
+  dwt_setpreambledetecttimeout(0);
+  dwt_setlowpowerlistening(false);
+  dwt_rxenable(DWT_START_RX_IMMEDIATE);
+  return;
   if (settings.transceiver.low_power_mode)
   {
-  	int on_pac = 2;
-  	int off_time_us = 20;
-  	TRANSCEIVER_ASSERT(transceiver_plen + transceiver_pac < off_time_us);
-  	TRANSCEIVER_ASSERT(0 <= off_time_us);
-  	TRANSCEIVER_ASSERT(off_time_us < 16);
-  	dwt_setsniffmode(1, 2, off_time_us);
+    int on_pac = 2;
+    int off_time_us = 20;
+    TRANSCEIVER_ASSERT(transceiver_plen + transceiver_pac < off_time_us);
+    TRANSCEIVER_ASSERT(0 <= off_time_us);
+    TRANSCEIVER_ASSERT(off_time_us < 16);
+    dwt_setsniffmode(1, on_pac, off_time_us);
   }
   else
   {
-  	dwt_rxenable(DWT_START_RX_IMMEDIATE);
+    dwt_rxenable(DWT_START_RX_IMMEDIATE);
   }
 }
 
-void TRANSCEIVER_EnterDeepSleep()	// TODO
+void TRANSCEIVER_EnterDeepSleep() // TODO
 {
-
 }
 
 void TRANSCEIVER_EnterSleep()
@@ -133,7 +173,7 @@ void TRANSCEIVER_WakeUp(uint8_t *buf, int len)
   TRANSCEIVER_ASSERT(ret == DWT_SUCCESS);
   PORT_SpiSpeedSlow(true);
 
-  //wt_configuretxrf(&settings.transceiver.dwt_txconfig);
+  // wt_configuretxrf(&settings.transceiver.dwt_txconfig);
   dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
   dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
 }
@@ -214,6 +254,8 @@ void TRANSCEIVER_ReadDiagnostic(int16_t *cRSSI, int16_t *cFPP, int16_t *cSNR)
 int TRANSCEIVER_Send(const void *buf, unsigned int len)
 {
   TRANSCEIVER_ASSERT(buf != 0);
+  TRANSCEIVER_ASSERT(len > 6);
+  TRANSCEIVER_ASSERT(len < 1024);
   const bool ranging_frame = false;
   dwt_forcetrxoff();
   dwt_writetxdata(len + 2, (uint8_t *)buf, 0);
@@ -225,7 +267,6 @@ int TRANSCEIVER_SendRanging(const void *buf, unsigned int len, uint8_t flags)
 {
   TRANSCEIVER_ASSERT(buf != 0);
   const bool ranging_frame = true;
-  dwt_forcetrxoff();
   dwt_writetxdata(len + 2, (uint8_t *)buf, 0);
   dwt_writetxfctrl(len + 2, 0, ranging_frame);
   return dwt_starttx(flags);
@@ -275,30 +316,29 @@ static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t *ts)
   int ch = ts->dwt_config.chan;
   // tx data, depends on channel
   const uint8_t PGdly[] = {0, 0xC9, 0xC2, 0xC5, 0x95, 0xC0, 0, 0x93};
-  const int TXpower16d[] = {0, 0x75757575, 0x75757575, 0x6F6F6F6F,
-                            0x5F5F5F5F, 0x48484848, 0, 0x92929292};
-  const int TXpower64d[] = {0, 0x67676767, 0x67676767, 0x8B8B8B8B,
-                            0x9A9A9A9A, 0x85858585, 0, 0xD1D1D1D1};
-  const int TXpower16e[] = {0, 0x15355575, 0x15355575, 0x0F2F4F6F,
-                            0x1F1F3F5F, 0x0E082848, 0, 0x32527292};
-  const int TXpower64e[] = {0, 0x07274767, 0x07274767, 0x2B4B6B8B,
-                            0x3A5A7A9A, 0x25456585, 0, 0x5171B1D1};
-
   ts->dwt_txconfig.PGdly = PGdly[ch];
-  // when data rate == 6M8 then smart power en should be enabled
-  const bool prf_is_16M = ts->dwt_config.prf == DWT_PRF_16M;
-  if (ts->dwt_config.dataRate == DWT_BR_6M8)
-  {
-    ts->dwt_txconfig.power = prf_is_16M ? TXpower16d[ch] : TXpower64d[ch];
-  }
-  else
-  {
-    ts->dwt_txconfig.power = prf_is_16M ? TXpower16e[ch] : TXpower64e[ch];
-  }
+  // todo: use power value below maximum
+  //  const int TXpower16d[] = {0,          0x75757575, 0x75757575, 0x6F6F6F6F,
+  //                            0x5F5F5F5F, 0x48484848, 0,          0x92929292};
+  //  const int TXpower64d[] = {0,          0x67676767, 0x67676767, 0x8B8B8B8B,
+  //                            0x9A9A9A9A, 0x85858585, 0,          0xD1D1D1D1};
+  //  const int TXpower16e[] = {0,          0x15355575, 0x15355575, 0x0F2F4F6F,
+  //                            0x1F1F3F5F, 0x0E082848, 0,          0x32527292};
+  //  const int TXpower64e[] = {0,          0x07274767, 0x07274767, 0x2B4B6B8B,
+  //                            0x3A5A7A9A, 0x25456585, 0,          0x5171B1D1};
+  //
+  //  // when data rate == 6M8 then smart power en should be enabled
+  //  const bool prf_is_16M = ts->dwt_config.prf == DWT_PRF_16M;
+  //  if (ts->dwt_config.dataRate == DWT_BR_6M8) {
+  //    ts->dwt_txconfig.power = prf_is_16M ? TXpower16d[ch] : TXpower64d[ch];
+  //  } else {
+  //    ts->dwt_txconfig.power = prf_is_16M ? TXpower16e[ch] : TXpower64e[ch];
+  //  }
+  ts->dwt_txconfig.power = 0x0E080222; // todo: uzywac mniejszej mocy default
 }
 
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
-                                               bool set_default_pac)
+                                            bool set_default_pac)
 {
   TRANSCEIVER_ASSERT(ts != 0);
   TRANSCEIVER_ASSERT(ts->dwt_config.dataRate < 3);
@@ -354,4 +394,21 @@ static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
   }
 
   transceiver_pac = pac[ts->dwt_config.rxPAC];
+}
+
+static int TRANSCEIVER_CalcSfdTo()
+{
+  TRANSCEIVER_ASSERT(transceiver_sfd > 0);
+  TRANSCEIVER_ASSERT(transceiver_plen > 0);
+  TRANSCEIVER_ASSERT(transceiver_pac > 0);
+  return 1 + transceiver_plen + transceiver_sfd - transceiver_pac;
+}
+
+static int TRANSCEIVER_CalcPGdly(int ch)
+{
+  TRANSCEIVER_ASSERT(ch > 0);
+  TRANSCEIVER_ASSERT(ch != 6);
+  TRANSCEIVER_ASSERT(ch < 8);
+  const int PGdly[] = {0, 0xC9, 0xC2, 0xC5, 0x95, 0xC0, 0, 0x93};
+  return PGdly[ch];
 }

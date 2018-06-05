@@ -7,11 +7,17 @@
 #include "platform/port.h"
 #include "settings.h"
 
-#define UUS_TO_DWT_TIME 1
+// UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) factor.
+// 1 uus = 512 / 499.2 us and 1 us = 499.2 * 128 dtu.
+#define UUS_TO_DWT_TIME (65536ul)
+
 #define MASK_40BIT (0xffffffffffL)
 
 // setup
-int TRANSCEIVER_Init(pan_dev_addr_t pan_addr, dev_addr_t dev_addr);
+int TRANSCEIVER_Init();
+
+// set device address
+void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr);
 
 // connect event callbacks
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,

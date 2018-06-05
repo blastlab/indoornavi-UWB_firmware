@@ -1,9 +1,11 @@
 #include "txt_parser.h"
 
 char _txt_buf_raw[256];
-txt_buf_t txt_buf = {.cmd = _txt_buf_raw,
+static char *txt_buf_wptr = _txt_buf_raw;
+static txt_buf_t txt_buf = {.cmd = _txt_buf_raw,
                      .start = _txt_buf_raw,
-                     .end = _txt_buf_raw + sizeof(_txt_buf_raw)};
+                     .end = _txt_buf_raw + sizeof(_txt_buf_raw),
+										 .cnt = 0};
 
 // zwroc wskaznik za num spacjami albo 0
 cchar *TXT_PointParamNumber(const txt_buf_t *buf, cchar *cmd, int num) {
@@ -55,7 +57,7 @@ int TXT_GetParam(const txt_buf_t *buf, cchar *cmd, int base) {
 }
 
 bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd) {
-	cchar* ptr = buf->cmd;
+	volatile cchar* ptr = buf->cmd;
 	while (*cmd != 0) {
 		if (*cmd != *ptr) {
 			return false;
@@ -85,4 +87,36 @@ void TXT_Parse(const txt_buf_t *buf) {
     }
   }
   LOG_ERR("Bad command (version, stat)");
+}
+
+// take input to data parser, ignore \r and split by \n
+void TXT_Input(const char *str, int len) {
+	while(len-- > 0) {
+		txt_buf_wptr[0] = str[0];
+		// new command
+		if(str[0] == '\n') {
+			txt_buf_wptr[0] = 0;
+			++txt_buf.cnt;
+		}
+		// not ignored char
+		if(str[0] != '\r'){
+			++txt_buf_wptr;
+			if(txt_buf_wptr >= txt_buf.end) {
+				txt_buf_wptr = (char*)txt_buf.start;
+			}
+		}
+		++str;
+	}
+}
+
+// look for any new text message to parse
+void TXT_Control() {
+	if(txt_buf.cnt > 0){
+		TXT_Parse(&txt_buf);
+		--txt_buf.cnt;
+		while(txt_buf.cmd[0] != 0) {
+			INCREMENT_CYCLE(txt_buf.cmd, txt_buf.start, txt_buf.end);
+		}
+		INCREMENT_CYCLE(txt_buf.cmd, txt_buf.start, txt_buf.end);
+	}
 }

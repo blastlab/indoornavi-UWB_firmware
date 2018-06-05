@@ -11,6 +11,13 @@
 #include "toa.h"
 
 #define SYNC_ASSERT(expr) IASSERT(expr)
+#define SYNC_TRACE_ENABLED 0
+#if SYNC_TRACE_ENABLED
+#define SYNC_TRACE(...) LOG_DBG(__VA_ARGS__)
+#else
+#include "tools.h"
+#define SYNC_TRACE(...) ALL_UNUSED(__VA_ARGS__)
+#endif
 
 typedef struct __packed {
   uint8_t FC;
@@ -33,6 +40,7 @@ typedef struct __packed {
   uint8_t slot_num;
   uint32_t TsPollTx;
   uint8_t TsFinTxBuf[5];
+  uint8_t TsOffset[5];
   uint32_t TsRespRx[0];
 } FC_SYNC_FIN_s;
 
@@ -53,11 +61,16 @@ typedef struct {
   sync_neightbour_t neightbour[5];
 } sync_instance_t;
 
-int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info);
-/*int FC_SYNC_RESP_cb(const void *data, const prot_packet_info_t *info);
-int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info);
+// Initialize Sync module
+void SYNC_Init();
 
-#define SYNC_RX_CALLBACKS FC_SYNC_POLL_cb, FC_SYNC_RESP_cb, FC_SYNC_FIN_cb,*/
+// Search for neightbour with a given addr. When such device isn't in table
+// then initialize new if there is enouth memory for it
+sync_neightbour_t* SYNC_FindOrCreateNeightbour(dev_addr_t addr, int tree_level);
+
+// Send Poll message to start SYNC process with a given anchor
+int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
+
 int SYNC_RxCb(const void *data, const prot_packet_info_t *info);
 int SYNC_RxToCb();
 int SYNC_TxCb(int64_t TsDwTx);

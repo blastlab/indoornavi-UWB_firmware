@@ -114,8 +114,11 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	SCB->VTOR = (int) (FU_GetCurrentFlashBase());
+
 	UNUSED(MX_WWDG_Init);
 	UNUSED(MX_RTC_Init);
+
+	__HAL_DBGMCU_FREEZE_WWDG();
 
   /* USER CODE END 1 */
 
@@ -268,10 +271,10 @@ static void MX_NVIC_Init(void)
   HAL_NVIC_SetPriority(USART1_IRQn, 9, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* LPTIM1_IRQn interrupt configuration */
-  NVIC_SetPriority(LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_SetPriority(LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(LPTIM1_IRQn);
   /* LPTIM2_IRQn interrupt configuration */
-  NVIC_SetPriority(LPTIM2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_SetPriority(LPTIM2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(LPTIM2_IRQn);
 }
 

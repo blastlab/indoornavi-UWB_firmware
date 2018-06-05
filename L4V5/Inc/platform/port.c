@@ -1,17 +1,19 @@
 #include "platform/port.h"
 #include "stm32l4xx_ll_crc.h"
 
-
 void PORT_BatteryInit();
 void PORT_SpiInit();
 void PORT_CrcInit();
+void PORT_TimeInit();
 
-void PORT_Init()
-{
-	PORT_SpiInit();
-	PORT_BatteryInit();
-	PORT_WatchdogInit();
-	PORT_CrcInit();
+void PORT_Init() {
+  PORT_SpiInit();
+  PORT_BatteryInit();
+  PORT_CrcInit();
+  PORT_TimeInit();
+#if !DBG
+  PORT_WatchdogInit();
+#endif
 }
 
 void PORT_WatchdogInit() {
@@ -91,6 +93,8 @@ void PORT_Reboot() {
   // it help from usb timeout error from the host side
   USB_StopDevice(USB);
   USB_DevDisconnect(USB);
+  for (volatile int i = 99999; i > 0; --i)
+    ;               // disabled irq safe delay
   PORT_SleepMs(10); // to be sure
   NVIC_SystemReset();
 }
