@@ -181,16 +181,6 @@ static inline void rotateSystem(void) {
 }
 
 static inline void integrateValues(void) {
-//	buff_v_x = v_x;
-//	buff_v_y = v_y;
-//	v_x = v_x + 9.81*100.0*(a_x + r_acc_X)/SAMPLE_F/2.0;
-//	v_y = v_y + 9.81*100.0*(a_y + r_acc_Y)/SAMPLE_F/2.0;
-//	a_x = r_acc_X;
-//	a_y = r_acc_Y;
-//
-//	pos_x = pos_x + (buff_v_x + v_x)/SAMPLE_F/2.0;
-//	pos_y = pos_y + (buff_v_y + v_y)/SAMPLE_F/2.0;
-
 	v_x += 9.81*100.0*r_acc_X/SAMPLE_F/2.0;
 	v_y += 9.81*100.0*r_acc_Y/SAMPLE_F/2.0;
 
@@ -225,11 +215,9 @@ void setQuaternionFromAccel(void) {
 static volatile uint32_t motion_tick;
 
 void ImuFifoConfig(void) {
-	motion_tick = 0;
+	motion_tick = PORT_TickMs();
 	imu_sleep_mode = 0;
-	a_x = 0.0f;	a_y = 0.0f;	a_z = 0.0f;
 	v_x = 0.0f;	v_y = 0.0f;	v_z = 0.0f;
-	buff_v_x = 0.0f; buff_v_y = 0.0f; buff_v_z = 0.0f;
 	pos_x = 0.0f; pos_y = 0.0f;	pos_z = 0.0f;
 	PORT_ImuReset();
 															// trying to configure FIFO-sampling and motion-interrupt together
@@ -273,7 +261,7 @@ void ImuFifoConfig(void) {
 				buff_w_y = (float)((int16_t)((fifo_data[i + 8] << 8) | fifo_data[i + 9]))/GYRO_DIV;
 				buff_w_z = (float)((int16_t)((fifo_data[i + 10] << 8) | fifo_data[i + 11]))/GYRO_DIV;
 
-				accFilter();
+//				accFilter();
 				madgwickFilterUpdate(buff_w_x*DEG_TO_RAD, buff_w_y*DEG_TO_RAD, buff_w_z*DEG_TO_RAD, buff_a_x, buff_a_y, buff_a_z);
 				rotateSystem();
 				integrateValues();

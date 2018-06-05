@@ -33,14 +33,12 @@ enum { G_DLPF_CFG = 7, G_AVGCFG = 5, FS_SEL = 3 }; 							// gyro config;  G_DLP
 #define 			beta 					sqrt(3.0f / 4.0f) * gyroMeasError 				// compute beta
 
 float buff_a_x, buff_a_y, buff_a_z, buff_a_a;
+float r_acc_X, r_acc_Y, r_acc_Z;
 float buff_w_x, buff_w_y, buff_w_z;
 float SEq_1, SEq_2, SEq_3, SEq_4;
 float yaw, pitch, roll;
-float r_acc_X, r_acc_Y, r_acc_Z;
 
-float a_x, a_y, a_z;
 float v_x, v_y, v_z;
-float buff_v_x, buff_v_y, buff_v_z;
 float pos_x, pos_y, pos_z;
 
 void ImuFifoConfig(void);
