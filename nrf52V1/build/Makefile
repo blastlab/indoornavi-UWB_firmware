@@ -164,6 +164,6 @@ generate_hash:
 	python ../updateHash.py
 
 SDK_CONFIG_FILE := ../config/sdk_config.h
-CMSIS_CONFIG_TOOL := $(SDK_ROOT)/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar
+CMSIS_CONFIG_TOOL := C:/nRF/nRF5_SDK_14.2.0_17b948a/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar
 sdk_config:
 	java -jar $(CMSIS_CONFIG_TOOL) $(SDK_CONFIG_FILE)

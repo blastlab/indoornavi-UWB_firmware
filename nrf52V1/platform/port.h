@@ -2,8 +2,7 @@
 #define _PORT_H
 
 #include "port_config.h"
-//#include "stm32l4xx_hal.h"
-//#include "usbd_cdc_if.h"
+//#include "usbd_cdc_if.h"	TODO: implement usbd_cdc
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
