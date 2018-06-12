@@ -20,7 +20,7 @@
 #define SYNC_TRACE(...) ALL_UNUSED(__VA_ARGS__)
 #endif
 
-#define SYNC_TRACE_TOA_ENABLED 0
+#define SYNC_TRACE_TOA_ENABLED 1
 #if SYNC_TRACE_TOA_ENABLED
 #define SYNC_TRACE_TOA(...) LOG_DBG(__VA_ARGS__)
 #else
@@ -55,7 +55,7 @@ typedef struct __packed {
 
 typedef struct {
   dev_addr_t addr;
-  uint8_t tree_level;
+  uint8_t tree_level, sync_ready;
   int64_t time_offset, update_ts;
   int64_t drift[3];
   float time_coeffP[3], time_coeffP_raw[3];
