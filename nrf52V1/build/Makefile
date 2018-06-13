@@ -19,6 +19,9 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
   $(SDK_ROOT)/components/libraries/util/nrf_assert.c \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
+  $(SDK_ROOT)/components/drivers_nrf/common/nrf_drv_common.c \
+  $(SDK_ROOT)/components/drivers_nrf/spi_master/nrf_drv_spi.c \
+  \
   $(PROJ_DIR)/platform/logs.c \
   $(PROJ_DIR)/platform/port.c \
   $(PROJ_DIR)/platform/port_battery.c \
@@ -59,10 +62,13 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/balloc \
   $(SDK_ROOT)/components/libraries/experimental_log \
   $(SDK_ROOT)/components/libraries/experimental_log/src \
-  $(PROJ_DIR) \
   $(SDK_ROOT)/components/toolchain/gcc \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
+  $(SDK_ROOT)/components/drivers_nrf/common \
+  $(SDK_ROOT)/components/drivers_nrf/spi_master \
+  $(PROJ_DIR) \
   ../config \
+  \
   $(SDK_ROOT)/components/device \
   $(SDK_ROOT)/components/drivers_nrf/delay \
   $(SDK_ROOT)/components/toolchain/cmsis/include \

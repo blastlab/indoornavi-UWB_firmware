@@ -212,8 +212,8 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
   FU_instance.sesionPacketCounter = 0;
 
   // check result
-  if (PORT_FlashErase(FU_GetAddressToWrite(), FU_instance.fileSize) !=
-      PORT_Success) {
+  if (PORT_FlashErase(FU_GetAddressToWrite(), FU_instance.fileSize) !=	// TODO add PORT_Success here
+      0) {
     FU_SendError(info, FU_ERR_FLASH_ERASING);
     return;
   }

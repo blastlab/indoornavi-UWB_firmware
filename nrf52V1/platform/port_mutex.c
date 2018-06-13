@@ -7,7 +7,7 @@
 
 #include "port.h"
 
-//// return 0 when IRQ is inactive, 1 otherwise		TODO: implement EXTI_GetITEnStatus
+// return 0 when IRQ is inactive, 1 otherwise		TODO: implement EXTI_GetITEnStatus - checking if DW_IRQ_PIN interrupt is handled or disabled
 //ITStatus EXTI_GetITEnStatus(uint32_t IRQn) {
 //  ITStatus bitstatus = RESET;
 //  uint32_t enablestatus = 0;
