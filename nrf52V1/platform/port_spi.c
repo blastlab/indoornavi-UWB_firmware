@@ -14,7 +14,7 @@
 #define SPI_INSTANCE  0 /**< SPI instance index. */
 static const nrf_drv_spi_t spi0 = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);
 
-void PORT_SpiSpeedSlow(bool slow) {		// TODO: implement low frequency SPI handling (3MHz)
+void PORT_SpiSpeedSlow(bool slow) {		// TODO: implement low frequency SPI handling (3MHz), change default SPI freq to max in sdk_config
 
 }
 
