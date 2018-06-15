@@ -2659,20 +2659,6 @@
 #define SPI0_USE_EASY_DMA 0
 #endif
 
-// <o> SPI0_DEFAULT_FREQUENCY  - SPI frequency
-
-// <33554432=> 125 kHz
-// <67108864=> 250 kHz
-// <134217728=> 500 kHz
-// <268435456=> 1 MHz
-// <536870912=> 2 MHz
-// <1073741824=> 4 MHz
-// <2147483648=> 8 MHz
-
-#ifndef SPI0_DEFAULT_FREQUENCY
-#define SPI0_DEFAULT_FREQUENCY 536870912
-#endif
-
 // <o> NRF_SPI_DRV_MISO_PULLUP_CFG  - MISO PIN pull-up configuration.
 
 // <0=> NRF_GPIO_PIN_NOPULL

@@ -1,8 +1,8 @@
 /*
  * port_spi.c
  *
- *  Created on: 21.03.2018
- *      Author: KarolTrzcinski
+ *  Created on: 14.06.2018
+ *      Author: DawidPeplinski
  */
 
 #include "port.h"
@@ -14,18 +14,30 @@
 #define SPI_INSTANCE  0 /**< SPI instance index. */
 static const nrf_drv_spi_t spi0 = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);
 
-void PORT_SpiSpeedSlow(bool slow) {		// TODO: implement low frequency SPI handling (3MHz), change default SPI freq to max in sdk_config
+#define NRF_DRV_SPI_DW_CONFIG                            	\
+{                                                        	\
+    .sck_pin      = DW_SPI_SCK_PIN,                			\
+    .mosi_pin     = DW_SPI_MOSI_PIN,                		\
+    .miso_pin     = DW_SPI_MISO_PIN,                		\
+    .ss_pin       = NRF_DRV_SPI_PIN_NOT_USED,				\
+    .irq_priority = SPI_DEFAULT_CONFIG_IRQ_PRIORITY,		\
+    .orc          = 0xFF,									\
+    .frequency    = NRF_DRV_SPI_FREQ_8M,					\
+    .mode         = NRF_DRV_SPI_MODE_0,						\
+    .bit_order    = NRF_DRV_SPI_BIT_ORDER_MSB_FIRST,		\
+}
 
+void PORT_SpiSpeedSlow(bool slow) {
+	nrf_drv_spi_uninit(&spi0);
+	nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DW_CONFIG;
+	spi_config.frequency = (slow) ? NRF_SPI_FREQ_2M : NRF_SPI_FREQ_8M;
+	APP_ERROR_CHECK(nrf_drv_spi_init(&spi0, &spi_config, NULL, NULL));
 }
 
 void PORT_SpiInit() {
 	nrf_gpio_cfg_output(DW_SPI_SS_PIN);
 	nrf_gpio_pin_set(DW_SPI_SS_PIN);
-	nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DEFAULT_CONFIG;
-	spi_config.ss_pin   = NRF_DRV_SPI_PIN_NOT_USED;
-	spi_config.miso_pin = DW_SPI_MISO_PIN;
-	spi_config.mosi_pin = DW_SPI_MOSI_PIN;
-	spi_config.sck_pin  = DW_SPI_SCK_PIN;
+	nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DW_CONFIG;
 	APP_ERROR_CHECK(nrf_drv_spi_init(&spi0, &spi_config, NULL, NULL));
 }
 

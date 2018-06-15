@@ -1,8 +1,8 @@
 /*
  * port_crc.c
  *
- *  Created on: 25.03.2018
- *      Author: KarolTrzcinski
+ *  Created on: 14.06.2018
+ *      Author: DawidPeplinski
  */
 #include "port.h"
 

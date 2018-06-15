@@ -1,8 +1,6 @@
 #include "port.h"
 #include "nrf_drv_gpiote.h"
 
-
-
 void PORT_BatteryInit();
 void PORT_SpiInit();
 void PORT_CrcInit();

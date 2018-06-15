@@ -1,8 +1,8 @@
 /*
  * port_flash.c
  *
- *  Created on: 21.03.2018
- *      Author: KarolTrzcinski
+ *  Created on: 14.06.2018
+ *      Author: DawidPeplinski
  */
 #include "port.h"
 

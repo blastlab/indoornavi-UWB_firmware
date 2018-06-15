@@ -1,8 +1,8 @@
 /*
  * port_time.c
  *
- *  Created on: 22.03.2018
- *      Author: KarolTrzcinski
+ *  Created on: 14.06.2018
+ *      Author: DawidPeplinski
  */
 
 #include "port.h"
