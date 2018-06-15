@@ -152,6 +152,7 @@ void TurnOff() {
   // disable IRQ
   __disable_irq();
 
+
   // wait forever
   // przeprowadz reset aby wylaczyc WWDG, a nastepnie
   // przejdz do trybu oszczednosci energii

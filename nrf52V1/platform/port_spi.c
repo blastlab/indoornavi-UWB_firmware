@@ -12,18 +12,9 @@
 // ==== SPI ====
 
 #define SPI_INSTANCE  0 /**< SPI instance index. */
-static const nrf_drv_spi_t spi1 = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);
-static volatile bool spi_xfer_done;
+static const nrf_drv_spi_t spi0 = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);
 
-
-
-void spi_event_handler(nrf_drv_spi_evt_t const * p_event,
-                       void *                    p_context)
-{
-    spi_xfer_done = true;
-}
-
-void PORT_SpiSpeedSlow(bool slow) {
+void PORT_SpiSpeedSlow(bool slow) {		// TODO: implement low frequency SPI handling (3MHz)
 
 }
 
@@ -35,21 +26,17 @@ void PORT_SpiInit() {
 	spi_config.miso_pin = DW_SPI_MISO_PIN;
 	spi_config.mosi_pin = DW_SPI_MOSI_PIN;
 	spi_config.sck_pin  = DW_SPI_SCK_PIN;
-	APP_ERROR_CHECK(nrf_drv_spi_init(&spi1, &spi_config, spi_event_handler, NULL));
+	APP_ERROR_CHECK(nrf_drv_spi_init(&spi0, &spi_config, NULL, NULL));
 }
 
 #pragma GCC optimize("O3")
 static inline void spi_tx(uint32_t length, const uint8_t *buf) {
-    spi_xfer_done = false;
-    APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi1, buf, length, NULL, 0));
-    while (!spi_xfer_done);
+    APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi0, buf, length, NULL, 0));
 }
 
 #pragma GCC optimize("O3")
 static inline void spi_rx(uint32_t length, uint8_t *buf) {
-    spi_xfer_done = false;
-    APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi1,NULL, 0, buf, length));
-    while (!spi_xfer_done);
+    APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi0, NULL, 0, buf, length));
 }
 
 #pragma GCC optimize("O3")

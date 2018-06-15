@@ -21,6 +21,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
   $(SDK_ROOT)/components/drivers_nrf/common/nrf_drv_common.c \
   $(SDK_ROOT)/components/drivers_nrf/spi_master/nrf_drv_spi.c \
+  $(SDK_ROOT)/components/drivers_nrf/gpiote/nrf_drv_gpiote.c \
   \
   $(PROJ_DIR)/platform/logs.c \
   $(PROJ_DIR)/platform/port.c \
@@ -66,6 +67,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
   $(SDK_ROOT)/components/drivers_nrf/common \
   $(SDK_ROOT)/components/drivers_nrf/spi_master \
+  $(SDK_ROOT)/components/drivers_nrf/gpiote \
   $(PROJ_DIR) \
   ../config \
   \
