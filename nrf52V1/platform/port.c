@@ -1,21 +1,32 @@
 #include "port.h"
 #include "nrf_drv_gpiote.h"
 
-void PORT_BatteryInit();
-void PORT_SpiInit();
-void PORT_CrcInit();
 void PORT_TimeInit();
+void PORT_GpioInit();
+void PORT_SpiInit();
+void PORT_BatteryInit();
+void PORT_CrcInit();
 void PORT_ExtiInit();
 
 void PORT_Init() {
-  PORT_SpiInit();
-  PORT_BatteryInit();
-  PORT_CrcInit();
-  PORT_TimeInit();
-  PORT_ExtiInit();
+	PORT_TimeInit();
+	PORT_GpioInit();
+	PORT_SpiInit();
+	PORT_BatteryInit();
+	PORT_CrcInit();
+	PORT_ExtiInit();
 #if !DBG
-  PORT_WatchdogInit();
+	PORT_WatchdogInit();
 #endif
+}
+
+void PORT_GpioInit() {
+	nrf_gpio_cfg_output(LED_ERR);
+	nrf_gpio_cfg_output(LED_STAT);
+	nrf_gpio_cfg_output(LED_BLE);
+	nrf_gpio_pin_set(LED_ERR);
+	nrf_gpio_pin_set(LED_STAT);
+	nrf_gpio_pin_set(LED_BLE);
 }
 
 void PORT_WatchdogInit() {
@@ -28,17 +39,48 @@ void PORT_WatchdogRefresh() {
 
 // turn led on
 void PORT_LedOn(int LED_x) {
-
+	switch(LED_x){
+		case LED_G1:
+			nrf_gpio_pin_clear(LED_G1);
+			break;
+		case LED_R1:
+			nrf_gpio_pin_clear(LED_R1);
+			break;
+		case LED_B1:
+			nrf_gpio_pin_clear(LED_B1);
+			break;
+		default:
+			IASSERT(0);
+			break;
+	}
 }
 
 // turrn led off
 void PORT_LedOff(int LED_x) {
-
+	switch(LED_x){
+		case LED_G1:
+			nrf_gpio_pin_set(LED_G1);
+			break;
+		case LED_R1:
+			nrf_gpio_pin_set(LED_R1);
+			break;
+		case LED_B1:
+			nrf_gpio_pin_set(LED_B1);
+			break;
+		default:
+			IASSERT(0);
+			break;
+	}
 }
 
 // reset dw 1000 device by polling RST pin down for a few ms
 void PORT_ResetTransceiver() {
-
+	nrf_gpio_cfg_output(DW_RST_PIN);
+	nrf_gpio_pin_clear(DW_RST_PIN);
+	PORT_SleepMs(2);
+	nrf_gpio_cfg_default(DW_RST_PIN);
+	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
+	PORT_SleepMs(2);
 }
 
 void PORT_EnterStopMode() {

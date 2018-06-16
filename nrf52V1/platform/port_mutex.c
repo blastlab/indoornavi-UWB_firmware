@@ -8,7 +8,7 @@
 #include "port.h"
 #include "nrf_drv_gpiote.h"
 
-// return 0 when IRQ is inactive, 1 otherwise		TODO: implement EXTI_GetITEnStatus - checking if DW_IRQ_PIN interrupt is handled or disabled
+// return 0 when IRQ is inactive, 1 otherwise
 uint8_t EXTI_GetITEnStatus(uint32_t IRQn) {
 	uint8_t irq_stat = 0;
     ASSERT(m_cb.pin_assignments[IRQn] >= 0);				// checking if pin is in use by gpiote

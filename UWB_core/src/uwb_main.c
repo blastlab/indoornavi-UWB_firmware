@@ -67,6 +67,7 @@ void UwbMain() {
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
 
+
   PORT_TimeStartTimers();
   SendTurnOnMessage();
 

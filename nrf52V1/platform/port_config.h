@@ -21,6 +21,7 @@
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
+#define DW_RST_PIN			24
 #define DW_EXTI_IRQn 		19
 #define DW_SPI_SS_PIN		17
 #define DW_SPI_MISO_PIN		18
