@@ -46,7 +46,7 @@ void RangingControl() {
   if (PORT_TickMs() - last_time > 50) {
     last_time = PORT_TickMs();
 
-		dev_addr_t addr = 0x8012;
+	dev_addr_t addr = 0x8012;
     if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
     	SYNC_SendPoll(addr, &addr, 1);
     }
@@ -65,7 +65,7 @@ void UwbMain() {
   PORT_Init();
   MAC_Init();
   CARRY_Init(settings.mac.role == RTLS_SINK);
-  FU_Init(settings.mac.role == RTLS_SINK);
+//  FU_Init(settings.mac.role == RTLS_SINK);		// TODO: uncomment when FU implemented
 
 
   PORT_TimeStartTimers();

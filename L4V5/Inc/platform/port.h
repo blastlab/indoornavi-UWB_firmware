@@ -8,6 +8,8 @@
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
+#define PORT_Success HAL_OK
+
 // debug configuration
 #define DBG 1
 
