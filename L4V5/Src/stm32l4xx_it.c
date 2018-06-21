@@ -257,6 +257,23 @@ void DMA1_Channel5_IRQHandler(void)
 }
 
 /**
+* @brief This function handles TIM2 global interrupt.
+*/
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+	LL_TIM_ClearFlag_UPDATE(TIM2);
+	  LL_GPIO_TogglePin(LED_R1_GPIO_Port, LED_R1_Pin);
+	decaIrqStatus_t en = decamutexon();
+	MAC_YourSlotIsr();
+	decamutexoff(en);
+  /* USER CODE END TIM2_IRQn 0 */
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
 * @brief This function handles USART1 global interrupt.
 */
 void USART1_IRQHandler(void)
@@ -281,21 +298,6 @@ void LPTIM1_IRQHandler(void)
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
   /* USER CODE END LPTIM1_IRQn 1 */
-}
-
-/**
-* @brief This function handles LPTIM2 global interrupt.
-*/
-void LPTIM2_IRQHandler(void)
-{
-  /* USER CODE BEGIN LPTIM2_IRQn 0 */
-	LL_LPTIM_ClearFLAG_ARRM(LPTIM2);
-  /* USER CODE END LPTIM2_IRQn 0 */
-  /* USER CODE BEGIN LPTIM2_IRQn 1 */
-	decaIrqStatus_t st = decamutexon();
-  MAC_YourSlotIsr();
-  decamutexoff(st);
-  /* USER CODE END LPTIM2_IRQn 1 */
 }
 
 /**
