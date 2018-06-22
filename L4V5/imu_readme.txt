@@ -1,0 +1,8 @@
+- Funkcjonalność Motion Tracking jest implementowana w funkcji ImuFifoConfig
+- Po uruchomieniu procesora pobierane są początkowe dane z akcelerometru w celu ustalenia wyjściowej pozycji układu względem ziemi (ustawiany jest początkowy kwaternion / yaw, pitch, roll)
+- Dane z żyroskopu i akcelerometru gromadzone są we wbudowanej w imu kolejce fifo
+- Dane z kolejki pobierane są cyklicznie przez STM
+- Paczki danych przeliczane są przez filtr Madgwicka, co daje w wyniku kwaterniony pozwalające obliczyć kąty yaw, pitch, roll
+- Na podstawie obliczonych kątów wyznaczona zostaje macierz obrotu, która pozwala określić wektory przyspieszeń z wektorem Z prostopadłym do ziemi
+- Tak wyznaczone przyspieszenia całkowane są prostokątami, co pozwala wyznaczyć prędkości w trzech płaszczyznach
+- Otrzymane prędkości charakteryzują się sporym dryfem, w kolejnych krokach należy dobrać odpowiednie filtry (np. Butterworth'a) / wykrywać nieprzemieszczanie się obiektu
