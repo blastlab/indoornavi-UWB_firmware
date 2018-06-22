@@ -1,0 +1,5 @@
+- jeżeli urządzenie jest tagiem, to po konfigurowalnym czasie w bezruchu o konfigurowalnym thresholdzie urządzenie przechodzi w tryb uśpienia
+- wykorzystany został Wake-on-Motion interrupt oferowany przez wykorzystane IMU
+- urządzenie zeruje czas "niespania" po każym wykrytym ruchu, gdy czas ten przekroczy pewną zadaną wartość, urządzenie zostaje uspane
+- podtrzymanie podczas zdalnego update'u nie jest zaimplementowane ze względu na brak implementacji zdalnego update'u
+- do dodania - zmiana ustawień z poziomu konsoli (komendy od sinka), dodanie ustawień do settings.h
