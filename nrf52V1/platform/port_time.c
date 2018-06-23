@@ -39,7 +39,7 @@ void PORT_TimeInit() {
     APP_ERROR_CHECK(nrf_drv_rtc_init(&RTC, &config, rtc_handler));
     nrf_drv_rtc_enable(&RTC);
 
-    nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;					// TIMER: f = 250 kHz; T = 4 us
+    nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;					// TIMER: f = 1 MHz; T = 1 us
     APP_ERROR_CHECK(nrf_drv_timer_init(&TIMER_SLOT, &timer_cfg, timer_slot_event_handler));
     nrf_drv_timer_extended_compare(
          &TIMER_SLOT, NRF_TIMER_CC_CHANNEL0, nrf_drv_timer_ms_to_ticks(&TIMER_SLOT, 100), NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);

@@ -29,7 +29,7 @@ int LOG_Text(char type, const char *frm, ...) {
     buf[n] = 0;
 // wyslij dane na SD i do USB
 #if LOG_USB_EN
-//    CDC_Transmit_FS((uint8_t *)buf, n);	TODO: implement CDC_Transmit
+    PORT_UsbUartTransmit((uint8_t *)buf, n);
 #endif
 #if LOG_LCD_EN
     if (type == LOG_ERR)
@@ -52,7 +52,7 @@ int LOG_Bin(const void *bin, int size) {
   } else {
     f += BASE64_Encode((unsigned char *)(buf + f), bin, size);
     buf[f++] = '\n';
-//    CDC_Transmit_FS((uint8_t *)buf, f); TODO: implement CDC_Transmit
+    PORT_UsbUartTransmit((uint8_t *)buf, f);
     return f;
   }
 }

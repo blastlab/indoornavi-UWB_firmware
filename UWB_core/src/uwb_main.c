@@ -5,6 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
+#include <stdio.h>
 #include "uwb_main.h"
 #include "mac/mac.h"
 #include "parsers/bin_struct.h"
@@ -46,10 +47,10 @@ void RangingControl() {
   if (PORT_TickMs() - last_time > 50) {
     last_time = PORT_TickMs();
 
-	dev_addr_t addr = 0x8012;
-    if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
-    	SYNC_SendPoll(addr, &addr, 1);
-    }
+//	dev_addr_t addr = 0x8012;
+//    if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
+//    	SYNC_SendPoll(addr, &addr, 1);
+//    }
   }
 }
 

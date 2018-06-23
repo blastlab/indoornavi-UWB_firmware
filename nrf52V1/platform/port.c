@@ -7,11 +7,13 @@ void PORT_SpiInit();
 void PORT_BatteryInit();
 void PORT_CrcInit();
 void PORT_ExtiInit();
+void PORT_UsbUartInit();
 
 void PORT_Init() {
 	PORT_TimeInit();
 	PORT_GpioInit();
 	PORT_SpiInit();
+	PORT_UsbUartInit();
 	PORT_BatteryInit();
 	PORT_CrcInit();
 	PORT_ExtiInit();

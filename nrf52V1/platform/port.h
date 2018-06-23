@@ -2,11 +2,11 @@
 #define _PORT_H
 
 #include "port_config.h"
-//#include "usbd_cdc_if.h"	TODO: implement usbd_cdc
 #include "iassert.h"
 #include "nrf_error.h"
 
 #define PORT_ASSERT(expr) IASSERT(expr)
+#define UNUSED(x) ((void)(x))
 
 char PROG_DESTINATION1; // should be defined in linker script
 char PROG_DESTINATION2;
@@ -16,8 +16,8 @@ char PROG_DESTINATION2;
 #define FLASH_BASE 1
 #define FLASH_BANK_SIZE 1
 
-
 #define PORT_Success NRF_SUCCESS
+
 
 // debug configuration
 #define DBG 1
@@ -57,6 +57,9 @@ void PORT_BatteryMeasure();
 
 // return last battery voltage in [mV]
 int PORT_BatteryVoltage();
+
+// USB data transmit
+uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len);
 
 // TIME
 
