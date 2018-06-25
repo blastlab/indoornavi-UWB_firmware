@@ -1,5 +1,6 @@
 #include "port.h"
 #include "nrf_drv_gpiote.h"
+#include "nrf_drv_wdt.h"
 
 void PORT_TimeInit();
 void PORT_GpioInit();
@@ -31,12 +32,23 @@ void PORT_GpioInit() {
 	nrf_gpio_pin_set(LED_BLE);
 }
 
-void PORT_WatchdogInit() {
+static nrf_drv_wdt_channel_id m_wdt_channel_id;
 
+void wdt_event_handler(void){ }
+
+void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t info) {
+    while(1);
+}
+
+void PORT_WatchdogInit() {
+	nrf_drv_wdt_config_t config = NRF_DRV_WDT_DEAFULT_CONFIG;
+	APP_ERROR_CHECK(nrf_drv_wdt_init(&config, wdt_event_handler));
+	APP_ERROR_CHECK(nrf_drv_wdt_channel_alloc(&m_wdt_channel_id));
+	nrf_drv_wdt_enable();
 }
 
 void PORT_WatchdogRefresh() {
-
+	nrf_drv_wdt_channel_feed(m_wdt_channel_id);
 }
 
 // turn led on

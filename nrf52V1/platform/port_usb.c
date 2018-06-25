@@ -18,12 +18,7 @@
 #define UART_TX_BUF_SIZE 		256	                 /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE 		256 	             /**< UART RX buffer size. */
 
-static volatile uint8_t RX_DATA[256];
-static volatile uint8_t RX_CNT;
-
-
-void uart_error_handle(app_uart_evt_t * p_event)
-{
+void uart_error_handle(app_uart_evt_t * p_event) {
     if (p_event->evt_type == APP_UART_COMMUNICATION_ERROR)
     {
         APP_ERROR_HANDLER(p_event->data.error_communication);
@@ -34,18 +29,13 @@ void uart_error_handle(app_uart_evt_t * p_event)
     }
     else if (p_event->evt_type == APP_UART_DATA_READY)
     {
-    	app_uart_get((uint8_t *)&RX_DATA[RX_CNT]);
-    	if(RX_DATA[RX_CNT++] == '\n') {
-    		TXT_Input((char *)RX_DATA, RX_CNT);
-    		memset((uint8_t*)&RX_DATA, 0, RX_CNT);
-    		RX_CNT = 0;
-    	}
+    	uint8_t byte;
+    	app_uart_get(&byte);
+    	TXT_Input((char *)&byte, 1);
     }
 }
 
 void PORT_UsbUartInit(void) {
-	memset((uint8_t *)&RX_DATA, 0, sizeof(RX_DATA));
-	RX_CNT = 0;
 	uint32_t err_code;
 	const app_uart_comm_params_t comm_params = {
 			.rx_pin_no = USB_UART_RX_PIN,
