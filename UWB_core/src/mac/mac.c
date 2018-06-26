@@ -185,14 +185,14 @@ void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
 	}
 
 	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - slot_time);
-	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, TIM2->CNT, (int)sync.neightbour[0].drift[0]);
+	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTick(), (int)sync.neightbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
   decaIrqStatus_t en = decamutexon();
   int64_t local_time = TRANSCEIVER_GetTime();
-  uint32_t slot_time = TIM2->CNT;
+  uint32_t slot_time = PORT_SlotTimerTick();
   mac.slot_time_offset = SYNC_GlobTime(local_time);
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
