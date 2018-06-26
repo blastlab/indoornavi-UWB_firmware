@@ -66,8 +66,11 @@ unsigned int PORT_TickHr();
 // convert high resolution clock time units to us
 unsigned int PORT_TickHrToUs(unsigned int delta);
 
-// update slot timer for one iteration
-void PORT_SlotTimerSetUsLeft(uint32 us);
+// return current slot timer tick counter
+uint32_t PORT_SlotTimerTick();
+
+// extend slot timer period for one iteration by delta_us
+void PORT_SlotTimerSetUsOffset(int32 delta_us);
 
 // set slot timer period
 void PORT_SetSlotTimerPeriodUs(uint32 us);

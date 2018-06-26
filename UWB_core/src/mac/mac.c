@@ -8,7 +8,7 @@ mac_instance_t mac;
 
 mac_buf_t *_MAC_BufGetOldestToTx();
 void _MAC_BufferReset(mac_buf_t *buf);
-int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time);
+int MAC_TryTransmitFrameInSlot(int64_t glob_time);
 
 void MAC_TxCb(const dwt_cb_data_t *data);
 void MAC_RxCb(const dwt_cb_data_t *data);
@@ -43,7 +43,6 @@ void MAC_Init() {
 
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
-  PORT_SlotTimerSetUsLeft(100);
 
   // turn on receiver after full low level initialization
   // especially after connecting callbacks
@@ -74,7 +73,7 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
 
   // try send next data frame
   if (ret == 0) {
-    ret = MAC_TryTransmitFrameInSlot(tx_ts);
+    ret = MAC_TryTransmitFrameInSlot(SYNC_GlobTime(tx_ts));
   }
 
   // or turn on default rx mode
@@ -168,17 +167,36 @@ void MAC_BeaconTimerReset()
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
-int64_t MAC_ToSlotsTime(int64_t transceiver_raw_time) {
-  int super_time = (transceiver_raw_time - mac.slot_time_offset) %
-                   (settings.mac.slots_sum_time_us * UUS_TO_DWT_TIME);
-  return super_time;
+int MAC_ToSlotsTime(int64_t glob_time) {
+	int64_t slots_period_dtu = (int64_t)settings.mac.slots_sum_time_us / (DWT_TIME_UNITS * 1e6f); // multiple in two lines (conversion 32-64B)
+	int slot_time_us = (glob_time % slots_period_dtu) * (DWT_TIME_UNITS * 1e6f);
+	return slot_time_us;
 }
 
+// update MAC slot timer to be in time with global time
+void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
+	extern sync_instance_t sync;
+	int64_t glob_time = SYNC_GlobTime(local_time);
+	int slot_time_us = MAC_ToSlotsTime(glob_time);
+	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
+
+	if (time_to_your_slot_us <= 0) {
+	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
+	}
+
+	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - slot_time);
+	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTick(), (int)sync.neightbour[0].drift[0]);
+}
+
+// Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
-  int64_t time = TRANSCEIVER_GetTime();
-  mac.slot_time_offset = time;
-  MAC_TryTransmitFrameInSlot(time);
-  // dwt_rxenable(DWT_START_RX_IMMEDIATE);
+  decaIrqStatus_t en = decamutexon();
+  int64_t local_time = TRANSCEIVER_GetTime();
+  uint32_t slot_time = PORT_SlotTimerTick();
+  mac.slot_time_offset = SYNC_GlobTime(local_time);
+  MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
+  decamutexoff(en);
+  MAC_UpdateSlotTimer(slot_time, local_time);
 }
 
 // private function, called when buf should be send now as a frame in slot
@@ -203,16 +221,17 @@ void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
       buf->state = FREE;
     }
     // try send next frame after tx fail
-    MAC_TryTransmitFrameInSlot(TRANSCEIVER_GetTime());
+    int64_t glob_time = SYNC_GlobTime(TRANSCEIVER_GetTime());
+    MAC_TryTransmitFrameInSlot(glob_time);
     LOG_WRN("Tx err");
   }
 }
 
 // calc slot time and send try send packet if it is yours time
-int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
+int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
-  int64_t slot_time = MAC_ToSlotsTime(transceiver_raw_time);
-  if (0 < slot_time || slot_time > settings.mac.slot_time_us) {
+  int64_t slot_time = MAC_ToSlotsTime(glob_time);
+  if (settings.mac.slot_time_us < slot_time || slot_time < 0) {
     return 0;
   }
 
@@ -227,7 +246,7 @@ int MAC_TryTransmitFrameInSlot(int64_t transceiver_raw_time) {
     return 0;
   }
 
-  if (transceiver_raw_time == mac.slot_time_offset) {
+  if (SYNC_GlobTime(glob_time) == mac.slot_time_offset) {
     dwt_rxreset();
   }
   // when you have enouth time to send next message, then do it
