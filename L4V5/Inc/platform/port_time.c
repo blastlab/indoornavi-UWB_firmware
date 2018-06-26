@@ -68,10 +68,17 @@ unsigned int PORT_TickHrToUs(unsigned int delta) {
 	return (uint64_t)(delta) * 1e6 / HAL_RCC_GetSysClockFreq();
  }
 
-// update slot timer for one iteration, @us is us to the next IT
-void PORT_SlotTimerSetUsLeft(uint32 us) {
-  if (us > 50 && LL_TIM_GetCounter(PTIM_SLOT) > 50) {
-	  LL_TIM_SetCounter(PTIM_SLOT, us);
+// return current slot timer tick counter
+uint32_t PORT_SlotTimerTick() {
+	return LL_TIM_GetCounter(PTIM_SLOT);
+}
+
+// extend slot timer period for one iteration by delta_us
+void PORT_SlotTimerSetUsOffset(int32 delta_us) {
+  // change value only if you have enough time to do that
+  if (LL_TIM_GetCounter(PTIM_SLOT) > 50 - delta_us) {
+	  uint32_t tim_cnt = LL_TIM_GetCounter(PTIM_SLOT);
+	  LL_TIM_SetCounter(PTIM_SLOT, tim_cnt + delta_us);
   }
 }
 

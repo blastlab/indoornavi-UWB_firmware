@@ -43,7 +43,6 @@ void MAC_Init() {
 
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
-  PORT_SlotTimerSetUsLeft(settings.mac.slots_sum_time_us);
 
   // turn on receiver after full low level initialization
   // especially after connecting callbacks
@@ -185,21 +184,19 @@ void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
 	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
 	}
 
-	PORT_SlotTimerSetUsLeft(time_to_your_slot_us);
-
-	// debug:
+	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - slot_time);
 	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, TIM2->CNT, (int)sync.neightbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
   decaIrqStatus_t en = decamutexon();
-  int64_t time = TRANSCEIVER_GetTime();
+  int64_t local_time = TRANSCEIVER_GetTime();
   uint32_t slot_time = TIM2->CNT;
-  mac.slot_time_offset = SYNC_GlobTime(time);
+  mac.slot_time_offset = SYNC_GlobTime(local_time);
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
-  MAC_UpdateSlotTimer(slot_time, time);
+  MAC_UpdateSlotTimer(slot_time, local_time);
 }
 
 // private function, called when buf should be send now as a frame in slot

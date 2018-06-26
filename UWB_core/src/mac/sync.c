@@ -145,9 +145,9 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
   drift = SYNC_TrimDrift(drift); // convert to -20B:+20B value
   int dt_us = neig_dt/64e9*1e6;
   SYNC_TRACE("SYNC %X %12d %7d %9X %10u %X %d", neig->addr, (int)drift,
-		  (int)(1e8*neig->time_coeffP[0]), (uint32_t)(neig->time_offset),
-		  dt_us, (int)(SYNC_GlobTimeNeig(neig, loc_time)-loc_time),
-		  (int)(1e8*neig->time_coeffP_slow));
+	(int)(1e8*neig->time_coeffP[0]), (uint32_t)(neig->time_offset),
+	dt_us, (int)(SYNC_GlobTimeNeig(neig, loc_time)-loc_time),
+	(int)(1e8*neig->time_coeffP_slow));
   SYNC_TIME_DUMP("SYNC %X%08X %X%08X %d %d",
 	(int)(loc_time>>32), (uint32_t)loc_time,
 	(int)(ext_time>>32), (uint32_t)ext_time,
