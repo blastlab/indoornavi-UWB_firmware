@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define HARDWARE_MAJOR 0
-#define HARDWARE_MINOR 1
+#define __H_MAJOR__ 0
+#define __H_MINOR__ 1
 #define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))
 #define HARDWARE_OTP_ADDR 0x1FFF7000
 

@@ -70,6 +70,7 @@ local.properties
 
 # PyDev specific (Python IDE for Eclipse)
 *.pydevproject
+*codeCounter.py
 
 
 # Java annotation processor (APT)
@@ -97,3 +98,4 @@ local.properties
 .cache-main
 .scala_dependencies
 .worksheet
+*.vscode

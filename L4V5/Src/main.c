@@ -83,15 +83,14 @@ static void MX_DMA_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_CRC_Init(void);
-static void MX_TIM6_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_LPTIM1_Init(void);
 static void MX_WWDG_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_AES_Init(void);
-static void MX_LPTIM2_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI3_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_NVIC_Init(void);
 
 /* USER CODE BEGIN PFP */
@@ -143,16 +142,15 @@ int main(void)
   MX_DMA_Init();
   MX_SPI1_Init();
   MX_CRC_Init();
-  MX_TIM6_Init();
   MX_USART1_UART_Init();
   MX_LPTIM1_Init();
   MX_USB_DEVICE_Init();
   MX_FATFS_Init();
   MX_ADC1_Init();
   MX_AES_Init();
-  MX_LPTIM2_Init();
   MX_SPI2_Init();
   MX_SPI3_Init();
+  MX_TIM2_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
@@ -186,17 +184,16 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI
-                              |RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_MSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_LSI
+                              |RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+  RCC_OscInitStruct.PLL.PLLM = 1;
   RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
@@ -221,11 +218,10 @@ void SystemClock_Config(void)
   }
 
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_USART1
-                              |RCC_PERIPHCLK_LPTIM1|RCC_PERIPHCLK_LPTIM2
-                              |RCC_PERIPHCLK_USB|RCC_PERIPHCLK_ADC;
+                              |RCC_PERIPHCLK_LPTIM1|RCC_PERIPHCLK_USB
+                              |RCC_PERIPHCLK_ADC;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
   PeriphClkInit.Lptim1ClockSelection = RCC_LPTIM1CLKSOURCE_LSI;
-  PeriphClkInit.Lptim2ClockSelection = RCC_LPTIM2CLKSOURCE_HSI;
   PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLSAI1;
   PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
   PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
@@ -272,9 +268,6 @@ static void MX_NVIC_Init(void)
   /* LPTIM1_IRQn interrupt configuration */
   NVIC_SetPriority(LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(LPTIM1_IRQn);
-  /* LPTIM2_IRQn interrupt configuration */
-  NVIC_SetPriority(LPTIM2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
-  NVIC_EnableIRQ(LPTIM2_IRQn);
 }
 
 /* ADC1 init function */
@@ -363,29 +356,6 @@ static void MX_LPTIM1_Init(void)
   LL_LPTIM_SetInput1Src(LPTIM1, LL_LPTIM_INPUT1_SRC_GPIO);
 
   LL_LPTIM_SetInput2Src(LPTIM1, LL_LPTIM_INPUT2_SRC_GPIO);
-
-}
-
-/* LPTIM2 init function */
-static void MX_LPTIM2_Init(void)
-{
-
-  /* Peripheral clock enable */
-  LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_LPTIM2);
-
-  LL_LPTIM_SetClockSource(LPTIM2, LL_LPTIM_CLK_SOURCE_INTERNAL);
-
-  LL_LPTIM_SetPrescaler(LPTIM2, LL_LPTIM_PRESCALER_DIV64);
-
-  LL_LPTIM_SetPolarity(LPTIM2, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
-
-  LL_LPTIM_SetUpdateMode(LPTIM2, LL_LPTIM_UPDATE_MODE_IMMEDIATE);
-
-  LL_LPTIM_SetCounterMode(LPTIM2, LL_LPTIM_COUNTER_MODE_INTERNAL);
-
-  LL_LPTIM_TrigSw(LPTIM2);
-
-  LL_LPTIM_SetInput1Src(LPTIM2, LL_LPTIM_INPUT1_SRC_GPIO);
 
 }
 
@@ -558,25 +528,32 @@ static void MX_SPI3_Init(void)
 
 }
 
-/* TIM6 init function */
-static void MX_TIM6_Init(void)
+/* TIM2 init function */
+static void MX_TIM2_Init(void)
 {
 
   LL_TIM_InitTypeDef TIM_InitStruct;
 
   /* Peripheral clock enable */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
+
+  /* TIM2 interrupt Init */
+  NVIC_SetPriority(TIM2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(TIM2_IRQn);
 
   TIM_InitStruct.Prescaler = 0;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
   TIM_InitStruct.Autoreload = 0;
-  LL_TIM_Init(TIM6, &TIM_InitStruct);
+  TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+  LL_TIM_Init(TIM2, &TIM_InitStruct);
 
-  LL_TIM_DisableARRPreload(TIM6);
+  LL_TIM_DisableARRPreload(TIM2);
 
-  LL_TIM_SetTriggerOutput(TIM6, LL_TIM_TRGO_RESET);
+  LL_TIM_SetClockSource(TIM2, LL_TIM_CLOCKSOURCE_INTERNAL);
 
-  LL_TIM_DisableMasterSlaveMode(TIM6);
+  LL_TIM_SetTriggerOutput(TIM2, LL_TIM_TRGO_RESET);
+
+  LL_TIM_DisableMasterSlaveMode(TIM2);
 
 }
 

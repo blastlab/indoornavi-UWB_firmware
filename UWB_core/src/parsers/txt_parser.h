@@ -3,6 +3,7 @@
 
 #include <ctype.h> // tolower
 
+#include "tools.h"
 #include "../mac/carry.h"
 #include "bin_const.h"
 #include "bin_struct.h"

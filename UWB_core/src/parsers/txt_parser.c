@@ -92,14 +92,14 @@ void TXT_Parse(const txt_buf_t *buf) {
 // take input to data parser, ignore \r and split by \n
 void TXT_Input(const char *str, int len) {
 	while(len-- > 0) {
-		*txt_buf_wptr = *str;
+		txt_buf_wptr[0] = str[0];
 		// new command
-		if(*str == '\n') {
-			*txt_buf_wptr = 0;
+		if(str[0] == '\n') {
+			txt_buf_wptr[0] = 0;
 			++txt_buf.cnt;
 		}
 		// not ignored char
-		if(*str != '\r'){
+		if(str[0] != '\r'){
 			++txt_buf_wptr;
 			if(txt_buf_wptr >= txt_buf.end) {
 				txt_buf_wptr = (char*)txt_buf.start;
@@ -114,5 +114,9 @@ void TXT_Control() {
 	if(txt_buf.cnt > 0){
 		TXT_Parse(&txt_buf);
 		--txt_buf.cnt;
+		while(txt_buf.cmd[0] != 0) {
+			INCREMENT_CYCLE(txt_buf.cmd, txt_buf.start, txt_buf.end);
+		}
+		INCREMENT_CYCLE(txt_buf.cmd, txt_buf.start, txt_buf.end);
 	}
 }

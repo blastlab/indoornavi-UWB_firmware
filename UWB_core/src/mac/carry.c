@@ -77,33 +77,48 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target) {
 }
 
 void CARRY_ParseMessage(mac_buf_t *buf) {
-  FC_CARRY_s *pcarry = (FC_CARRY_s *)&buf->frame.data[0];
-  uint8_t hops_num = pcarry->flag_hops & CARRY_HOPS_NUM_MASK;
-  uint8_t target = pcarry->flag_hops & CARRY_FLAG_TARGET_MASK;
-
-  bool toSink = (target == CARRY_FLAG_TARGET_SERVER) ||
-                (target == CARRY_FLAG_TARGET_SINK);
-  bool toMe =
-      target == CARRY_FLAG_TARGET_DEV && pcarry->hops[0] == settings.mac.addr;
-  toMe |= target == CARRY_FLAG_TARGET_SINK && settings.mac.role == RTLS_SINK;
-  toMe |= (pcarry->flag_hops & CARRY_FLAG_REROUTE) &&
-          pcarry->hops[0] == settings.mac.addr;
-
-  uint8_t *dataPointer =
-      (uint8_t *)&pcarry->hops[0] + hops_num * sizeof(pcarry->hops[0]);
-  uint8_t dataSize = buf->buf + buf->rx_len - dataPointer;
-
-  if (toMe) {
-    prot_packet_info_t info;
+  prot_packet_info_t info;
+  uint8_t *dataPointer;
+  uint8_t dataSize;
+  bool toSink, toMe, toServer, ackReq;
+  // broadcast without carry header
+  if (buf->frame.dst == ADDR_BROADCAST) {
+    dataPointer = &buf->frame.data[0];
+    ackReq = false;
+    toSink = toServer = false;
+    toMe = true;
+    info.direct_src = buf->frame.src;
+  } else {
+    // or standard data message with carry header
+    FC_CARRY_s *pcarry = (FC_CARRY_s *)&buf->frame.data[0];
+    uint8_t hops_num = pcarry->flag_hops & CARRY_HOPS_NUM_MASK;
+    uint8_t target = pcarry->flag_hops & CARRY_FLAG_TARGET_MASK;
+    dataPointer = (uint8_t *)&pcarry->hops[0];
+    dataPointer += hops_num * sizeof(pcarry->hops[0]);
+    toSink = (target == CARRY_FLAG_TARGET_SERVER);
+    toSink |= (target == CARRY_FLAG_TARGET_SINK);
+    toMe = target == CARRY_FLAG_TARGET_DEV && hops_num == 0;
+    toMe |=
+        target == CARRY_FLAG_TARGET_DEV && pcarry->hops[0] == settings.mac.addr;
+    toMe |= target == CARRY_FLAG_TARGET_SINK && settings.mac.role == RTLS_SINK;
+    toMe |= (pcarry->flag_hops & CARRY_FLAG_REROUTE) &&
+            pcarry->hops[0] == settings.mac.addr;
+    toServer = target == CARRY_FLAG_TARGET_SERVER;
+    ackReq = pcarry->flag_hops & CARRY_FLAG_ACK_REQ;
     info.carry = (struct FC_CARRY_s *)pcarry;
     info.direct_src = pcarry->src_addr;
-    BIN_Parse(buf, &info, dataSize);
   }
-  if (target == CARRY_FLAG_TARGET_SERVER && carry.isConnectedToServer) {
-    LOG_Bin(buf, dataSize);
+  dataSize = buf->buf + buf->rx_len - dataPointer;
+
+  if (toMe) {
+    BIN_Parse(buf, &info, dataSize);
+  } else if (toServer && carry.isConnectedToServer) {
+    LOG_Bin(&buf->frame.data[0], buf->rx_len - MAC_HEAD_LENGTH);
   } else if (toSink) {
     MAC_FillFrameTo(buf, carry.toSinkId);
     buf->dPtr = dataPointer + dataSize;
-    MAC_Send(buf, pcarry->flag_hops & CARRY_FLAG_ACK_REQ);
+    MAC_Send(buf, ackReq);
+  } else {
+    IASSERT(0);
   }
 }

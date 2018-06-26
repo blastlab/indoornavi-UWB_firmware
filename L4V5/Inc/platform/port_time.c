@@ -8,7 +8,7 @@
 #include "port.h"
 
 #define LPTIM_SLEEP LPTIM1
-#define LPTIM_SLOT LPTIM2
+#define PTIM_SLOT TIM2
 
 void PORT_TimeInit() {
   // sleep timer
@@ -19,11 +19,13 @@ void PORT_TimeInit() {
   LL_LPTIM_Enable(LPTIM_SLEEP);
 
   // slot timer
-  // f = 16MHz / 64 = 250kHz
-  // T = 4 us
-  LL_LPTIM_EnableIT_ARRM(LPTIM_SLOT);
-  LL_LPTIM_SetAutoReload(LPTIM_SLOT, 1000);
-  LL_LPTIM_Enable(LPTIM_SLOT);
+  // f = 40 MHz / 40 = 1MHz
+  // T = 1 us
+  // Tmax = more than 1h but only half of that is usable
+  LL_TIM_SetPrescaler(PTIM_SLOT, 40);
+  LL_TIM_SetAutoReload(PTIM_SLOT, UINT32_MAX);
+  LL_TIM_SetCounterMode(PTIM_SLOT, LL_TIM_COUNTERMODE_DOWN);
+  LL_TIM_EnableIT_UPDATE(PTIM_SLOT);
 
   // HR timer
   // enable Debug Timer for rtls processing time measurement
@@ -47,7 +49,7 @@ void PORT_TimeInit() {
 
 void PORT_TimeStartTimers() {
   LL_LPTIM_StartCounter(LPTIM_SLEEP, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
-  LL_LPTIM_StartCounter(LPTIM_SLOT, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
+  LL_TIM_EnableCounter(PTIM_SLOT);
 }
 
 void PORT_SleepMs(unsigned int time_ms) {
@@ -60,24 +62,28 @@ void PORT_SleepMs(unsigned int time_ms) {
 unsigned int PORT_TickMs() { return HAL_GetTick(); }
 
 // get high resosolution clock tick
-
 unsigned int PORT_TickHr() { return DWT->CYCCNT; }
 
 unsigned int PORT_TickHrToUs(unsigned int delta) {
 	return (uint64_t)(delta) * 1e6 / HAL_RCC_GetSysClockFreq();
  }
 
-// update slot timer for one iteration, @us is us to the next IT
-void PORT_SlotTimerSetUsLeft(uint32 us) {
-  int delta =
-      LL_LPTIM_GetAutoReload(LPTIM_SLOT) - LL_LPTIM_GetCounter(LPTIM_SLOT);
-  if (us > 8 && delta > 5) {
-    LPTIM2->CNT = us / 4;
+// return current slot timer tick counter
+uint32_t PORT_SlotTimerTick() {
+	return LL_TIM_GetCounter(PTIM_SLOT);
+}
+
+// extend slot timer period for one iteration by delta_us
+void PORT_SlotTimerSetUsOffset(int32 delta_us) {
+  // change value only if you have enough time to do that
+  if (LL_TIM_GetCounter(PTIM_SLOT) > 50 - delta_us) {
+	  uint32_t tim_cnt = LL_TIM_GetCounter(PTIM_SLOT);
+	  LL_TIM_SetCounter(PTIM_SLOT, tim_cnt + delta_us);
   }
 }
 
 // set slot timer period
 void PORT_SetSlotTimerPeriodUs(uint32 us) {
-  // 1 tick = 4 us
-  LL_LPTIM_SetAutoReload(LPTIM2, us / 4);
+  // 1 tick = 1 us
+  LL_TIM_SetAutoReload(PTIM_SLOT, us);
 }

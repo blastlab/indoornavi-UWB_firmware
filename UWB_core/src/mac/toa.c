@@ -3,7 +3,10 @@
 // private function from calib file
 int _TOA_GetRangeBias(uint8 chan, int range, uint8 prf, int smartTxPower);
 
-void TOA_State(toa_core_t *toa, toa_state_t state) { toa->state = state; }
+void TOA_State(toa_core_t *toa, toa_state_t state) {
+	toa->prev_state = toa->state;
+	toa->state = state;
+}
 
 // add new measure to measures table
 void TOA_AddMeasure(dev_addr_t addr, int distance) {
@@ -27,8 +30,8 @@ int TOA_FindAddrIndexInResp(toa_core_t *toa, dev_addr_t addr) {
 int TOA_CalcTofDwTu(toa_core_t *toa, int resp_ind) {
   const uint32_t TsErr = 0;
   if (toa->TsPollTx == TsErr || toa->TsPollRx == TsErr ||
-      toa->TsRespTx == TsErr || toa->TsRespRx[resp_ind] ||
-      toa->TsFinTx == TsErr || toa->TsFinRx) {
+      toa->TsRespTx == TsErr || toa->TsRespRx[resp_ind] == TsErr ||
+      toa->TsFinTx == TsErr || toa->TsFinRx == TsErr) {
     return 0;
   }
   float Ra, Rb, Da, Db, den, t;
@@ -37,7 +40,7 @@ int TOA_CalcTofDwTu(toa_core_t *toa, int resp_ind) {
   Da = (float)((uint32_t)(toa->TsFinTx - toa->TsRespRx[resp_ind]));
   Db = (float)((uint32_t)(toa->TsRespTx - toa->TsPollRx));
   den = (Ra + Rb + Da + Db);
-  t = ((Ra * Rb - Da * Db) / den * DWT_TIME_UNITS);
+  t = ((Ra * Rb - Da * Db) / den);
   return t;
 }
 
