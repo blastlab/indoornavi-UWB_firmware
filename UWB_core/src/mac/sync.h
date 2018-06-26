@@ -12,7 +12,7 @@
 
 #define SYNC_ASSERT(expr) IASSERT(expr)
 
-#define SYNC_TRACE_ENABLED 1
+#define SYNC_TRACE_ENABLED 0
 #if SYNC_TRACE_ENABLED
 #define SYNC_TRACE(...) LOG_DBG(__VA_ARGS__)
 #else
@@ -20,7 +20,15 @@
 #define SYNC_TRACE(...) ALL_UNUSED(__VA_ARGS__)
 #endif
 
-#define SYNC_TRACE_TOA_ENABLED 1
+#define SYNC_TIME_DUMP_ENABLED 0
+#if SYNC_TIME_DUMP_ENABLED
+#define SYNC_TIME_DUMP(...) LOG_DBG(__VA_ARGS__)
+#else
+#include "tools.h"
+#define SYNC_TIME_DUMP(...) ALL_UNUSED(__VA_ARGS__)
+#endif
+
+#define SYNC_TRACE_TOA_ENABLED 0
 #if SYNC_TRACE_TOA_ENABLED
 #define SYNC_TRACE_TOA(...) LOG_DBG(__VA_ARGS__)
 #else
@@ -58,7 +66,7 @@ typedef struct {
   uint8_t tree_level, sync_ready;
   int64_t time_offset, update_ts;
   int64_t drift[3];
-  float time_coeffP[3], time_coeffP_raw[3];
+  float time_coeffP[3], time_coeffP_raw[3], time_coeffP_slow;
   float tof_dw;
 } sync_neightbour_t;
 
@@ -72,6 +80,7 @@ typedef struct {
 
 // Initialize Sync module
 void SYNC_Init();
+int64_t SYNC_GlobTime(int64_t dw_ts);
 
 // Search for neightbour with a given addr. When such device isn't in table
 // then initialize new if there is enouth memory for it

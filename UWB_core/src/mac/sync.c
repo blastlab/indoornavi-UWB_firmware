@@ -57,11 +57,15 @@ void SYNC_Init() {
   tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
 }
 
-int64_t SYNC_GlobTime(sync_neightbour_t *neig, int64_t dw_ts) {
+int64_t SYNC_GlobTimeNeig(sync_neightbour_t *neig, int64_t dw_ts) {
   int64_t dt = (dw_ts - neig->update_ts) & MASK_40BIT;
   int64_t res = dw_ts + neig->time_offset;
   res += (int64_t)(neig->time_coeffP[0] * dt);
   return res & MASK_40BIT;
+}
+
+int64_t SYNC_GlobTime(int64_t dw_ts) {
+	return SYNC_GlobTimeNeig(&sync.local_obj, dw_ts);
 }
 
 void SYNC_InitNeightbour(sync_neightbour_t *neig, dev_addr_t addr,
@@ -111,12 +115,8 @@ float SYNC_CalcTimeCoeff(sync_neightbour_t *neig) {
   float *Y = neig->time_coeffP;
   float out = Y[1] + K * (X[0] - X[1]) + 0.1f * X[0];
 
-
-  float a = 0.01f;
-  float thres = 0.0001;
-  out += neig->time_coeffP_slow;
-  neig->time_coeffP_slow = a*out + (1.0f-a)*neig->time_coeffP_slow;
-  neig->time_coeffP_slow = thres * SYNC_Smooth(neig->time_coeffP_slow, thres);
+  neig->time_coeffP_slow += X[0];
+  out += neig->time_coeffP_slow*0.001;
 
   return SYNC_Smooth(out, 1.0f);
 }
@@ -144,12 +144,14 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
   drift -= loc_time; // apply local time flow
   drift = SYNC_TrimDrift(drift); // convert to -20B:+20B value
   int dt_us = neig_dt/64e9*1e6;
-  SYNC_TRACE("SYNC %X %12d %7d %9X %10u %d", neig->addr, (int)drift, (int)(1e8*neig->time_coeffP[0]),
-		  (uint32_t)(neig->time_offset), dt_us, neig->sync_ready);
-//  SYNC_TRACE("SYNC %X%08X %X%08X %d %d",
-//	(int)(loc_time>>32), (uint32_t)loc_time,
-//	(int)(ext_time>>32), (uint32_t)ext_time,
-//	(int)neig->tof_dw, dt_us);
+  SYNC_TRACE("SYNC %X %12d %7d %9X %10u %X %d", neig->addr, (int)drift,
+		  (int)(1e8*neig->time_coeffP[0]), (uint32_t)(neig->time_offset),
+		  dt_us, (int)(SYNC_GlobTimeNeig(neig, loc_time)-loc_time),
+		  (int)(1e8*neig->time_coeffP_slow));
+  SYNC_TIME_DUMP("SYNC %X%08X %X%08X %d %d",
+	(int)(loc_time>>32), (uint32_t)loc_time,
+	(int)(ext_time>>32), (uint32_t)ext_time,
+	(int)neig->tof_dw, dt_us);
 
   // move data in arrays
   MOVE_ARRAY_ELEM(neig->drift, 2);
@@ -170,6 +172,7 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
 	  // neig->timeDriftSum += drift;
   } else {
 	  neig->time_offset += drift;
+	  neig->time_coeffP_slow = 0;
 	  neig->sync_ready = 0;
 	  neig->drift[0] = 0;
 	  neig->time_coeffP[0] = 0.0f;
@@ -177,38 +180,30 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
   }
 }
 
-// only for UpdateLocalTimeParams
-int64_t MAC_ToSlotsTime(int64_t transceiver_raw_time);
-
 void SYNC_UpdateLocalTimeParams(uint64_t transceiver_raw_time) {
-  // todo: update SYNC hr time
-  // try update local
-  if (transceiver_raw_time - sync.local_obj.update_ts > 20 * UUS_TO_DWT_TIME) {
-    float sum_P = 0;
-    int cnt = 0;
-    int64_t offset = 0;
-    // iterate for each neighbour with nonzero update_ts
-    for (int i = 0; i < SYNC_MAC_NEIGHTBOURS; ++i) {
-      if (sync.neightbour[i].update_ts && sync.neightbour[i].sync_ready) {
-        sum_P += sync.neightbour[i].time_coeffP[0];
-        offset += sync.neightbour[i].time_offset; // 63b / 40b = 23b
-        ++cnt;
-      }
-    }
-    SYNC_UpdateNeightbour(&sync.local_obj, offset / cnt,
-                          sync.local_obj.time_offset, 0);
-    float a = 0.5;
-    sync.local_obj.time_coeffP[0] =
-        a * sync.local_obj.time_coeffP[0] + (1.0f - a) * sum_P / cnt;
-  }
-  // update MAC slot timer
-  int64_t slot_time = MAC_ToSlotsTime(transceiver_raw_time);
-  int left_time =
-      settings.mac.slot_number * settings.mac.slot_time_us - slot_time;
-  PORT_SlotTimerSetUsLeft(left_time * DWT_TIME_UNITS * 1.0e6f);
+	float sum_P = 0;
+	int cnt = 0;
+	int64_t offset = 0;
+
+	// iterate for each neighbour with nonzero update_ts
+	for (int i = 0; i < SYNC_MAC_NEIGHTBOURS; ++i) {
+	  if (sync.neightbour[i].update_ts && sync.neightbour[i].sync_ready) {
+		sum_P += sync.neightbour[i].time_coeffP[0];
+		offset += sync.neightbour[i].time_offset; // 63b / 40b = 23b
+		++cnt;
+	  }
+	}
+
+	// when there is some synchronized neighbour, apply their clock change rate
+	if(cnt != 0) {
+		int64_t dt = sync.local_obj.update_ts - transceiver_raw_time;
+		sync.local_obj.update_ts = transceiver_raw_time;
+		sync.local_obj.time_offset += dt * sync.local_obj.time_coeffP[0];
+		sync.local_obj.time_coeffP[0] = sum_P / cnt;
+	}
 }
 
-// complex syncronisation processing
+// complex synchronisation processing
 void SYNC_Update(sync_neightbour_t *neig, int64_t ext_time, int64_t loc_time,
                  int tof_dw) {
   SYNC_UpdateNeightbour(neig, ext_time, loc_time, tof_dw);
@@ -299,7 +294,7 @@ int SYNC_SendFinal() {
       .TsPollTx = sync.toa.TsPollTx,
   };
   // calc time offset
-  int64_t offset = SYNC_GlobTime(&sync.local_obj, TsFinTx);
+  int64_t offset = SYNC_GlobTimeNeig(&sync.local_obj, TsFinTx);
   offset = (offset - TsFinTx) & MASK_40BIT;
   TOA_Write40bValue(&packet.TsOffset[0], offset);
   // calc global time in place to keep 40B resolution
@@ -465,6 +460,7 @@ int SYNC_TxCb(int64_t TsDwTx) {
     ret = 1;
     break;
   case TOA_FIN_WAIT_TO_SEND:
+    TRANSCEIVER_DefaultRx();
     TOA_State(&sync.toa, TOA_FIN_SENT);
     sync.toa.TsFinTx = TsDwTx;
     int fin_us = (sync.toa.TsFinTx - sync.toa.TsPollTx) / UUS_TO_DWT_TIME;

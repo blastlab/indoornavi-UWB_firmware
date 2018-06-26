@@ -70,6 +70,7 @@ local.properties
 
 # PyDev specific (Python IDE for Eclipse)
 *.pydevproject
+*codeCounter.py
 
 
 # Java annotation processor (APT)

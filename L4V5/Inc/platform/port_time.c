@@ -24,6 +24,7 @@ void PORT_TimeInit() {
   // Tmax = more than 1h but only half of that is usable
   LL_TIM_SetPrescaler(PTIM_SLOT, 40);
   LL_TIM_SetAutoReload(PTIM_SLOT, UINT32_MAX);
+  LL_TIM_SetCounterMode(PTIM_SLOT, LL_TIM_COUNTERMODE_DOWN);
   LL_TIM_EnableIT_UPDATE(PTIM_SLOT);
 
   // HR timer
@@ -69,8 +70,7 @@ unsigned int PORT_TickHrToUs(unsigned int delta) {
 
 // update slot timer for one iteration, @us is us to the next IT
 void PORT_SlotTimerSetUsLeft(uint32 us) {
-  int delta = LL_TIM_GetAutoReload(PTIM_SLOT) - LL_TIM_GetCounter(PTIM_SLOT);
-  if (us > 5 && delta > 5) {
+  if (us > 50 && LL_TIM_GetCounter(PTIM_SLOT) > 50) {
 	  LL_TIM_SetCounter(PTIM_SLOT, us);
   }
 }

@@ -9,6 +9,15 @@
 #include "mac/mac_settings.h"
 #include "mac/sync.h"
 
+#define MAC_TRACE_ENABLED 1
+#if MAC_TRACE_ENABLED
+#define MAC_TRACE(...) LOG_DBG(__VA_ARGS__)
+#else
+#include "tools.h"
+#define MAC_TRACE(...) ALL_UNUSED(__VA_ARGS__)
+#endif
+
+
 // macro to find unreleased buffer at compilation time
 #define MAC_USAGE_BUF_START(name)                                              \
   mac_buf_t *#name = MAC_Buffer();                                             \
@@ -65,6 +74,9 @@ unsigned int MAC_BeaconTimerGetMs();
 
 // reset beacon timer after sending a beacon message
 void MAC_BeaconTimerReset();
+
+// convert global time in Dwt time units to slot time in us
+int MAC_ToSlotsTime(int64_t glob_time);
 
 // should be called at the beginning of your slot time
 void MAC_YourSlotIsr();

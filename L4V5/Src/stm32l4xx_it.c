@@ -263,10 +263,7 @@ void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
 	LL_TIM_ClearFlag_UPDATE(TIM2);
-	  LL_GPIO_TogglePin(LED_R1_GPIO_Port, LED_R1_Pin);
-	decaIrqStatus_t en = decamutexon();
 	MAC_YourSlotIsr();
-	decamutexoff(en);
   /* USER CODE END TIM2_IRQn 0 */
   /* USER CODE BEGIN TIM2_IRQn 1 */
 
