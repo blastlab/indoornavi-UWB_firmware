@@ -43,6 +43,25 @@ void PORT_TimeInit() {
     APP_ERROR_CHECK(nrf_drv_timer_init(&TIMER_SLOT, &timer_cfg, timer_slot_event_handler));
     nrf_drv_timer_extended_compare(
          &TIMER_SLOT, NRF_TIMER_CC_CHANNEL0, nrf_drv_timer_ms_to_ticks(&TIMER_SLOT, 100), NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+
+    // HR timer
+    // enable Debug Timer for rtls processing time measurement
+  #if defined(__CORTEX_M) && DBG
+    // Disable TRC
+    CoreDebug->DEMCR &= ~CoreDebug_DEMCR_TRCENA_Msk; // ~0x01000000;
+    // Enable TRC */
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // 0x01000000;
+    // Disable clock cycle counter
+    DWT->CTRL &= ~DWT_CTRL_CYCCNTENA_Msk; //~0x00000001;
+    // Enable  clock cycle counter
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk; // 0x00000001;
+    // Reset the clock cycle counter value */
+    DWT->CYCCNT = 0;
+    // 3 NO OPERATION instructions
+    __ASM volatile("NOP");
+    __ASM volatile("NOP");
+    __ASM volatile("NOP");
+  #endif
 }
 
 void PORT_TimeStartTimers() {
