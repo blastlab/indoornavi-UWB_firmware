@@ -10,7 +10,7 @@
 #include "nrf_gpio.h"
 
 // ==== SPI ====
-
+//#define SPI_LL
 #define SPI_INSTANCE  0 /**< SPI instance index. */
 static const nrf_drv_spi_t spi0 = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);
 
@@ -41,6 +41,7 @@ void PORT_SpiInit() {
 	APP_ERROR_CHECK(nrf_drv_spi_init(&spi0, &spi_config, NULL, NULL));
 }
 
+#ifdef SPI_LL
 #pragma GCC optimize("O3")
 static inline void spi_tx(uint32_t length, const uint8_t *buf) {
     APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi0, buf, length, NULL, 0));
@@ -50,6 +51,35 @@ static inline void spi_tx(uint32_t length, const uint8_t *buf) {
 static inline void spi_rx(uint32_t length, uint8_t *buf) {
     APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi0, NULL, 0, buf, length));
 }
+#else
+#include "nrf_drv_common.h"
+#pragma GCC optimize("O3")
+static inline void spi_tx(uint32_t length, const uint8_t *buf) {
+	IASSERT(nrf_drv_is_in_RAM(buf));
+	NRF_SPIM0->TXD.PTR = (uint32_t)buf;
+	NRF_SPIM0->TXD.MAXCNT = length;
+	NRF_SPIM0->RXD.PTR = (uint32_t)NULL;
+	NRF_SPIM0->RXD.MAXCNT = 0;
+	NRF_SPIM0->EVENTS_END = 0x0UL;
+	NRF_SPIM0->TXD.LIST = 0x0UL;
+	NRF_SPIM0->RXD.LIST = 0x0UL;
+	NRF_SPIM0->TASKS_START = 0x1UL;
+	while(NRF_SPIM0->EVENTS_END == 0x0UL);
+}
+#pragma GCC optimize("O3")
+static inline void spi_rx(uint32_t length, uint8_t *buf) {
+	IASSERT(nrf_drv_is_in_RAM(buf));
+	NRF_SPIM0->TXD.PTR = (uint32_t)NULL;
+	NRF_SPIM0->TXD.MAXCNT = 0;
+	NRF_SPIM0->RXD.PTR = (uint32_t)buf;
+	NRF_SPIM0->RXD.MAXCNT = length;
+	NRF_SPIM0->EVENTS_END = 0x0UL;
+	NRF_SPIM0->TXD.LIST = 0x0UL;
+	NRF_SPIM0->RXD.LIST = 0x0UL;
+	NRF_SPIM0->TASKS_START = 0x1UL;
+	while(NRF_SPIM0->EVENTS_END == 0x0UL);
+}
+#endif
 
 #pragma GCC optimize("O3")
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,

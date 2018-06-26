@@ -62,12 +62,10 @@ void UwbMain() {
   if(settings.mac.role == RTLS_DEFAULT) {
   	settings.mac.role = RTLS_SINK;
   }
-
   PORT_Init();
   MAC_Init();
   CARRY_Init(settings.mac.role == RTLS_SINK);
 //  FU_Init(settings.mac.role == RTLS_SINK);		// TODO: uncomment when FU implemented
-
 
   PORT_TimeStartTimers();
   SendTurnOnMessage();

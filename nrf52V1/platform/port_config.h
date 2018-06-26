@@ -23,10 +23,14 @@
 
 #define DW_RST_PIN			24
 #define DW_EXTI_IRQn 		19
+
 #define DW_SPI_SS_PIN		17
 #define DW_SPI_MISO_PIN		18
 #define DW_SPI_MOSI_PIN		20
 #define DW_SPI_SCK_PIN		16
+
+#define USB_UART_RX_PIN 	11
+#define USB_UART_TX_PIN 	5
 
 #define BOOTLOADER_MAGIC_NUMBER (0xBECA95)
 #define BOOTLOADER_MAGIC_REG 0 // ((uint32_t*)&RTC->BKP0R)

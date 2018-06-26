@@ -11,9 +11,6 @@
 #include "nrf_uart.h"
 #include "app_uart.h"
 
-#define USB_UART_RX_PIN 11
-#define USB_UART_TX_PIN 5
-
 #define MAX_TEST_DATA_BYTES     (15U)                /**< max number of test bytes to be used for tx and rx. */
 #define UART_TX_BUF_SIZE 		256	                 /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE 		256 	             /**< UART RX buffer size. */

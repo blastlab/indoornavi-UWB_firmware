@@ -22,13 +22,13 @@ void PORT_iassert_fun(const char *msg, int line) {
 	// disable all interrupts
 	// why to FPU_IRQn? It is the last IRQn for this processor
 	for(int i = 1; i <= FPU_IRQn; ++i) {
-		if(i == WDT_IRQn) continue;			// we do not want to turn off watchdog interrupts
+		if(i == WDT_IRQn || i == UARTE0_UART0_IRQn) continue;			// we do not want to turn off watchdog and UART interrupts
 		NVIC_DisableIRQ(i);
 	}
 
 	PORT_LedOn(LED_ERR);
 
-	#if NDBG
+	#if DBG == 0
 	NVIC_SystemReset();
 	#endif
 
