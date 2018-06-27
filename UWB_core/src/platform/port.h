@@ -1,119 +1,424 @@
+/**
+ * \file
+ * \brief Portable module, strictly hardware dependent.
+ * \author Karol Trzcimski
+ * \date 06-2018
+ *
+ * Each function from this module has to be implemented
+ * in current hardware project workspace.
+ * To fully port project you need to implement each function
+ * from this header and connect interrupts routines, especially:
+ *   - #dwt_isr
+ *   - #MAC_YourSlotIsr
+ *
+ */
+
+
 #ifndef _PORT_H
 #define _PORT_H
 
 #include "platform/port_config.h"
-#include "stm32l4xx_hal.h"
-#include "usbd_cdc_if.h"
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
-// debug configuration
+
+/**
+ * \brief This is used to set or reset debug mode
+ *
+ * Especially difference is during assertion.
+ * In debug mode assert lead to IC hang and in release mode to reset.
+ */
 #define DBG 1
 
-// extra initialization for port modules
+
+/**
+ * \brief Initialization for port modules
+ *
+ * Especially difference is during assertion.
+ * In debug mode assert lead to IC hang and in release mode to reset.
+ *
+ * \return void
+ */
 void PORT_Init();
 
-// assert routine
+
+/**
+ * \brief assert routine function.
+ *
+ * It is recommended to make implementation of this function
+ * depended from DBG flag. By default it should reset device
+ * in release mode (to improve system reliability) and hang
+ * device in debug mode (to highlight the issue).
+ * Moreover in both mode it is recommended to log assert function name
+ * and line.
+ *
+ * \param[in] msg is pointer to text message with assert function name
+ * \param[in] line of assert in code
+ * \return void
+ */
 void PORT_Iassert_fun(const char *msg, int line);
 
-// turn led on
+
+/**
+ * \brief Turn led on.
+ *
+ * From UWB_Core there is used LED_STAT and LED_ERR macros
+ * (defined in port_config.h file) to indicate current program state.
+ *
+ * \param[in] LED_x is hardware dependent numerical description of led.
+ *
+ * \return void
+ */
 void PORT_LedOn(int LED_x);
 
-// turrn led off
+
+/**
+ * \brief Turn led off.
+ *
+ * From UWB_Core there is used LED_STAT and LED_ERR macros
+ * (defined in port_config.h file) to indicate current program state.
+ *
+ * \param[in] LED_x is hardware dependent numerical description of led.
+ *
+ * \return void
+ */
 void PORT_LedOff(int LED_x);
 
-// reset dw 1000 device by polling RST pin down for at least 500us
+
+/**
+ * \brief Hard reset DW1000 device by RST pin.
+ *
+ * \note Keep RST pin down for at leas 500 microseconds.
+ *
+ * \return void
+ */
 void PORT_ResetTransceiver();
 
-// wake up DW1000 device by setting CS low at least 500 us
+
+/**
+ * \brief Wake up DW1000 device.
+ *
+ * It can be done by setting DW1000 CS pin low for at least
+ * 500 microseconds.
+ *
+ * \return void
+ */
 void PORT_WakeupTransceiver(void);
 
-// reset STM
+
+/**
+ * \brief Reset host microcontroler.
+ *
+ * Used especially after successful firmware upgrade to change
+ * working firmware. Also assert function can use it.
+ *
+ * \return void
+ */
 void PORT_Reboot();
 
-// turn on low power or stop mode
+
+/**
+ * \brief turn on low power or stop mode.
+ *
+ * Used especially after successful firmware upgrade to change
+ * working firmware.
+ *
+ * \return void
+ */
 void PORT_EnterStopMode();
 
-// start watchdog work
+
+/**
+ * \brief Start watchdog work
+ *
+ * Watchdog is refreshed in each iteration of main loop.
+ * Also in PORT_Sleep and PORT_FlashErase and PORT_FlashSave this
+ * function should be used.
+ *
+ * \return void
+ */
 void PORT_WatchdogInit();
 
-// refresh watchdog timer
+
+/**
+ * \brief Refresh watchdog timer
+ *
+ * Watchdog is refreshed in each iteration of main loop.
+ * Also in PORT_Sleep and PORT_FlashErase and PORT_FlashSave this
+ * function should be used.
+ *
+ * \return void
+ */
 void PORT_WatchdogRefresh();
 
-// measure current battery voltage
+
+/**
+ * \brief Start battery measurement process
+ *
+ * \return void
+ */
 void PORT_BatteryMeasure();
 
-// return last battery voltage in [mV]
+
+/**
+ * \brief Return last battery voltage in [mV]
+ *
+ * \return last battery voltage in [mV]
+ */
 int PORT_BatteryVoltage();
 
-// TIME
 
-// run timers when device is fully initialised
+// ========  TIME  ==========
+
+
+/**
+ * \brief run timers when device is fully initialized.
+ *
+ * Especially slot and sleep timer
+ *
+ * \return void
+ */
 void PORT_TimeStartTimers();
 
-// nop
+
+/**
+ * \brief Sleep and refresh watchdog.
+ *
+ * \param[in] time_ms time to sleep in milliseconds
+ *
+ * \return void
+ */
 void PORT_SleepMs(unsigned int time_ms);
 
-// get clock
+
+/**
+ * \brief Get current milliseconds timer counter value.
+ *
+ * \return current time in milliseconds
+ */
 unsigned int PORT_TickMs();
 
-// get high resolution clock - CPU tick counter
+
+/**
+ * \brief Get high resolution clock counter value.
+ *
+ * In Cortex DWT_CYCCNT counter can be used.
+ * This function is used only for generate user messages.
+ *
+ * \return high resolution clock counter value
+ */
 unsigned int PORT_TickHr();
 
-// convert high resolution clock time units to us
+
+/**
+* \brief convert high resolution clock time units to us
+*
+* \param[in] delta time difference in high resolution clock units
+*
+* \return time difference in microseconds
+*/
 unsigned int PORT_TickHrToUs(unsigned int delta);
 
-// return current slot timer tick counter
-uint32_t PORT_SlotTimerTick();
 
-// extend slot timer period for one iteration by delta_us
+/**
+* \brief return current slot timer tick counter in milliseconds
+*
+* It is used during slot timer calibration to save timestamp.
+* In systems when it is impossible to read slot timer counter value
+* it is possible to return always zero and in function
+* #PORT_SlotTimerSetUsOffset treat input parameters as an absolute value,
+* but in this form there will be degradation of precision especially
+* during heavy load.
+*
+* \return current slot timer tick counter in milliseconds
+*/
+uint32_t PORT_SlotTimerTickUs();
+
+
+/**
+* \brief return current slot timer tick counter in milliseconds
+*
+* It is used during slot timer calibration.
+* In systems when it is impossible to read slot timer counter value
+* it is possible to return always zero in function #PORT_SlotTimerTickUs
+* and in function and treat input parameters as an absolute value,
+* but in this form there will be degradation of precision especially
+* during heavy load.
+*
+* local slot timer value counter should be updated in form:
+* 	local_cnt += delta_us
+* In this function it should be checked if this offset is possible to realize
+* and if it doesn't impact on system reliability. Watch out about timer overflow
+* and underflow.
+*
+* \param[in] delta_us time difference between global and local slot timer value in microseconds
+*
+* \return void
+*/
 void PORT_SlotTimerSetUsOffset(int32 delta_us);
 
-// set slot timer period
+
+/**
+ * \brief set new slot timer period time
+ *
+ * \note watch out when new period is shorten than previous one.
+ *
+ * \param[in] us new period duration in microseconds
+ */
 void PORT_SetSlotTimerPeriodUs(uint32 us);
 
-// CRC
 
-// set inital value to the crc calculator
+// ========  CRC  ==========
+
+
+/**
+ * \brief set inital value to the crc calculator
+ *
+ * \note initial value for IndoorNavi is 0xFFFF
+ *
+ * \return void
+ */
 void PORT_CrcReset();
 
-// feed crc calculator with new data and return result
+
+/**
+ * \brief feed crc calculator with new data and return result
+ *
+ * \note return value should be automatically set as initial
+ *    value during next iteration.
+ */
 uint16_t PORT_CrcFeed(const void *data, int size);
 
-// MUTEX
 
-// get deca spi mutex
+// ========  MUTEX  ==========
+
+
+/**
+ * \brief enable deca mutex
+ *
+ * Disable #dwt_isr interrupt in host processor
+ *
+ * \return 0 if previous status of dwt_isr was disabled, 1 otherwise
+ */
 decaIrqStatus_t decamutexon(void);
 
-// release deca spi mutex
+
+/**
+ * \brief disable deca mutex
+ *
+ * Enable #dwt_isr interrupt in host processor
+ *
+ * \param[in] s is return value from #decamutexon() function
+ *
+ * \return void
+ */
 void decamutexoff(decaIrqStatus_t s);
 
-// SPI
 
-// set SPI speed below 3MHz when param is true or below 20MHz when false
+// ========  SPI  ==========
+
+
+/**
+ * \brief change decawave SPI master clock speed
+ *
+ * Set SPI speed below 20MHz if \p slow is false
+ * or below 3 MHz if \p slow is true
+ *
+ * \param[in] slow boolean value
+ */
 void PORT_SpiSpeedSlow(bool slow);
 
-// returns DWT_SUCCESS(0) for success or DWT_ERROR for error
+
+/**
+ * \brief send header and read response from DW1000 device
+ *
+ * \note this function is used very frequently and should be optimized for time
+ * \note SPI should work in half-duplex mode, so receiving is realized after transmiting header
+ *
+ * \param[in] headerLength to transmit in bytes
+ * \param[in] headerBuffer pointer to header data
+ * \param[in] readlength length of response in bytes
+ * \param[out] readBuffer pointer to response buffer
+ *
+ * \return 0 if success error code otherwise
+ */
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
                 uint32_t readlength, uint8_t *readBuffer);
 
-// returns DWT_SUCCESS(0) for success or DWT_ERROR for error
+
+/**
+ * \brief send header and write data to DW1000 device
+ *
+ * \note this function is used very frequently and should be optimized for time
+ *
+ * \param[in] headerLength to transmit in bytes
+ * \param[in] headerBuffer pointer to header data
+ * \param[in] bodylength length of data in bytes
+ * \param[in] bodyBuffer pointer to data buffer
+ *
+ * \return 0 if success error code otherwise
+ */
 int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
                uint32_t bodylength, const uint8_t *bodyBuffer);
 
-// FLASH
 
-// save value in reset-safe backup register
+// ========  FLASH  ==========
+
+
+/**
+ * \brief Save value in reset-safe backup register
+ *
+ * \note it doesn't need to save after power down
+ *
+ * \param[in] reg pointer to memory address
+ * \param[in] value to write into register
+ *
+ * \return void
+ */
 void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value);
 
-// read value from reset-safe backup register
+
+/**
+ * \brief Read value in reset-safe backup register
+ *
+ * \note it doesn't need to save after power down
+ *
+ * \param[in] reg pointer to memory address
+ *
+ * \return current value
+ */
 uint32_t PORT_BkpRegisterRead(uint32_t *reg);
 
-// clear flash pages before fill with new data
+
+/**
+ * \brief Erase memory in flash
+ *
+ * It is used before save new settings and during firmware upgrade
+ *
+ * \note watch about watchdog timeout
+ *
+ * \param[in] flash_addr start address of region to erase
+ * \param[in] length minimal length of memory region to erase
+ *
+ * \return 0 if success, error code otherwise
+ */
 int PORT_FlashErase(void *flash_addr, uint32_t length);
 
-// write new data to previously erased flash memory
+
+/**
+ * \brief Save data in flash
+ *
+ * It is used to save new settings and during firmware upgrade
+ *
+ * \note watch about watchdog timeout
+ *
+ * \param[in] destination start address of region to save in flash region
+ * \param[in] p_source is pointer to input data buffer
+ * \param[in] length minimal length of memory region to erase
+ *
+ * \return 0 if success, error code otherwise
+ */
 int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
 #endif

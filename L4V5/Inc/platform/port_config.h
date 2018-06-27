@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "stm32l4xx_hal.h"
+#include "usbd_cdc_if.h"
+
 #define __H_MAJOR__ 0
 #define __H_MINOR__ 1
 #define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))

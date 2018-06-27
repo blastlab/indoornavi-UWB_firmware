@@ -174,7 +174,7 @@ int MAC_ToSlotsTime(int64_t glob_time) {
 }
 
 // update MAC slot timer to be in time with global time
-void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
+void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	extern sync_instance_t sync;
 	int64_t glob_time = SYNC_GlobTime(local_time);
 	int slot_time_us = MAC_ToSlotsTime(glob_time);
@@ -184,15 +184,15 @@ void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
 	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
 	}
 
-	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - slot_time);
-	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTick(), (int)sync.neightbour[0].drift[0]);
+	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - loc_slot_time_us);
+	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTickUs(), (int)sync.neightbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
   decaIrqStatus_t en = decamutexon();
   int64_t local_time = TRANSCEIVER_GetTime();
-  uint32_t slot_time = PORT_SlotTimerTick();
+  uint32_t slot_time = PORT_SlotTimerTickUs();
   mac.slot_time_offset = SYNC_GlobTime(local_time);
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
