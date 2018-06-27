@@ -4,7 +4,7 @@
  *  Created on: 21.03.2018
  *      Author: KarolTrzcinski
  */
-#include "port.h"
+#include "platform/port.h"
 
 // save value in reset-safe backup register
 void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)

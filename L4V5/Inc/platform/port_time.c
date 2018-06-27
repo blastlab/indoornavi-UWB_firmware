@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 
 #define LPTIM_SLEEP LPTIM1
 #define PTIM_SLOT TIM2

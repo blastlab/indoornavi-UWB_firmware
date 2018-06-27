@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 
 // return 0 when IRQ is inactive, 1 otherwise
 ITStatus EXTI_GetITEnStatus(uint32_t IRQn) {

@@ -1,7 +1,7 @@
 #ifndef _PORT_H
 #define _PORT_H
 
-#include "port_config.h"
+#include "platform/port_config.h"
 #include "stm32l4xx_hal.h"
 #include "usbd_cdc_if.h"
 
