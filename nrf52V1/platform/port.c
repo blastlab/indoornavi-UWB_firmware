@@ -30,6 +30,7 @@ void PORT_GpioInit() {
 	nrf_gpio_pin_set(LED_ERR);
 	nrf_gpio_pin_set(LED_STAT);
 	nrf_gpio_pin_set(LED_BLE);
+	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
 }
 
 static nrf_drv_wdt_channel_id m_wdt_channel_id;
@@ -116,12 +117,10 @@ void PORT_ExtiInit() {
     nrf_drv_gpiote_in_config_t in_config = {
 		.is_watcher = false,
 		.hi_accuracy = true,
-		.pull = NRF_GPIO_PIN_PULLDOWN,
+		.pull = NRF_GPIO_PIN_NOPULL,
 		.sense = NRF_GPIOTE_POLARITY_LOTOHI,
     };
-    in_config.pull = NRF_GPIO_PIN_PULLUP;
     err_code = nrf_drv_gpiote_in_init(DW_EXTI_IRQn, &in_config, DW_EXTI_IRQ_Handler);
     APP_ERROR_CHECK(err_code);
-    NVIC_SetPriority(GPIOTE_IRQn, 5);
     nrf_drv_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 }

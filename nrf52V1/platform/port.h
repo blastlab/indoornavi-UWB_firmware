@@ -78,11 +78,14 @@ unsigned int PORT_TickHr();
 // convert high resolution clock time units to us
 unsigned int PORT_TickHrToUs(unsigned int delta);
 
-// update slot timer for one iteration
-void PORT_SlotTimerSetUsLeft(uint32 us);
-
 // set slot timer period
 void PORT_SetSlotTimerPeriodUs(uint32 us);
+
+// get current slot timer count
+uint32_t PORT_SlotTimerTick();
+
+// extend slot timer period for one iteration by delta_us
+void PORT_SlotTimerSetUsOffset(int32 delta_us);
 
 // CRC
 

@@ -43,15 +43,7 @@ void BeaconSender() {
 }
 
 void RangingControl() {
-  static unsigned int last_time = INT32_MAX;
-  if (PORT_TickMs() - last_time > 150) {
-    last_time = PORT_TickMs();
 
-	dev_addr_t addr = 0x8012;
-    if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
-    	SYNC_SendPoll(addr, &addr, 1);
-    }
-  }
 }
 
 void UwbMain() {
@@ -68,7 +60,7 @@ void UwbMain() {
 //  FU_Init(settings.mac.role == RTLS_SINK);		// TODO: uncomment when FU implemented
 
   PORT_TimeStartTimers();
-  SendTurnOnMessage();
+//  SendTurnOnMessage();
 
   volatile int i = 0;
   while (1) {
@@ -77,14 +69,13 @@ void UwbMain() {
     PORT_LedOff(LED_ERR);
     //BatteryControl(); //todo: HardFault
     RangingControl();
-    BeaconSender();
+//    BeaconSender();
     TXT_Control();
     PORT_WatchdogRefresh();
     //PORT_SleepMs(10);
     //diagnostic();
   }
 }
-
 
 
 void SendTurnOnMessage()

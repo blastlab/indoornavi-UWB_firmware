@@ -9,7 +9,7 @@
 #include "mac/mac_settings.h"
 #include "mac/sync.h"
 
-#define MAC_TRACE_ENABLED 1
+#define MAC_TRACE_ENABLED 0
 #if MAC_TRACE_ENABLED
 #define MAC_TRACE(...) LOG_DBG(__VA_ARGS__)
 #else

@@ -21,9 +21,9 @@ static void rtc_handler(nrf_drv_rtc_int_type_t int_type) {}
 static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_context) {
 	if(event_type == NRF_TIMER_EVENT_COMPARE0 || event_type == NRF_TIMER_EVENT_COMPARE1) {
 		if(event_type == NRF_TIMER_EVENT_COMPARE1) {
-			TIMER_SLOT.p_reg->TASKS_CLEAR = 1;
-			TIMER_SLOT.p_reg->INTENCLR = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL1);
-			TIMER_SLOT.p_reg->INTENSET = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL0);
+			TIMER_SLOT.p_reg->TASKS_CLEAR = 1;														// event from comp1 does not clear the timer automatically
+			TIMER_SLOT.p_reg->INTENCLR = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL1);	// turning off CC[1] compare interrupt
+			TIMER_SLOT.p_reg->INTENSET = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL0);	// turning back on CC[0] compare interrupt
 			TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] = 0;
 		}
 		decaIrqStatus_t st = decamutexon();
@@ -81,19 +81,24 @@ unsigned int PORT_TickHrToUs(unsigned int delta) {		// TODO implement this
 	return 0;
 }
 
-// update slot timer for one iteration, @us is us to the next IT
-void PORT_SlotTimerSetUsLeft(uint32 us) {
+// return current slot timer tick counter
+uint32_t PORT_SlotTimerTick() {
 	TIMER_SLOT.p_reg->TASKS_CAPTURE[NRF_TIMER_CC_CHANNEL1] = 1;
-	int delta = TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] - TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1];
-	if (us > 8 && delta > 8) {
-		TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] = TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] + nrf_drv_timer_us_to_ticks(&TIMER_SLOT, us);
-		TIMER_SLOT.p_reg->INTENCLR = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL0);
-		TIMER_SLOT.p_reg->INTENSET = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL1);
+	return TIMER_SLOT.p_reg->CC[1];
+}
+
+// extend slot timer period for one iteration by delta_us
+void PORT_SlotTimerSetUsOffset(int32 delta_us) {
+	TIMER_SLOT.p_reg->TASKS_CAPTURE[NRF_TIMER_CC_CHANNEL1] = 1;														// get actual timer count to CC[1]
+	if(TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] + delta_us > TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] + 50) {	// auto_reload + delta > actual_count + 50 (as reserve)
+		TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] = TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] + delta_us;		// setting actual auto_reload value + delta for one iteration;
+		TIMER_SLOT.p_reg->INTENCLR = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL0);						// when the freq is different than 1MHz, use nrf_drv_timer_us_to_ticks(TIM, delta_us) and remember about the sign
+		TIMER_SLOT.p_reg->INTENSET = (NRF_TIMER_INT_COMPARE0_MASK << NRF_TIMER_CC_CHANNEL1);						// turning off CC[0] interrupt and turning on CC[1]
 	}
 }
 
 // set slot timer period
 void PORT_SetSlotTimerPeriodUs(uint32 us) {
 	TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] = nrf_drv_timer_us_to_ticks(&TIMER_SLOT, us);
-	TIMER_SLOT.p_reg->TASKS_CLEAR = 1;
+	TIMER_SLOT.p_reg->TASKS_CLEAR = 1;																				// clearing the timer to prevent waiting for overcount when new period is smaller than actual timer count
 }
