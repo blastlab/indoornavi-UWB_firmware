@@ -20,12 +20,11 @@
 #define FR_CRH_SA_LONG 0xC0
 
 typedef enum {
-  FREE,
-  BUSY,
-  WAIT_FOR_TX,
-  WAIT_FOR_TX_ACK,
-  WAIT_FOR_TX_IN_RESPONSE,
-  WAIT_FOR_ACK,
+  FREE,  ///< packet is fre
+  BUSY,  ///< packet under edition
+  WAIT_FOR_TX,  ///< when packet wait on tx queue
+  WAIT_FOR_TX_ACK,  ///< when packet wait on tx queue and need ack
+  WAIT_FOR_ACK,  ///< wait for receive ack after transmission
 } mac_buf_state;
 
 typedef unsigned short dev_addr_t;
@@ -41,6 +40,10 @@ typedef unsigned short pan_dev_addr_t;
 
 struct FC_CARRY_s;
 
+/**
+ * @brief packet extra information struct
+ * 
+ */
 typedef struct {
   dev_addr_t direct_src;
   struct FC_CARRY_s *carry;

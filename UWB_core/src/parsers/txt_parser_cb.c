@@ -14,7 +14,7 @@ void _TXT_Finalize(mac_buf_t *buf, const prot_packet_info_t *info)
   }
 }
 
-void _TXT_Ask(const prot_packet_info_t *info, uint8_t FC)
+void _TXT_Ask(const prot_packet_info_t *info, FC_t FC)
 {
   dev_addr_t addr = info->direct_src;
   mac_buf_t *buf;
@@ -27,7 +27,7 @@ void _TXT_Ask(const prot_packet_info_t *info, uint8_t FC)
 
   if (buf != 0)
   {
-    MAC_Write8(buf, FC);
+    MAC_Write8(buf, (uint8_t)FC);
     MAC_Write8(buf, 2); // len
     _TXT_Finalize(buf, info);
   }

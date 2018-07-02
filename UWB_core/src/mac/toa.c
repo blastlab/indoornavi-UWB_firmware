@@ -27,7 +27,7 @@ int TOA_FindAddrIndexInResp(toa_core_t *toa, dev_addr_t addr) {
 }
 
 // calculate TimeOfFlight in DecaWave TimeUnits or 0
-int TOA_CalcTofDwTu(toa_core_t *toa, int resp_ind) {
+int TOA_CalcTofDwTu(const toa_core_t *toa, int resp_ind) {
   const uint32_t TsErr = 0;
   if (toa->TsPollTx == TsErr || toa->TsPollRx == TsErr ||
       toa->TsRespTx == TsErr || toa->TsRespRx[resp_ind] == TsErr ||
@@ -45,7 +45,7 @@ int TOA_CalcTofDwTu(toa_core_t *toa, int resp_ind) {
 }
 
 // calculate TimeOfFlight in seconds
-float TOA_CalcTof(toa_core_t *toa, int resp_ind) {
+float TOA_CalcTofconst (toa_core_t *toa, int resp_ind) {
   return (float)TOA_CalcTofDwTu(toa, resp_ind) * DWT_TIME_UNITS;
 }
 
@@ -74,7 +74,7 @@ int64_t TOA_SetTxTime(int64_t dw_time, uint32_t delay_us) {
 }
 
 // called from response cb.
-int TOA_EnableRxBeforeFin(toa_core_t *toa, toa_settings_t *tset,
+int TOA_EnableRxBeforeFin(const toa_core_t *toa, const toa_settings_t *tset,
                           uint64_t DwPollRxTs) {
   int64_t rx_start = tset->resp_dly_us[toa->resp_ind] - tset->guard_time_us;
   if (toa->resp_ind == toa->anc_in_poll_cnt) {

@@ -6,14 +6,14 @@
 // global mac instance
 mac_instance_t mac;
 
-mac_buf_t *_MAC_BufGetOldestToTx();
-void _MAC_BufferReset(mac_buf_t *buf);
+static mac_buf_t *_MAC_BufGetOldestToTx();
+static void _MAC_BufferReset(mac_buf_t *buf);
 int MAC_TryTransmitFrameInSlot(int64_t glob_time);
 
-void MAC_TxCb(const dwt_cb_data_t *data);
-void MAC_RxCb(const dwt_cb_data_t *data);
-void MAC_RxToCb(const dwt_cb_data_t *data);
-void MAC_RxErrCb(const dwt_cb_data_t *data);
+static void MAC_TxCb(const dwt_cb_data_t *data);
+static void MAC_RxCb(const dwt_cb_data_t *data);
+static void MAC_RxToCb(const dwt_cb_data_t *data);
+static void MAC_RxErrCb(const dwt_cb_data_t *data);
 
 void MAC_Init() {
   // init transceiver
@@ -52,7 +52,7 @@ void MAC_Init() {
   MAC_BeaconTimerReset();
 }
 
-void MAC_TxCb(const dwt_cb_data_t *data) {
+static void MAC_TxCb(const dwt_cb_data_t *data) {
   int64_t tx_ts = TRANSCEIVER_GetTxTimestamp();
 
   PORT_LedOn(LED_STAT);
@@ -88,7 +88,7 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
   }
 }
 
-void MAC_RxCb(const dwt_cb_data_t *data) {
+static void MAC_RxCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_STAT);
   mac.last_rx_ts = PORT_TickHr();
   mac_buf_t *buf = MAC_Buffer();
@@ -110,7 +110,7 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
     if (broadcast || unicast) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
-        // int ret = SYNC_UpdateNeightbour()
+        // int ret = SYNC_UpdateNeighbour()
         SYNC_RxCb(buf->frame.data, &info);
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
@@ -132,7 +132,7 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
 }
 
 // timeout error -> check ranging, maybe ACK or default RX
-void MAC_RxToCb(const dwt_cb_data_t *data) {
+static void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
@@ -143,7 +143,7 @@ void MAC_RxToCb(const dwt_cb_data_t *data) {
 }
 
 // error during receiving frame
-void MAC_RxErrCb(const dwt_cb_data_t *data) {
+static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
   LOG_ERR("Rx error status:%X", data->status);
@@ -167,7 +167,7 @@ void MAC_BeaconTimerReset()
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
-int MAC_ToSlotsTime(int64_t glob_time) {
+int MAC_ToSlotsTimeUs(int64_t glob_time) {
 	int64_t slots_period_dtu = (int64_t)settings.mac.slots_sum_time_us / (DWT_TIME_UNITS * 1e6f); // multiple in two lines (conversion 32-64B)
 	int slot_time_us = (glob_time % slots_period_dtu) * (DWT_TIME_UNITS * 1e6f);
 	return slot_time_us;
@@ -177,7 +177,7 @@ int MAC_ToSlotsTime(int64_t glob_time) {
 void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	extern sync_instance_t sync;
 	int64_t glob_time = SYNC_GlobTime(local_time);
-	int slot_time_us = MAC_ToSlotsTime(glob_time);
+	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
 	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
 
 	if (time_to_your_slot_us <= 0) {
@@ -185,7 +185,7 @@ void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	}
 
 	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - loc_slot_time_us);
-	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTickUs(), (int)sync.neightbour[0].drift[0]);
+	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTickUs(), (int)sync.neighbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
@@ -200,7 +200,7 @@ void MAC_YourSlotIsr() {
 }
 
 // private function, called when buf should be send now as a frame in slot
-void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
+static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   int ret;
   // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
   if (buf->isRangingFrame) {
@@ -230,8 +230,8 @@ void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 // calc slot time and send try send packet if it is yours time
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
-  int64_t slot_time = MAC_ToSlotsTime(glob_time);
-  if (settings.mac.slot_time_us < slot_time || slot_time < 0) {
+  int64_t slot_time = MAC_ToSlotsTimeUs(glob_time);
+  if (settings.mac.slots_sum_time_us < slot_time || slot_time < 0) {
     return 0;
   }
 
@@ -264,7 +264,7 @@ void MAC_AckFrameIsr(uint8_t seq_num) {
   }
 }
 
-void _MAC_BufferReset(mac_buf_t *buf) {
+static void _MAC_BufferReset(mac_buf_t *buf) {
   buf->state = BUSY;
   buf->dPtr = buf->buf;
   buf->retransmit_fail_cnt = 0;
@@ -275,7 +275,7 @@ void _MAC_BufferReset(mac_buf_t *buf) {
 
 // get pointer to the oldest buffer with WAIT_FOR_TX or WAIT_FOR_TX_ACK
 // when there is no buffer to tx then return 0
-mac_buf_t *_MAC_BufGetOldestToTx() {
+static mac_buf_t *_MAC_BufGetOldestToTx() {
   volatile int oldest_index = MAC_BUF_CNT;
   int current_time = mac_port_buff_time();
   int oldest_time = -1;

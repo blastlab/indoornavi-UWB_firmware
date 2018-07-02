@@ -34,10 +34,10 @@ void SYNC_Init() {
   tset->rx_after_tx_offset_us += TRANSCEIVER_EstimateTxTimeUs(0);
 
   // add here 2 bytes for CRC
-  int basePollLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_POLL_s) + (2);
+  int basePollLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_POLL_s);
   basePollLen += sizeof(dev_addr_t) * TOA_MAX_DEV_IN_POLL;
-  const int respLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_RESP_s) + (2);
-  const int baseFinLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_FIN_s) + (2);
+  const int respLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_RESP_s);
+  const int baseFinLen = MAC_HEAD_LENGTH + sizeof(FC_SYNC_FIN_s);
   int len;
 
   for (int i = 0; i < TOA_MAX_DEV_IN_POLL; ++i) {
@@ -57,7 +57,7 @@ void SYNC_Init() {
   tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
 }
 
-int64_t SYNC_GlobTimeNeig(sync_neightbour_t *neig, int64_t dw_ts) {
+int64_t SYNC_GlobTimeNeig(sync_neighbour_t *neig, int64_t dw_ts) {
   int64_t dt = (dw_ts - neig->update_ts) & MASK_40BIT;
   int64_t res = dw_ts + neig->time_offset;
   res += (int64_t)(neig->time_coeffP[0] * dt);
@@ -68,28 +68,28 @@ int64_t SYNC_GlobTime(int64_t dw_ts) {
 	return SYNC_GlobTimeNeig(&sync.local_obj, dw_ts);
 }
 
-void SYNC_InitNeightbour(sync_neightbour_t *neig, dev_addr_t addr,
+void SYNC_InitNeighbour(sync_neighbour_t *neig, dev_addr_t addr,
                          int tree_level) {
   memset(neig, 0, sizeof(*neig));
   neig->addr = addr;
   neig->tree_level = tree_level;
 }
 
-sync_neightbour_t *SYNC_FindOrCreateNeightbour(dev_addr_t addr,
+sync_neighbour_t *SYNC_FindOrCreateNeighbour(dev_addr_t addr,
                                                int tree_level) {
-  sync_neightbour_t *neig;
+  sync_neighbour_t *neig;
   // search
-  for (int i = 0; i < SYNC_MAC_NEIGHTBOURS; ++i) {
-    neig = &sync.neightbour[i];
+  for (int i = 0; i < SYNC_MAC_NEIGHBOURS; ++i) {
+    neig = &sync.neighbour[i];
     if (neig->addr == addr) {
       return neig;
     }
   }
   // create
-  for (int i = 0; i < SYNC_MAC_NEIGHTBOURS; ++i) {
-    neig = &sync.neightbour[i];
+  for (int i = 0; i < SYNC_MAC_NEIGHBOURS; ++i) {
+    neig = &sync.neighbour[i];
     if (neig->addr == 0) {
-      SYNC_InitNeightbour(neig, addr, tree_level);
+      SYNC_InitNeighbour(neig, addr, tree_level);
       return neig;
     }
   }
@@ -109,20 +109,20 @@ int64_t SYNC_TrimDrift(int64_t drift) {
 float SYNC_Smooth(float x, float range) { return x / sqrtf(range + x * x); }
 
 // time coefficient P calculation
-float SYNC_CalcTimeCoeff(sync_neightbour_t *neig) {
+float SYNC_CalcTimeCoeff(sync_neighbour_t *neig) {
   const float K = 0.5; // algorithm speed (0..1)
   float *X = neig->time_coeffP_raw;
   float *Y = neig->time_coeffP;
   float out = Y[1] + K * (X[0] - X[1]) + 0.1f * X[0];
 
-  neig->time_coeffP_slow += X[0];
-  out += neig->time_coeffP_slow*0.001;
+  neig->time_drift_sum += X[0];
+  out += neig->time_drift_sum*0.001;
 
   return SYNC_Smooth(out, 1.0f);
 }
 
 // shift data arrays and calculate raw data
-void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
+void SYNC_UpdateNeighbour(sync_neighbour_t *neig, int64_t ext_time,
                            int64_t loc_time, int tof_dw) {
   const int64_t thres = 123456;
   float neig_dt = (loc_time - neig->update_ts) & MASK_40BIT;
@@ -147,7 +147,7 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
   SYNC_TRACE("SYNC %X %12d %7d %9X %10u %X %d", neig->addr, (int)drift,
 	(int)(1e8*neig->time_coeffP[0]), (uint32_t)(neig->time_offset),
 	dt_us, (int)(SYNC_GlobTimeNeig(neig, loc_time)-loc_time),
-	(int)(1e8*neig->time_coeffP_slow));
+	(int)(1e8*neig->time_drift_sum));
   SYNC_TIME_DUMP("SYNC %X%08X %X%08X %d %d",
 	(int)(loc_time>>32), (uint32_t)loc_time,
 	(int)(ext_time>>32), (uint32_t)ext_time,
@@ -172,7 +172,7 @@ void SYNC_UpdateNeightbour(sync_neightbour_t *neig, int64_t ext_time,
 	  // neig->timeDriftSum += drift;
   } else {
 	  neig->time_offset += drift;
-	  neig->time_coeffP_slow = 0;
+	  neig->time_drift_sum = 0;
 	  neig->sync_ready = 0;
 	  neig->drift[0] = 0;
 	  neig->time_coeffP[0] = 0.0f;
@@ -186,10 +186,10 @@ void SYNC_UpdateLocalTimeParams(uint64_t transceiver_raw_time) {
 	int64_t offset = 0;
 
 	// iterate for each neighbour with nonzero update_ts
-	for (int i = 0; i < SYNC_MAC_NEIGHTBOURS; ++i) {
-	  if (sync.neightbour[i].update_ts && sync.neightbour[i].sync_ready) {
-		sum_P += sync.neightbour[i].time_coeffP[0];
-		offset += sync.neightbour[i].time_offset; // 63b / 40b = 23b
+	for (int i = 0; i < SYNC_MAC_NEIGHBOURS; ++i) {
+	  if (sync.neighbour[i].update_ts && sync.neighbour[i].sync_ready) {
+		sum_P += sync.neighbour[i].time_coeffP[0];
+		offset += sync.neighbour[i].time_offset; // 63b / 40b = 23b
 		++cnt;
 	  }
 	}
@@ -204,9 +204,9 @@ void SYNC_UpdateLocalTimeParams(uint64_t transceiver_raw_time) {
 }
 
 // complex synchronisation processing
-void SYNC_Update(sync_neightbour_t *neig, int64_t ext_time, int64_t loc_time,
+void SYNC_Update(sync_neighbour_t *neig, int64_t ext_time, int64_t loc_time,
                  int tof_dw) {
-  SYNC_UpdateNeightbour(neig, ext_time, loc_time, tof_dw);
+  SYNC_UpdateNeighbour(neig, ext_time, loc_time, tof_dw);
   SYNC_UpdateLocalTimeParams(loc_time);
 
   // add distance to measure table
@@ -385,8 +385,8 @@ int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info) {
   SYNC_ASSERT(sizeof(*packet->TsRespRx) == sizeof(*sync.toa.TsRespRx));
   SYNC_ASSERT(sizeof(packet->TsFinTxBuf) == 5);
 
-  sync_neightbour_t *neig =
-      SYNC_FindOrCreateNeightbour(info->direct_src, packet->tree_level);
+  sync_neighbour_t *neig =
+      SYNC_FindOrCreateNeighbour(info->direct_src, packet->tree_level);
   if (neig == 0) {
     return 0;
   }

@@ -14,7 +14,7 @@ uint8_t BIN_ParseSingle(const uint8_t *buf, const prot_packet_info_t *info) {
       return buf[1]; // frame len
     }
   }
-  return 0xFF;
+  return 0;
 }
 
 void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, int size) {
@@ -23,8 +23,8 @@ void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, int size) {
 
   while (size > 0) {
     ret = BIN_ParseSingle(buf->dPtr, info);
-    if(ret == 0xFF) {
-      LOG_ERR("unknown opcode %X", *buf->dPtr);
+    if(ret == 0) {
+      LOG_ERR("unknown opcode 0x%X", *buf->dPtr);
       ret = buf->dPtr[1]; // frame len
     }
 		size -= ret;
