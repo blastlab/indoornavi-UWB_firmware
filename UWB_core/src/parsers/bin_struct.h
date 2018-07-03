@@ -28,14 +28,14 @@ typedef struct __packed {
 } FC_STAT_s;
 
 typedef struct {
-	uint64_t serial;
-	uint64_t hash;
-	uint16_t fMinor;
 	uint8_t FC, len;
 	uint8_t hMajor;
 	uint8_t hMinor;
 	uint8_t fMajor;
-	rtls_role role;
+	uint8_t role;
+	uint16_t fMinor;
+	uint64_t serial;
+	uint64_t hash;
 } FC_VERSION_s;
 
 #endif

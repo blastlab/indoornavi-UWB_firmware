@@ -230,10 +230,9 @@ void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 // calc slot time and send try send packet if it is yours time
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
-  int64_t slot_time = MAC_ToSlotsTime(glob_time);
-  if (settings.mac.slot_time_us < slot_time || slot_time < 0) {
-    return 0;
-  }
+  int slot_time = MAC_ToSlotsTime(glob_time);
+  MAC_ASSERT(slot_time <= settings.mac.slots_sum_time_us);
+  MAC_ASSERT(0 <= slot_time);
 
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
@@ -243,6 +242,7 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
   uint32_t end_us = settings.mac.slot_time_us - settings.mac.slot_guard_time_us;
   if (slot_time + tx_est_time > end_us) {
+	LOG_DBG("%d", slot_time);
     return 0;
   }
 

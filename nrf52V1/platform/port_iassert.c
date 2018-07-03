@@ -34,7 +34,7 @@ void PORT_iassert_fun(const char *msg, int line) {
 
 	while(1)
 	{
-		if(counter++ % 100 == 0)
+		if(counter++ % 25 == 0)
 		{
 			#if LOG_USB_EN
 				PORT_UsbUartTransmit((uint8_t*)buf, n);

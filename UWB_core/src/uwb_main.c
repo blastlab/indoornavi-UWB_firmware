@@ -60,7 +60,7 @@ void UwbMain() {
 //  FU_Init(settings.mac.role == RTLS_SINK);		// TODO: uncomment when FU implemented
 
   PORT_TimeStartTimers();
-//  SendTurnOnMessage();
+  SendTurnOnMessage();
 
   volatile int i = 0;
   while (1) {
@@ -69,10 +69,10 @@ void UwbMain() {
     PORT_LedOff(LED_ERR);
     //BatteryControl(); //todo: HardFault
     RangingControl();
-//    BeaconSender();
+    BeaconSender();
     TXT_Control();
     PORT_WatchdogRefresh();
-    //PORT_SleepMs(10);
+    PORT_SleepMs(1);		// stops receiving without this delay
     //diagnostic();
   }
 }
