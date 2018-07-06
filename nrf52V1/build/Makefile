@@ -29,6 +29,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/drivers_nrf/clock/nrf_drv_clock.c \
   $(SDK_ROOT)/components/drivers_nrf/uart/nrf_drv_uart.c \
   $(SDK_ROOT)/components/drivers_nrf/wdt/nrf_drv_wdt.c \
+  $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
   \
   $(PROJ_DIR)/platform/logs.c \
   $(PROJ_DIR)/platform/port.c \

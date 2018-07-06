@@ -38,7 +38,7 @@ static nrf_drv_wdt_channel_id m_wdt_channel_id;
 void wdt_event_handler(void){ }
 
 void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t info) {
-    while(1);
+    IASSERT(0);
 }
 
 void PORT_WatchdogInit() {

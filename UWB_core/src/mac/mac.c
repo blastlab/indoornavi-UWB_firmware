@@ -228,7 +228,7 @@ void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 }
 
 // calc slot time and send try send packet if it is yours time
-int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
+int MAC_TryTransmitFrameInSlot(int64_t glob_time) {					// TODO: dodac uwzglednienie Guard Time, LOG_WRN gdy niespelniony warunek: (-guard_time < (slot_time - slot_number*slot_period) < guard_time)
   // calc time from begining of yours slot
   int slot_time = MAC_ToSlotsTime(glob_time);
   MAC_ASSERT(slot_time <= settings.mac.slots_sum_time_us);

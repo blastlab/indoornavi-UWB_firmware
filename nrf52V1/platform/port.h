@@ -4,20 +4,20 @@
 #include "port_config.h"
 #include "iassert.h"
 #include "nrf_error.h"
+#include "nrf52.h"
 
 #define PORT_ASSERT(expr) IASSERT(expr)
 #define UNUSED(x) ((void)(x))
 
-char PROG_DESTINATION1; // should be defined in linker script
-char PROG_DESTINATION2;
 
-// place where current firmware version is stored (offsed from FLASH_BASE), used by linker script, should be macros from uC's SDK
-#define FLASH_PAGE_SIZE 1
-#define FLASH_BASE 1
-#define FLASH_BANK_SIZE 1
+//char PROG_DESTINATION1; // TODO should be defined in linker script
+//char PROG_DESTINATION2;
+
+#define FLASH_PAGE_SIZE 	NRF_FICR->CODEPAGESIZE
+#define FLASH_BASE 			((uint32_t)0x0U)
+#define FLASH_BANK_SIZE  	((uint32_t)0x80000U)
 
 #define PORT_Success NRF_SUCCESS
-
 
 // debug configuration
 #define DBG 1

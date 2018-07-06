@@ -33,8 +33,8 @@
 #define USB_UART_TX_PIN 	5
 
 #define BOOTLOADER_MAGIC_NUMBER (0xBECA95)
-#define BOOTLOADER_MAGIC_REG 0 // ((uint32_t*)&RTC->BKP0R)
-#define STATUS_MAGIC_REG 0 //((uint32_t*)&RTC->BKP1R)
+#define BOOTLOADER_MAGIC_REG 0 	// TODO ((uint32_t*)&RTC->BKP0R)
+#define STATUS_MAGIC_REG 0 		// TODO((uint32_t*)&RTC->BKP1R)
 #define STATUS_MAGIC_NUMBER_GO_SLEEP (0x12345678)
 
 // leds
