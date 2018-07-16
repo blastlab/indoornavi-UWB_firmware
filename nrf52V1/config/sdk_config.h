@@ -1817,7 +1817,7 @@
 // <7=> 7
 
 #ifndef GPIOTE_CONFIG_IRQ_PRIORITY
-#define GPIOTE_CONFIG_IRQ_PRIORITY 5
+#define GPIOTE_CONFIG_IRQ_PRIORITY 4
 #endif
 
 // </e>
@@ -2724,7 +2724,6 @@
 #endif
 
 // </e>
-
 // </e>
 
 // <e> TIMER_ENABLED - nrf_drv_timer - TIMER periperal driver

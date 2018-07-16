@@ -20,7 +20,9 @@
 
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
+
 #define USE_DECA_DEVKIT
+
 #ifdef USE_DECA_DEVKIT
 #define DW_RST_PIN			24
 #define DW_EXTI_IRQn 		19
