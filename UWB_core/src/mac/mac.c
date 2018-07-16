@@ -115,6 +115,9 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
         CARRY_ParseMessage(buf);
+      } else if (type == FR_CR_BEACON) {
+    	  LOG_INF("Beacon received from %x", buf->frame.src);		// TODO do not merge this to develop; add beacons handling for neighbours detecion
+    	  TRANSCEIVER_DefaultRx();
       } else {
         LOG_ERR("This kind of frame is not supported: %x",
                 buf->frame.control[0]);
@@ -187,13 +190,20 @@ void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
 	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - slot_time);
 	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTick(), (int)sync.neightbour[0].drift[0]);
 }
-
+#define USE_GET_TIME
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
   decaIrqStatus_t en = decamutexon();
+
+#ifndef USE_GET_TIME
+  uint32_t slot_time = PORT_SlotTimerTick();
+  mac.slot_time_offset = slot_time / (DWT_TIME_UNITS * 1e6f);
+  int64_t local_time = mac.slot_time_offset;
+#else
   int64_t local_time = TRANSCEIVER_GetTime();
   uint32_t slot_time = PORT_SlotTimerTick();
   mac.slot_time_offset = SYNC_GlobTime(local_time);
+#endif
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
   MAC_UpdateSlotTimer(slot_time, local_time);

@@ -10,7 +10,7 @@
 #include "nrf_gpio.h"
 
 // ==== SPI ====
-//#define SPI_LL
+#define SPI_LL
 #define SPI_INSTANCE  0 /**< SPI instance index. */
 static const nrf_drv_spi_t spi0 = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);
 

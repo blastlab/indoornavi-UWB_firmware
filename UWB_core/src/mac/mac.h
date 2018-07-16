@@ -33,7 +33,7 @@
 typedef struct {
   union {
     unsigned char buf[MAC_BUF_LEN];
-    struct _packed {
+    struct __packed {
       unsigned char control[2];
       unsigned char seq_num;
       pan_dev_addr_t pan;

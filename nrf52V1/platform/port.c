@@ -12,11 +12,11 @@ void PORT_UsbUartInit();
 
 void PORT_Init() {
 	PORT_TimeInit();
-	PORT_GpioInit();
-	PORT_SpiInit();
 	PORT_UsbUartInit();
 	PORT_BatteryInit();
 	PORT_CrcInit();
+	PORT_SpiInit();
+	PORT_GpioInit();
 	PORT_ExtiInit();
 #if !DBG
 	PORT_WatchdogInit();
@@ -34,7 +34,6 @@ void PORT_GpioInit() {
 }
 
 static nrf_drv_wdt_channel_id m_wdt_channel_id;
-
 void wdt_event_handler(void){ }
 
 void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t info) {
@@ -49,7 +48,9 @@ void PORT_WatchdogInit() {
 }
 
 void PORT_WatchdogRefresh() {
+#if !DBG
 	nrf_drv_wdt_channel_feed(m_wdt_channel_id);
+#endif
 }
 
 // turn led on
@@ -111,16 +112,13 @@ void DW_EXTI_IRQ_Handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 }
 
 void PORT_ExtiInit() {
-    ret_code_t err_code;
-    err_code = nrf_drv_gpiote_init();
-    APP_ERROR_CHECK(err_code);
+    APP_ERROR_CHECK(nrf_drv_gpiote_init());
     nrf_drv_gpiote_in_config_t in_config = {
 		.is_watcher = false,
-		.hi_accuracy = true,
+		.hi_accuracy = false,
 		.pull = NRF_GPIO_PIN_NOPULL,
 		.sense = NRF_GPIOTE_POLARITY_LOTOHI,
     };
-    err_code = nrf_drv_gpiote_in_init(DW_EXTI_IRQn, &in_config, DW_EXTI_IRQ_Handler);
-    APP_ERROR_CHECK(err_code);
+    APP_ERROR_CHECK(nrf_drv_gpiote_in_init(DW_EXTI_IRQn, &in_config, DW_EXTI_IRQ_Handler));
     nrf_drv_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 }

@@ -2433,7 +2433,7 @@
 
 
 #ifndef RTC_DEFAULT_CONFIG_FREQUENCY
-#define RTC_DEFAULT_CONFIG_FREQUENCY 1000
+#define RTC_DEFAULT_CONFIG_FREQUENCY 990
 #endif
 
 // <q> RTC_DEFAULT_CONFIG_RELIABLE  - Ensures safe compare event triggering

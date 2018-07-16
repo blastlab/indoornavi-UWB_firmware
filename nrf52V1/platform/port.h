@@ -20,7 +20,7 @@
 #define PORT_Success NRF_SUCCESS
 
 // debug configuration
-#define DBG 1
+#define DBG 0
 
 // extra initialization for port modules
 void PORT_Init();

@@ -1,67 +1,26 @@
-PROJECT_NAME     := uwb_nrf
+PROJECT_NAME     := bootloader_UWB
 TARGETS          := nrf52832_xxaa
 OUTPUT_DIRECTORY := _build
 
-SDK_ROOT := ../nrf_libs
+SDK_ROOT := ../../nrf_libs
 PROJ_DIR := ../
-UWB_DIR := ../../UWB_core
+UWB_DIR := ../../../UWB_core
 
 $(OUTPUT_DIRECTORY)/nrf52832_xxaa.out: \
-  LINKER_SCRIPT  := uwb_nrf_gcc_nrf52.ld
+  LINKER_SCRIPT  := uwb_nrf_bootloader_gcc_nrf52.ld
 
 # Source files common to all targets
 SRC_FILES += \
   $(SDK_ROOT)/components/toolchain/gcc/gcc_startup_nrf52.S \
   $(SDK_ROOT)/components/toolchain/system_nrf52.c \
   $(PROJ_DIR)/main.c \
+  $(PROJ_DIR)/bootloader.c \
   $(SDK_ROOT)/components/libraries/util/app_error.c \
   $(SDK_ROOT)/components/libraries/util/app_error_weak.c \
   $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
   $(SDK_ROOT)/components/libraries/util/nrf_assert.c \
-  $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
-  $(SDK_ROOT)/components/libraries/fifo/app_fifo.c \
-  $(SDK_ROOT)/components/libraries/uart/app_uart_fifo.c \
-  $(SDK_ROOT)/components/drivers_nrf/common/nrf_drv_common.c \
-  $(SDK_ROOT)/components/drivers_nrf/spi_master/nrf_drv_spi.c \
-  $(SDK_ROOT)/components/drivers_nrf/gpiote/nrf_drv_gpiote.c \
-  $(SDK_ROOT)/components/drivers_nrf/timer/nrf_drv_timer.c \
-  $(SDK_ROOT)/components/drivers_nrf/rtc/nrf_drv_rtc.c \
-  $(SDK_ROOT)/components/drivers_nrf/clock/nrf_drv_clock.c \
-  $(SDK_ROOT)/components/drivers_nrf/uart/nrf_drv_uart.c \
-  $(SDK_ROOT)/components/drivers_nrf/wdt/nrf_drv_wdt.c \
-  $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
-  \
-  $(PROJ_DIR)/platform/logs.c \
-  $(PROJ_DIR)/platform/port.c \
-  $(PROJ_DIR)/platform/port_battery.c \
-  $(PROJ_DIR)/platform/port_crc.c \
-  $(PROJ_DIR)/platform/port_flash.c \
-  $(PROJ_DIR)/platform/port_iassert.c \
-  $(PROJ_DIR)/platform/port_mutex.c \
-  $(PROJ_DIR)/platform/port_spi.c \
-  $(PROJ_DIR)/platform/port_time.c \
-  $(PROJ_DIR)/platform/port_usb.c \
-  $(UWB_DIR)/src/decadriver/deca_device.c \
-  $(UWB_DIR)/src/decadriver/deca_params_init.c \
-  $(UWB_DIR)/src/mac/carry.c \
-  $(UWB_DIR)/src/mac/mac.c \
-  $(UWB_DIR)/src/mac/sync.c \
-  $(UWB_DIR)/src/mac/toa.c \
-  $(UWB_DIR)/src/mac/toa_calib.c \
-  $(UWB_DIR)/src/parsers/base64.c \
-  $(UWB_DIR)/src/parsers/bin_parser.c \
-  $(UWB_DIR)/src/parsers/bin_parser_cb.c \
-  $(UWB_DIR)/src/parsers/listener_parser.c \
-  $(UWB_DIR)/src/parsers/printer.c \
-  $(UWB_DIR)/src/parsers/txt_parser.c \
-  $(UWB_DIR)/src/parsers/txt_parser_cb.c \
-  $(UWB_DIR)/src/prot/FU.c \
-  $(UWB_DIR)/src/settings.c \
-  $(UWB_DIR)/src/tools.c \
-  $(UWB_DIR)/src/transceiver.c \
-  $(UWB_DIR)/src/transceiver_translator.c \
-  $(UWB_DIR)/src/uwb_main.c \
-  
+  $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \  
+
 # Include folders common to all targets
 INC_FOLDERS += \
   $(SDK_ROOT)/components \
@@ -72,32 +31,15 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/balloc \
   $(SDK_ROOT)/components/libraries/experimental_log \
   $(SDK_ROOT)/components/libraries/experimental_log/src \
-  $(SDK_ROOT)/components/libraries/uart \
-  $(SDK_ROOT)/components/libraries/fifo \
+  $(PROJ_DIR) \
   $(SDK_ROOT)/components/toolchain/gcc \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
-  $(SDK_ROOT)/components/drivers_nrf/common \
-  $(SDK_ROOT)/components/drivers_nrf/spi_master \
-  $(SDK_ROOT)/components/drivers_nrf/gpiote \
-  $(SDK_ROOT)/components/drivers_nrf/timer \
-  $(SDK_ROOT)/components/drivers_nrf/rtc \
-  $(SDK_ROOT)/components/drivers_nrf/clock \
-  $(SDK_ROOT)/components/drivers_nrf/uart \
-  $(SDK_ROOT)/components/drivers_nrf/wdt \
-  $(PROJ_DIR) \
   ../config \
-  \
   $(SDK_ROOT)/components/device \
   $(SDK_ROOT)/components/drivers_nrf/delay \
   $(SDK_ROOT)/components/toolchain/cmsis/include \
   $(SDK_ROOT)/components/drivers_nrf/hal \
   $(SDK_ROOT)/components/libraries/strerror \
-  ../platform \
-  $(UWB_DIR)/src/decadriver \
-  $(UWB_DIR)/src/mac \
-  $(UWB_DIR)/src/parsers \
-  $(UWB_DIR)/src/prot \
-  $(UWB_DIR)/src \
 
 # Libraries common to all targets
 LIB_FILES += \
@@ -109,6 +51,7 @@ OPT = -O3 -g3
 
 # C flags common to all targets
 CFLAGS += $(OPT)
+CFLAGS += -DBOARD_PCA10040
 CFLAGS += -DBSP_DEFINES_ONLY
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DFLOAT_ABI_HARD
@@ -131,6 +74,7 @@ ASMFLAGS += -g3
 ASMFLAGS += -mcpu=cortex-m4
 ASMFLAGS += -mthumb -mabi=aapcs
 ASMFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
+ASMFLAGS += -DBOARD_PCA10040
 ASMFLAGS += -DBSP_DEFINES_ONLY
 ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
 ASMFLAGS += -DFLOAT_ABI_HARD
@@ -173,7 +117,7 @@ include $(TEMPLATE_PATH)/Makefile.common
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
-.PHONY: flash erase generate_hash
+.PHONY: flash erase
 
 # Flash the program
 flash: $(OUTPUT_DIRECTORY)/nrf52832_xxaa.hex
@@ -183,14 +127,8 @@ flash: $(OUTPUT_DIRECTORY)/nrf52832_xxaa.hex
 
 erase:
 	nrfjprog -f nrf52 --eraseall
-	
-generate_hash:
-	python ../updateHash.py
-	
-reset:
-	nrfjprog --reset -f NRF52
 
 SDK_CONFIG_FILE := ../config/sdk_config.h
-CMSIS_CONFIG_TOOL := C:/nRF/nRF5_SDK_14.2.0_17b948a/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar
+CMSIS_CONFIG_TOOL := $(SDK_ROOT)/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar
 sdk_config:
 	java -jar $(CMSIS_CONFIG_TOOL) $(SDK_CONFIG_FILE)
