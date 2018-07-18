@@ -4,10 +4,10 @@
 #include "printer.h"
 
 
-void BIN_SEND_RESP(uint8_t FC, const void *data, uint8_t len,
+void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
                    const prot_packet_info_t *info) {
 	uint8_t *header = (uint8_t *)data;
-	header[0] = FC;
+	header[0] = (uint8_t)FC;
 	header[1] = len;
 	mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src);
 	MAC_Write(buf, data, len);
@@ -22,7 +22,7 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 	LOG_DBG("Beacon from %X", info->direct_src);
 	if(info->direct_src & ADDR_ANCHOR_FLAG) {
 		uint8_t default_tree_level = 255;
-		SYNC_FindOrCreateNeightbour(info->direct_src, default_tree_level);
+		SYNC_FindOrCreateNeighbour(info->direct_src, default_tree_level);
 	}
 }
 
@@ -62,8 +62,8 @@ void FC_VERSION_ASK_cb(const void *data, const prot_packet_info_t *info) {
 const prot_cb_t prot_cb_tab[] = {
 		{FC_TURN_ON, FC_TURN_ON_cb},
 		{FC_BEACON, FC_BEACON_cb},
-    {FC_CARRY, 0},
-    {FC_STAT_ASK, FC_STAT_ASK_cb},
+		{FC_CARRY, 0},
+		{FC_STAT_ASK, FC_STAT_ASK_cb},
 		{FC_VERSION_ASK, FC_VERSION_ASK_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

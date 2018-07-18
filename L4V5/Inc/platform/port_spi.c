@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 
 #define DW_SPI_LL 0
 

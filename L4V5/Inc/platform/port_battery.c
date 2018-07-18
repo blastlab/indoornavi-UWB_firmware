@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 #include "settings.h"
 
 extern ADC_HandleTypeDef hadc1; // in main.c

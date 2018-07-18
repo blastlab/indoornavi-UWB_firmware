@@ -26,10 +26,10 @@ carry_trace_t *_CARRY_FindTrace(carry_target_t *ptarget) {
   }
 
   for (int i = 0; i < CARRY_MAX_TRACE; ++i) {
-    if (ptarget->trace[i].fail_cnt < settings.carry.max_fail_counter) {
+    if (ptarget->trace[i].fail_cnt < settings.carry.trace_max_fail_cnt) {
       mac_buff_time_t delta = mac_port_buff_time();
       delta -= ptarget->trace[i].last_update_time;
-      if (delta < settings.carry.max_inactive_time) {
+      if (delta < settings.carry.trace_max_fail_cnt) {
         return &ptarget->trace[i];
       }
     }

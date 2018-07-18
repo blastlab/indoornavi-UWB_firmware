@@ -45,11 +45,6 @@ void RangingControl() {
   static unsigned int last_time = INT32_MAX;
   if (PORT_TickMs() - last_time > 150) {
     last_time = PORT_TickMs();
-
-	dev_addr_t addr = 0x8012;
-    if(settings.mac.role == RTLS_SINK && settings.mac.addr != addr) {
-    	SYNC_SendPoll(addr, &addr, 1);
-    }
   }
 }
 

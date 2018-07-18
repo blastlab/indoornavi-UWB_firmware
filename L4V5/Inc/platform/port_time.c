@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 
 #define LPTIM_SLEEP LPTIM1
 #define PTIM_SLOT TIM2
@@ -69,7 +69,7 @@ unsigned int PORT_TickHrToUs(unsigned int delta) {
  }
 
 // return current slot timer tick counter
-uint32_t PORT_SlotTimerTick() {
+uint32_t PORT_SlotTimerTickUs() {
 	return LL_TIM_GetCounter(PTIM_SLOT);
 }
 
