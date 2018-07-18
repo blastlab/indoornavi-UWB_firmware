@@ -11,12 +11,19 @@
 #include "nrf_drv_timer.h"
 #include "nrf_drv_rtc.h"
 #include "nrf_drv_clock.h"
+#include "nrf_gpio.h"
 
 //#define LPTIM_SLEEP LPTIM1 TODO: implement LPTIM_SLEEP handler
-const nrf_drv_timer_t TIMER_SLOT = NRF_DRV_TIMER_INSTANCE(0);
-const nrf_drv_rtc_t RTC = NRF_DRV_RTC_INSTANCE(0);
+const nrf_drv_timer_t TIMER_SLOT = NRF_DRV_TIMER_INSTANCE(1);
+const nrf_drv_rtc_t RTC = NRF_DRV_RTC_INSTANCE(1);
 
-static void rtc_handler(nrf_drv_rtc_int_type_t int_type) {}
+static void rtc_handler(nrf_drv_rtc_int_type_t int_type) {
+#ifdef BEACON_MODE
+	if(!(RTC.p_reg->COUNTER % 1000) && int_type == NRF_DRV_RTC_INT_TICK) {
+		nrf_gpio_pin_toggle(LED_BLE);
+	}
+#endif
+}
 static volatile uint32_t slot_timer_buf;
 
 static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_context) {
@@ -31,10 +38,11 @@ static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_conte
 
 void PORT_TimeInit() {
 	slot_timer_buf = 0;
-    APP_ERROR_CHECK(nrf_drv_clock_init());
+    nrf_drv_clock_init();					// when using SD, module is already initialized
     nrf_drv_clock_lfclk_request(NULL);
     nrf_drv_rtc_config_t config = NRF_DRV_RTC_DEFAULT_CONFIG;
     APP_ERROR_CHECK(nrf_drv_rtc_init(&RTC, &config, rtc_handler));
+    nrf_drv_rtc_tick_enable(&RTC, true);
     nrf_drv_rtc_enable(&RTC);
 
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;					// TIMER: f = 1 MHz; T = 1 us

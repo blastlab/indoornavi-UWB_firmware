@@ -22,6 +22,9 @@
 // debug configuration
 #define DBG 0
 
+// BLE beacon - this method must be called before LFCLK initialization due to softdevice's init method
+void PORT_BleBeaconStart(void);
+
 // extra initialization for port modules
 void PORT_Init();
 

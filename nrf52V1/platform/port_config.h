@@ -22,6 +22,7 @@
 #define PORT_TICKS_HR_PER_US 1000
 
 #define USE_DECA_DEVKIT
+#define BEACON_MODE
 
 #ifdef USE_DECA_DEVKIT
 #define DW_RST_PIN			24

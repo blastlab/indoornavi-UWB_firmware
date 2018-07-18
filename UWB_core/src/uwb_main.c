@@ -72,7 +72,7 @@ void UwbMain() {
     BeaconSender();
     TXT_Control();
     PORT_WatchdogRefresh();
-//    PORT_SleepMs(1);		// stops receiving without this delay
+//    PORT_SleepMs(1);
     //diagnostic();
   }
 }
