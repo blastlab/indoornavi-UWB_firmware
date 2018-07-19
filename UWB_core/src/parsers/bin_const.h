@@ -28,9 +28,9 @@ typedef enum {
 	FC_STAT_RESP = (FC_STAT_ASK + 1), ///< device is asked about status
 	FC_STAT_SET = (FC_STAT_ASK + 2), ///< device should change status to new one
 	// empty
-	FC_TXSET_ASK = 0x1C, ///< device is asked about transceiver settings
-	FC_TXSET_RESP = (FC_TXSET_ASK + 1), ///< device is asked about transceiver settings
-	FC_TXSET_SET = (FC_TXSET_ASK + 2), ///< device should change transceiver settings to new one
+	FC_RFSET_ASK = 0x1C, ///< device is asked about transceiver settings
+	FC_RFSET_RESP = (FC_RFSET_ASK + 1), ///< device is asked about transceiver settings
+	FC_RFSET_SET = (FC_RFSET_ASK + 2), ///< device should change transceiver settings to new one
 	// empty
 } FC_t;
 

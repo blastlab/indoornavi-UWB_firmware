@@ -27,13 +27,26 @@ cchar *TXT_PointParamNumber(const txt_buf_t *buf, cchar *cmd, int num) {
 // return
 int TXT_AtoI(const txt_buf_t *buf, cchar *ptr, int base) {
   int result = 0;
+  bool has_value = false;
   if (ptr == 0) {
     return -1;
   }
   while (('0' <= *ptr && *ptr <= '9') ||
-         (base == 16 && 'a' <= tolower(*ptr) && tolower(*ptr) <= 'f')) {
-    result *= base;
-    result += *ptr <= '9' ? *ptr - '0' : tolower(*ptr) - 'a';
+         (base == 16 && 'a' <= tolower(*ptr) && tolower(*ptr) <= 'f') ||
+		 *ptr == ' ') {
+	  if(('0' <= *ptr && *ptr <= '9') || (base > 10 && 'a' <= tolower(*ptr) && tolower(*ptr) <= 'f'))
+	  {
+		  has_value = true;
+		  result *= base;
+		  result += *ptr <= '9' ? *ptr - '0' : tolower(*ptr) - 'a';
+	  } else if(*ptr == ' ' && has_value == false)
+	  {
+		  // only increment ptr
+	  } else
+	  {
+		  return result;
+	  }
+
     ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
   }
   return result;
