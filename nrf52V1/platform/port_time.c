@@ -71,6 +71,10 @@ void PORT_TimeInit() {
 }
 
 void PORT_TimeStartTimers() {
+#ifdef BEACON_MODE
+	PORT_BleSetAdvData(settings.mac.addr, 0xDECA);
+	PORT_BleAdvStart();
+#endif
 	nrf_drv_timer_enable(&TIMER_SLOT);
 }
 

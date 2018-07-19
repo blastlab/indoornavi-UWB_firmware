@@ -24,6 +24,8 @@
 
 // BLE beacon - this method must be called before LFCLK initialization due to softdevice's init method
 void PORT_BleBeaconStart(void);
+void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val);
+void PORT_BleAdvStart(void);
 
 // extra initialization for port modules
 void PORT_Init();
