@@ -76,7 +76,6 @@ void UwbMain()
   MAC_Init();
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
-  IMU_WomConfig();
 
   PORT_TimeStartTimers();
   SendTurnOnMessage();
@@ -91,7 +90,7 @@ void UwbMain()
     RangingControl();
     BeaconSender();
     TXT_Control();
-    IMU_MotionControl();
+    PORT_ImuMotionControl();
     PORT_WatchdogRefresh();
     //PORT_SleepMs(10);
     //diagnostic();

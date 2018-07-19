@@ -115,11 +115,11 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
 // IMU
 
-void PORT_ImuWriteRegister(uint8_t addr, uint8_t val);
+void PORT_ImuWomConfig();
 
-void PORT_ImuReadRegister(uint8_t addr, uint8_t *val, uint16_t count);
+void PORT_ImuMotionControl();
 
-void PORT_ImuReset(void);
+void PORT_ImuIrqHandler();
 
 // SLEEP
 
