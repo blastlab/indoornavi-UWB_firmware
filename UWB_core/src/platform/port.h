@@ -332,10 +332,10 @@ decaIrqStatus_t PORT_EnterCritical();
 void PORT_ExitCritical(decaIrqStatus_t s);
 
 
-#define CRITICAL(x) \
+#define CRITICAL(_CODE_) \
     { \
         decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
-        x \
+        _CODE_ \
         PORT_ExitCritical(_irq_primask); \
     }
 

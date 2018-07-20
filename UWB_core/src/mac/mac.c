@@ -115,10 +115,17 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
         CARRY_ParseMessage(buf);
+      } else if(type == FR_CR_BEACON){
+    	  prot_packet_info_t info;
+        memset(&info, 0, sizeof(info));
+    	  info.direct_src = buf->frame.src;
+    	  BIN_ParseSingle(buf->dPtr, &info);
+      } else if(type == FR_CR_ACK) {
+    	  LOG_WRN("ACK frame is not supported");
       } else {
-        LOG_ERR("This kind of frame is not supported: %x",
-                buf->frame.control[0]);
-        TRANSCEIVER_DefaultRx();
+		LOG_ERR("This kind of frame is not supported: %x",
+		buf->frame.control[0]);
+		TRANSCEIVER_DefaultRx();
       }
     } else {
       // frame not for you
@@ -190,13 +197,15 @@ void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
+  CRITICAL(
+    int64_t local_time = TRANSCEIVER_GetTime();
+    uint32_t slot_time = PORT_SlotTimerTickUs();
+    mac.slot_time_offset = SYNC_GlobTime(local_time);
+    MAC_UpdateSlotTimer(slot_time, local_time);
+  )
   decaIrqStatus_t en = decamutexon();
-  int64_t local_time = TRANSCEIVER_GetTime();
-  uint32_t slot_time = PORT_SlotTimerTickUs();
-  mac.slot_time_offset = SYNC_GlobTime(local_time);
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
-  MAC_UpdateSlotTimer(slot_time, local_time);
 }
 
 // private function, called when buf should be send now as a frame in slot
@@ -241,8 +250,14 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   }
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
-  uint32_t end_us = settings.mac.slot_time_us - settings.mac.slot_guard_time_us;
-  if (slot_time + tx_est_time > end_us) {
+  uint32_t end_us = settings.mac.slot_time_us * (mac.slot_number + 1);
+  end_us -= settings.mac.slot_guard_time_us;
+  if(tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
+    LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
+    MAC_Free(buf);
+  }
+  // when it is too late to send this packet
+  if (end_us < slot_time + tx_est_time) {
     return 0;
   }
 
