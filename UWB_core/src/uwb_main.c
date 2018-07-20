@@ -34,10 +34,10 @@ void BatteryControl() {
 
 void BeaconSender() {
   if (MAC_BeaconTimerGetMs() > 5000) {
-  	if(settings.mac.role != RTLS_LISTENER) {
-			SendBeaconMessage();
-			MAC_BeaconTimerReset();
-  	}
+    if (settings.mac.role != RTLS_LISTENER) {
+      SendBeaconMessage();
+      MAC_BeaconTimerReset();
+    }
   }
 }
 
@@ -49,12 +49,12 @@ void RangingControl() {
 }
 
 void UwbMain() {
-  //CheckSleepMode();
+  // CheckSleepMode();
   SETTINGS_Init();
-  Desynchronize(); // base on device address
+  Desynchronize();  // base on device address
 
-  if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_SINK;
+  if (settings.mac.role == RTLS_DEFAULT) {
+    settings.mac.role = RTLS_SINK;
   }
 
   PORT_Init();
@@ -67,52 +67,49 @@ void UwbMain() {
 
   volatile int i = 0;
   while (1) {
-  	++i;
+    ++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
-    //BatteryControl(); //todo: HardFault
+    // BatteryControl(); //todo: HardFault
     RangingControl();
     BeaconSender();
     TXT_Control();
+    PORT_ImuMotionControl();
     PORT_WatchdogRefresh();
-    //PORT_SleepMs(10);
-    //diagnostic();
+    // PORT_SleepMs(10);
+    // diagnostic();
   }
 }
 
-
-
-void SendTurnOnMessage()
-{
-	if(settings.mac.role != RTLS_LISTENER) {
-		FC_TURN_ON_s packet;
-		packet.FC = FC_TURN_ON;
-		packet.len = sizeof(packet);
-		mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-		MAC_Write(buf, &packet, packet.len);
-		MAC_Send(buf, false);
-	  LOG_DBG("I send turn on - %X %c", settings.mac.addr, (char)settings.mac.role);
-	}
+void SendTurnOnMessage() {
+  if (settings.mac.role != RTLS_LISTENER) {
+    FC_TURN_ON_s packet;
+    packet.FC = FC_TURN_ON;
+    packet.len = sizeof(packet);
+    mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+    MAC_Write(buf, &packet, packet.len);
+    MAC_Send(buf, false);
+    LOG_DBG("I send turn on - %X %c", settings.mac.addr,
+            (char)settings.mac.role);
+  }
 }
 
-void SendTurnOffMessage(uint8_t reason)
-{
-	FC_TURN_OFF_s packet;
+void SendTurnOffMessage(uint8_t reason) {
+  FC_TURN_OFF_s packet;
   packet.FC = FC_TURN_OFF;
   packet.len = sizeof(packet);
   packet.reason = reason;
-  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+  mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
   MAC_Write(buf, &packet, packet.len);
   MAC_Send(buf, false);
 }
 
-void SendBeaconMessage()
-{
+void SendBeaconMessage() {
   FC_BEACON_s packet;
   packet.FC = FC_BEACON;
   packet.len = sizeof(packet);
   packet.serial = settings_otp->serial;
-  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+  mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
   MAC_Write(buf, &packet, packet.len);
   MAC_Send(buf, false);
   LOG_DBG("I send beacon - %X %c", settings.mac.addr, (char)settings.mac.role);
@@ -165,39 +162,39 @@ void CheckSleepMode() {
   }
 }
 
-
-
 #include "decadriver/deca_regs.h"
 #include "stdarg.h"
 
-void str_append(char *buf, size_t size, char *frm, ...) {
-	int len = strlen(buf);
-	va_list arg;
+void str_append(char* buf, size_t size, char* frm, ...) {
+  int len = strlen(buf);
+  va_list arg;
   va_start(arg, frm);
-	vsnprintf(buf+len, size-len, frm, arg);
+  vsnprintf(buf + len, size - len, frm, arg);
   va_end(arg);
 }
 
 void diagnostic() {
-	char buf[50] = "";
-	int len = sizeof(buf) / sizeof(*buf);
-	decaIrqStatus_t st = decamutexon();
-  uint32 status = dwt_read32bitreg(SYS_STATUS_ID); // Read status register low 32bits
+  char buf[50] = "";
+  int len = sizeof(buf) / sizeof(*buf);
+  decaIrqStatus_t st = decamutexon();
+  uint32 status =
+      dwt_read32bitreg(SYS_STATUS_ID);  // Read status register low 32bits
   decamutexoff(st);
 
-  if(status & SYS_STATUS_RFPLL_LL) {
-  	str_append(buf, len, " RFPLL_LL");
+  if (status & SYS_STATUS_RFPLL_LL) {
+    str_append(buf, len, " RFPLL_LL");
   }
-  if(status & SYS_STATUS_CLKPLL_LL) {
-  	str_append(buf, len, " CLKPLL_LL");
+  if (status & SYS_STATUS_CLKPLL_LL) {
+    str_append(buf, len, " CLKPLL_LL");
   }
-  if(status & SYS_STATUS_RXRSCS) {
-  	str_append(buf, len, " RXRSCS");
+  if (status & SYS_STATUS_RXRSCS) {
+    str_append(buf, len, " RXRSCS");
   }
 
-  if(strlen(buf) > 0) {
-  	LOG_DBG(buf);
-  	dwt_write32bitoffsetreg(SYS_STATUS_ID, SYS_STATUS_OFFSET, SYS_STATUS_ALL_RX_ERR);
-  	PORT_SleepMs(1);
+  if (strlen(buf) > 0) {
+    LOG_DBG(buf);
+    dwt_write32bitoffsetreg(SYS_STATUS_ID, SYS_STATUS_OFFSET,
+                            SYS_STATUS_ALL_RX_ERR);
+    PORT_SleepMs(1);
   }
 }

@@ -11,6 +11,7 @@ void PORT_Init() {
   PORT_BatteryInit();
   PORT_CrcInit();
   PORT_TimeInit();
+  PORT_ImuWomConfig();
 #if !DBG
   PORT_WatchdogInit();
 #endif
@@ -104,4 +105,39 @@ void PORT_EnterStopMode() {
   PORT_LedOff(LED_R1);
   PORT_LedOff(LED_G1);
   HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+}
+
+extern USBD_HandleTypeDef hUsbDeviceFS;
+extern USBD_DescriptorsTypeDef FS_Desc;
+volatile uint32_t RCC_config[4];
+void PORT_PrepareSleepMode() {
+	PORT_LedOff(LED_R1);
+	PORT_LedOff(LED_G1);
+	USB_StopDevice(USB);
+	USB_DevDisconnect(USB);
+	RCC_config[0] = RCC->CR;
+	RCC_config[1] = RCC->CFGR;
+	RCC_config[2] = RCC->CSR;
+	RCC_config[3] = RCC->CRRCR;
+	HAL_PWREx_EnableLowPowerRunMode();
+	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, PWR_CR1_LPMS_STOP0);
+	SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+}
+
+inline void PORT_EnterSleepMode() {
+	 __WFI();
+}
+
+void PORT_ExitSleepMode() {
+	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+	HAL_PWREx_DisableLowPowerRunMode();
+	RCC->CR = RCC_config[0];
+	RCC->CFGR = RCC_config[1];
+	RCC->CSR = RCC_config[2];
+	RCC->CRRCR = RCC_config[3];
+	USB_DevConnect(USB);
+	USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
+	USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
+	USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
+	USBD_Start(&hUsbDeviceFS);
 }
