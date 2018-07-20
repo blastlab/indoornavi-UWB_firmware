@@ -98,7 +98,7 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
 
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
-    buf->rx_len = data->datalength;
+    buf->rx_len = data->datalength - 2; // ommit CRC
     info.direct_src = buf->frame.src;
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;

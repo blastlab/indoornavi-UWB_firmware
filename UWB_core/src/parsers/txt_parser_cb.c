@@ -18,8 +18,10 @@ static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
   }
   else
   {
-    mac_buf_t *mbuf = MAC_BufferPrepare(info->direct_src, false);
+    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->direct_src);
     if(mbuf != 0) {
+      uint8_t *ibuf = (uint8_t*)buf;
+      MAC_Write(mbuf, buf, ibuf[1]); // length is always second byte of frame
       MAC_Send(mbuf, true);
     }
     else

@@ -90,9 +90,9 @@ void CARRY_Init(bool isConnectedToServer);
  * 
  * @param[in] buf 
  * @param[in] target 
- * @return int number of written addresses or 0 when target is unknown
+ * @return int hops counter 0..#CARRY_MAX_HOPS
  */
-int CARRY_WriteTrace(dev_addr_t *buf, dev_addr_t target);
+int CARRY_WriteTrace(mac_buf_t *buf, dev_addr_t target);
 
 
 /**

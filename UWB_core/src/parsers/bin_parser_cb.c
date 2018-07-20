@@ -10,8 +10,12 @@ void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
   header[0] = (uint8_t)FC;
   header[1] = len;
   mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src);
-  MAC_Write(buf, data, len);
-  MAC_Send(buf, false);
+  if(buf != 0) {
+	  MAC_Write(buf, data, len);
+	  MAC_Send(buf, false);
+  } else {
+	  LOG_WRN("Not enough buffer to send bin resp");
+  }
 }
 
 void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
@@ -37,6 +41,8 @@ void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info) {
   FC_STAT_s packet;
   dwt_deviceentcnts_t evnt;
   dwt_readeventcounters(&evnt);
+  packet.FC = FC_STAT_RESP;
+  packet.len = sizeof(packet);
   packet.tx_cnt = evnt.TXF;
   packet.rx_cnt = evnt.CRCG;
   packet.to_cnt = evnt.SFDTO + evnt.PTO + evnt.RTO;
@@ -60,6 +66,8 @@ void FC_STAT_RESP_cb(const void *data, const prot_packet_info_t *info) {
 void FC_VERSION_ASK_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_VERSION_ASK);
   FC_VERSION_s packet;
+  packet.FC = FC_VERSION_RESP;
+  packet.len = sizeof(packet);
   packet.hMajor = __H_MAJOR__;
   packet.hMinor = __H_MINOR__;
   packet.fMajor = __F_MAJOR__;
@@ -69,7 +77,7 @@ void FC_VERSION_ASK_cb(const void *data, const prot_packet_info_t *info) {
   if(info->direct_src == ADDR_BROADCAST) {
     PRINT_Version(&packet, settings.mac.addr);
   } else {
-    BIN_SEND_RESP(FC_STAT_RESP, &packet, packet.len, info);
+    BIN_SEND_RESP(FC_VERSION_RESP, &packet, packet.len, info);
   }
 }
 
