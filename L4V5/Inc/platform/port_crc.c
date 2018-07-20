@@ -4,7 +4,7 @@
  *  Created on: 25.03.2018
  *      Author: KarolTrzcinski
  */
-#include "port.h"
+#include "platform/port.h"
 
 void PORT_CrcInit()
 {

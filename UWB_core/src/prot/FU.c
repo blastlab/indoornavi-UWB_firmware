@@ -7,7 +7,7 @@
 
 //#include "main.h"
 //#include "IAP.h"
-#include "FU.h"
+#include "prot/fu.h"
 
 #if FU_BLOCK_SIZE % 8 != 0
 #error 8 bytes are programmed to flash at once
@@ -33,8 +33,11 @@ static FU_prot FU_tx;
 // === bootloader ===
 // ==================
 
-// compare address of this function with FU_DESTINATION_x and
-// return address of start a currently used flash program space
+/**
+ * @brief ompare address of this function with FU_DESTINATION_x and
+ * 
+ * @return uint8_t* address of start a currently used flash program space
+ */
 uint8_t *FU_GetCurrentFlashBase() {
   if ((void *)FU_GetCurrentFlashBase < FU_DESTINATION_2) {
     return FU_DESTINATION_1;
@@ -43,8 +46,12 @@ uint8_t *FU_GetCurrentFlashBase() {
   }
 }
 
-// compare address of this function with FU_DESTINATION_x and
-// return address of start flash program space to write new software
+
+/**
+ * @brief address of this function with FU_DESTINATION_x and
+ * 
+ * @return uint8_t* address of start flash program space to write new software
+ */
 static inline uint8_t *FU_GetAddressToWrite() {
   if ((void *)FU_GetAddressToWrite < FU_DESTINATION_2) {
     return FU_DESTINATION_2;
@@ -73,18 +80,39 @@ int FU_AcceptHardwareVersion(int Ver) {
   }
 }
 
-// prepare opcode with current protocol version
+
+/**
+ * @brief prepare opcode with current protocol version
+ * 
+ * @param opcode 
+ * @return uint8_t 
+ */
 static inline uint8_t FU_MakeOpcode(uint8_t opcode) {
   return (FU_PROT_VERSION << 4) | (opcode & 0x0F);
 }
 
-// check if it is this opcode
-static inline uint8_t FU_IsOpcode(uint8_t original, uint8_t toCkeck) {
+/**
+ * @brief copmpare opcode with fu version with raw opcode
+ * 
+ * this function ignore fu version from original
+ * 
+ * @param original value of opcode with fu version
+ * @param toCkeck only opcode value
+ * @return true if opcode math
+ * @return false if opcode didn't math
+ */
+static inline bool FU_IsOpcode(uint8_t original, uint8_t toCkeck) {
   return (original & 0x0F) == toCkeck;
 }
 
-// return 1 if firmware version is inside this block of data
-static inline uint8_t FU_IsVersionInside(const FU_prot *fup) {
+/**
+ * @brief check if firmware version is inside this block of data
+ * 
+ * @param fup 
+ * @return true if firmware version is inside this block of data
+ * @return false otherwise
+ */
+static inline bool FU_IsVersionInside(const FU_prot *fup) {
   uint16_t dataLen = fup->frameLen - FU_PROT_HEAD_SIZE - 2; // -2 for CRC
   if (fup->extra * FU_BLOCK_SIZE <= FU_VERSION_LOC &&
       FU_VERSION_LOC < fup->extra * FU_BLOCK_SIZE + dataLen) {
@@ -112,10 +140,17 @@ static inline int FU_GetLocalHash() {
   return (uint8_t)(settings_otp->h_major + settings.version.f_hash);
 }
 
-// check if CRC is ok
-static uint8_t FU_IsCRCError(const FU_prot *fup) {
+
+/**
+ * @brief check if CRC has error
+ * 
+ * @param fup protocol
+ * @return true bad CRC
+ * @return false CRC correct
+ */
+static bool FU_IsCRCError(const FU_prot *fup) {
   PORT_CrcReset();
-  return PORT_CrcFeed(fup, fup->frameLen);
+  return PORT_CrcFeed(fup, fup->frameLen) != 0;
 }
 
 // return 1 data in flash and packet with new version is correct
@@ -144,6 +179,12 @@ static void FU_FillCRC(const FU_prot *fup) {
 
 // add 2 to packet length, write current version, calculate CRC, send packet via
 // resp
+/**
+ * @brief 
+ * 
+ * @param fup 
+ * @param info 
+ */
 static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
 #ifdef TEST_FU
   DW_ASSERT(fup->frameLen >= FU_PROT_HEAD_SIZE);
@@ -166,13 +207,19 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   fup->hash = (uint8_t)FU_GetLocalHash();
   fup->frameLen += 2; // correct value for CRC calculation
   FU_FillCRC(fup);
-  mac_buf_t *buf = carry_prepare_response(info);
+  mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src);
   MAC_Write(buf, fup, fup->frameLen);
   MAC_Send(buf, true);
 }
 
-// set opcode, error code, package length then version and CRC and send message
-// via resp
+
+/**
+ * @brief set opcode, error code, package length then version and CRC and send
+ *   message
+ * 
+ * @param info extra informations about message
+ * @param err error code
+ */
 static void FU_SendError(const prot_packet_info_t *info, uint16_t err) {
   FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ABORT); // zglos blad
   FU_tx.extra = err;
@@ -180,16 +227,22 @@ static void FU_SendError(const prot_packet_info_t *info, uint16_t err) {
   FU_SendResponse(&FU_tx, info);
 }
 
-/* Public functions ---------------------------------------------------------*/
 
-// zapisz odebrane CRC dla pliku,
-// wyczysc caly bank pamieci - zajmuje duzo czasu
+/**
+ * @brief process SOT message as device
+ * 
+ * save CRC, version, size, hash
+ * erase Flash
+ * 
+ * @param fup_d message to process
+ * @param info extra informations about message
+ */
 static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
   FU_SOT_prot *fup = (FU_SOT_prot *)fup_d;
   if (fup->frameLen != sizeof(FU_SOT_prot)) { // 2 for CRC, 4 for size
     FU_SendError(info, FU_ERR_BAD_FRAME_LEN);
     return;
-  } // sprawdz czy ta wersja jest nowsza - wiekszy numerek 'version'
+  } // sprawdz czy ta wersja jest odpowiednia - nalezy do odpowiedniej partycji
   else if (FU_AcceptFirmwareVersion(fup->fversion) == 0) {
     FU_SendError(info, FU_ERR_BAD_F_VERSION);
     return;
@@ -235,8 +288,13 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
   LOG_DBG("FU_SOT ok");
 }
 
-// sprawdz czy to jest ramka z wersja nowego programu,
-// gdy tak jest to sprawdz CRC dla calego programu
+
+/**
+ * @brief process DATA message as device
+ * 
+ * @param fup message to process
+ * @param info extra informations about message
+ */
 static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
   if (FU_instance.fileSize == 0) {
     FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
@@ -249,9 +307,8 @@ static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
     FU_SendError(info, FU_ERR_BAD_OFFSET);
     return;
   } else if (FU_IsVersionInside(fup) &&
-             !FU_IsOpcode(fup->opcode,
-                          FU_OPCODE_EOT)) { // gdy ta paczka zawiera version a
-    // nie jest typu EOT, to zg�o� b��d
+            !FU_IsOpcode(fup->opcode, FU_OPCODE_EOT)) {
+    // gdy ta paczka zawiera version a  nie jest typu EOT, to zglos blad
     FU_SendError(info, FU_ERR_VERSION_IN_PACKAGE);
   }
   // gdy nie ma wersji firmwaru w tej paczce lub jest, ale zgadza sie CRC
@@ -271,8 +328,13 @@ static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
   }
 }
 
-// process last message with data as a device
-// so you have to
+
+/**
+ * @brief process EOT message as a device
+ * 
+ * @param fup message to process
+ * @param info extra informations about message
+ */
 static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
   if (FU_IsFlashCRCError(fup)) {
     FU_SendError(info, FU_ERR_BAD_FLASH_CRC);
@@ -291,18 +353,18 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
   }
 }
 
+
+/* Public functions ---------------------------------------------------------*/
+
 // obluga paczki przychodzacej
 void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info) {
   if (FU_IsCRCError(fup)) {
     // check CRC
     FU_SendError(info, FU_ERR_BAD_FRAME_CRC);
-    return;
   } else if ((fup->opcode >> 4) != FU_PROT_VERSION) {
     // check protocol version
     FU_SendError(info, FU_ERR_BAD_PROT_VER);
-    return;
-  }
-  if (FU_IsOpcode(fup->opcode, FU_OPCODE_DATA)) {
+  } else if (FU_IsOpcode(fup->opcode, FU_OPCODE_DATA)) {
     // przeslanie paczki z danymi
     FU_Data(fup, info);
   } else if (FU_IsOpcode(fup->opcode, FU_OPCODE_SOT)) {
@@ -324,7 +386,7 @@ void FU_AcceptFirmware()
 	}
 }
 
-// funkcja wywo�ywana z main
+
 void FU_Init(bool forceNoFirmwareCheck) {
   FU_ASSERT(FU_MAX_PROGRAM_SIZE % FLASH_PAGE_SIZE == 0);
   FU_ASSERT(FU_DESTINATION_2+FU_MAX_PROGRAM_SIZE <= (void*)(FLASH_BASE + FLASH_BANK_SIZE));

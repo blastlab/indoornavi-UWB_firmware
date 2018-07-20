@@ -269,6 +269,19 @@ void EXTI9_5_IRQHandler(void)
 
   /* USER CODE END EXTI9_5_IRQn 1 */
 }
+/**
+* @brief This function handles TIM2 global interrupt.
+*/
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+	LL_TIM_ClearFlag_UPDATE(TIM2);
+	MAC_YourSlotIsr();
+  /* USER CODE END TIM2_IRQn 0 */
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
 
 /**
 * @brief This function handles USART1 global interrupt.
@@ -295,21 +308,6 @@ void LPTIM1_IRQHandler(void)
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
   /* USER CODE END LPTIM1_IRQn 1 */
-}
-
-/**
-* @brief This function handles LPTIM2 global interrupt.
-*/
-void LPTIM2_IRQHandler(void)
-{
-  /* USER CODE BEGIN LPTIM2_IRQn 0 */
-  LL_LPTIM_ClearFLAG_ARRM(LPTIM2);
-  /* USER CODE END LPTIM2_IRQn 0 */
-  /* USER CODE BEGIN LPTIM2_IRQn 1 */
-  decaIrqStatus_t st = decamutexon();
-  MAC_YourSlotIsr();
-  decamutexoff(st);
-  /* USER CODE END LPTIM2_IRQn 1 */
 }
 
 /**
