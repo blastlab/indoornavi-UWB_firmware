@@ -5,7 +5,7 @@
  *      Author: Dawid Peplinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 #include "mac/mac.h"
 
 #define IMU_ACCEL_WOM_THRESHOLD 0b00001000

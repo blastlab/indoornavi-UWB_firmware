@@ -421,4 +421,71 @@ int PORT_FlashErase(void *flash_addr, uint32_t length);
  */
 int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
+
+// ========  IMU  ==========
+
+
+/**
+ * \brief Configure Wake-on-Motion feature
+ * 
+ * It configures imu registers for low power cycled accelerometer mode
+ * which compares samples to each other and throws interrupts
+ * 
+ *  \note imu WoM feature is set only on TAG devices to save energy
+ * 
+ */
+void PORT_ImuWomConfig();
+
+
+/**
+ * \brief Check if the device should go to sleep
+ * 
+ * It checks if the given time with no motion detected is up,
+ * if so, it sets the device to sleep
+ * 
+ */
+void PORT_ImuMotionControl();
+
+
+/**
+ * \brief Handle IRQ coming from IMU
+ * 
+ * When motion detected, it resets the time used for setting device to sleep
+ * 
+ */
+void PORT_ImuIrqHandler();
+
+
+// ========  SLEEP  ==========
+
+
+/**
+ * \brief Prepare the processor for sleeping
+ * 
+ * It turns off leds, USB and saves current
+ * RCC configuration
+ * 
+ */
+void PORT_PrepareSleepMode();
+
+
+/**
+ * \brief Set the processor into sleep mode
+ * 
+ * It sets the device to sleep and holds this state
+ * with sleeping flag
+ * 
+ */
+void PORT_EnterSleepMode();
+
+
+/**
+ * \brief Wake up the processor
+ * 
+ * When motion is detected during sleep,
+ * it wakes the device and reinit USB and RCC
+ * 
+ */
+void PORT_ExitSleepMode();
+
 #endif
