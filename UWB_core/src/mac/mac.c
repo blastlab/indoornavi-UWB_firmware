@@ -66,7 +66,7 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
   if (mac.frame_under_tx_is_ranging) {
     // try ranging callback
     ret = SYNC_TxCb(tx_ts);
-    if(ret != 0) {
+    if(ret == 0) {
       ret = TOA_TxCb(tx_ts);
     }
     // reset ranging settings when SYNC release transceiver
