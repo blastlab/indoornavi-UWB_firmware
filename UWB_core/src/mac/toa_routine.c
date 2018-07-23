@@ -194,13 +194,13 @@ int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
   if (toa.core.resp_ind < toa.core.anc_in_poll_cnt) {
     int ret = TOA_SendResp(rx_ts);
     if (ret != 0) {
-      LOG_DBG("Sync POLL->RESP tx timeout (%d)", MAC_UsFromRx());
+      LOG_DBG("TOA POLL->RESP tx timeout (%d)", MAC_UsFromRx());
       TRANSCEIVER_DefaultRx();
     } else {
       int dly = settings.mac.toa_dly.resp_dly_us[toa.core.resp_ind];
       int lag = MAC_UsFromRx();
       int tx_time = TRANSCEIVER_EstimateTxTimeUs(sizeof(FC_TOA_RESP_s));
-      TOA_TRACE("SYNC RESP sent to %X (%d>%d+%d)", toa.core.initiator, dly, lag,
+      TOA_TRACE("TOA RESP sent to %X (%d>%d+%d)", toa.core.initiator, dly, lag,
                 tx_time);
     }
   } else {
@@ -223,12 +223,12 @@ int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
   if (toa.core.resp_ind >= toa.core.anc_in_poll_cnt) {
     int ret = TOA_SendFinal();
     if (ret != 0) {
-      TOA_TRACE("Sync RESP->FIN tx timeout (%d)", MAC_UsFromRx());
+      TOA_TRACE("TOA RESP->FIN tx timeout (%d)", MAC_UsFromRx());
     } else {
       int dly = settings.mac.toa_dly.fin_dly_us;
       int lag = MAC_UsFromRx();
       int tx_time = TRANSCEIVER_EstimateTxTimeUs(sizeof(FC_TOA_RESP_s));
-      TOA_TRACE("SYNC FIN sent to %X (%d>%d+%d)", toa.core.addr_tab[0], dly,
+      TOA_TRACE("TOA FIN sent to %X (%d>%d+%d)", toa.core.addr_tab[0], dly,
                 lag, tx_time);
     }
   } else {
@@ -236,7 +236,7 @@ int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
                                     toa.core.TsPollRx);
     if (ret != 0) {
       int lag = MAC_UsFromRx();
-      TOA_TRACE("Sync RESP->RESP rx timeout (%d, %d)", lag, toa.core.resp_ind);
+      TOA_TRACE("TOA RESP->RESP rx timeout (%d, %d)", lag, toa.core.resp_ind);
     }
   }
   return 0;
@@ -321,14 +321,14 @@ int TOA_TxCb(int64_t TsDwTx) {
     case TOA_POLL_WAIT_TO_SEND:
       TOA_State(&toa.core, TOA_POLL_SENT);
       toa.core.TsPollTx = TsDwTx;
-      TOA_TRACE("SYNC POLL sent");
+      TOA_TRACE("TOA POLL sent");
       ret = 1;
       break;
     case TOA_RESP_WAIT_TO_SEND:
       TOA_State(&toa.core, TOA_RESP_SENT);
       toa.core.TsRespTx = TsDwTx;
       int resp_us = (toa.core.TsRespTx - toa.core.TsPollRx) / UUS_TO_DWT_TIME;
-      TOA_TRACE("SYNC RESP sent after %dus", resp_us);
+      TOA_TRACE("TOA RESP sent after %dus", resp_us);
       ret = 1;
       break;
     case TOA_FIN_WAIT_TO_SEND:
@@ -337,7 +337,7 @@ int TOA_TxCb(int64_t TsDwTx) {
       toa.core.TsFinTx = TsDwTx;
       int fin_us =
           ((TsDwTx - toa.core.TsPollTx) & MASK_40BIT) / UUS_TO_DWT_TIME;
-      TOA_TRACE("SYNC FIN sent after %dus from POLL", fin_us);
+      TOA_TRACE("TOA FIN sent after %dus from POLL", fin_us);
       ret = 0;  // to release transceiver
       break;
     default:
@@ -368,7 +368,7 @@ int TOA_RxToCb() {
     // so abort ranging
     case TOA_RESP_SENT: {
       int fin_to_dw = TRANSCEIVER_GetTime() - TRANSCEIVER_GetTxTimestamp();
-      TOA_TRACE("SYNC FIN TO after %d", fin_to_dw / UUS_TO_DWT_TIME);
+      TOA_TRACE("TOA FIN TO after %d", fin_to_dw / UUS_TO_DWT_TIME);
       ret = 2;
       break;
     }
