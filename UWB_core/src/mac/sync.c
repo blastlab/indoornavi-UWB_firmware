@@ -4,13 +4,13 @@
 sync_instance_t sync;
 extern mac_instance_t mac;
 
-const char bad_len_msg[] = "%s bad len %d!=%d";
+const char sync_bad_len_msg[] = "%s bad len %d!=%d";
 #define PROT_CHECK_LEN(FC, len, expected)                                      \
   \
 do \
 {                                                                        \
     if ((len) < (expected)) {                                                  \
-      LOG_ERR(bad_len_msg, #FC, (len), (expected));                            \
+      LOG_ERR(sync_bad_len_msg, #FC, (len), (expected));                            \
       return -1;                                                               \
     }                                                                          \
   \
@@ -212,7 +212,7 @@ void SYNC_Update(sync_neighbour_t *neig, int64_t ext_time, int64_t loc_time,
   // add distance to measure table
   if (settings.mac.raport_anchor_anchor_distance) {
     int distance = TOA_TofToCm(tof_dw * DWT_TIME_UNITS);
-    TOA_AddMeasure(neig->addr, distance);
+    TOA_MeasurePushLocal(neig->addr, distance);
   }
 }
 
@@ -463,7 +463,7 @@ int SYNC_TxCb(int64_t TsDwTx) {
     TRANSCEIVER_DefaultRx();
     TOA_State(&sync.toa, TOA_FIN_SENT);
     sync.toa.TsFinTx = TsDwTx;
-    int fin_us = (sync.toa.TsFinTx - sync.toa.TsPollTx) / UUS_TO_DWT_TIME;
+    int fin_us = ((TsDwTx - sync.toa.TsPollTx) & MASK_40BIT) / UUS_TO_DWT_TIME;
     SYNC_TRACE_TOA("SYNC FIN sent after %dus from POLL", fin_us);
     ret = 0; // to release transceiver
     break;

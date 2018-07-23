@@ -2,6 +2,7 @@
 #include "../settings.h"
 #include "carry.h"
 #include "sync.h"
+#include "toa_routine.h"
 
 // global mac instance
 mac_instance_t mac;
@@ -38,8 +39,9 @@ void MAC_Init() {
     TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
   }
 
-  // initialize synchronization engine
+  // initialize synchronization and ranging engine
   SYNC_Init();
+  TOA_InitDly();
 
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
