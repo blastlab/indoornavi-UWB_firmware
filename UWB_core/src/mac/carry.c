@@ -66,14 +66,31 @@ int CARRY_WriteTrace(mac_buf_t *buf, dev_addr_t target)
 
 mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target)
 {
-  mac_buf_t *buf = MAC_BufferPrepare(target, true);
+  mac_buf_t *buf;
+  uint8_t target_flags = 0;
+
+  if(target == CARRY_ADDR_SINK) {
+    target_flags = CARRY_FLAG_TARGET_SINK;
+    if(carry.toSinkId == 0) {
+      buf = MAC_BufferPrepare(ADDR_BROADCAST, true);
+    } else {
+      buf = MAC_BufferPrepare(carry.toSinkId, true);
+    }
+  } else if(target == CARRY_ADDR_SERVER) {
+    target_flags = CARRY_FLAG_TARGET_SERVER;
+    buf = MAC_Buffer();
+    buf->isServerFrame = true;
+  } else {
+    target_flags = CARRY_FLAG_TARGET_DEV;
+    buf = MAC_BufferPrepare(target, true);
+  }
 
   if (buf != 0)
   {
     FC_CARRY_s *p_target = (FC_CARRY_s *)buf->dPtr;
     FC_CARRY_s prot;
     prot.src_addr = settings.mac.addr;
-    prot.flag_hops = CARRY_FLAG_TARGET_DEV;
+    prot.flag_hops = target_flags;
 
     MAC_Write(buf, &prot, sizeof(FC_CARRY_s));
     int hops_cnt = CARRY_WriteTrace(buf, target);
@@ -88,6 +105,18 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target)
   }
   return buf;
 }
+
+
+void CARRY_Send(mac_buf_t* buf, bool ack_req)
+{
+  if(buf->isServerFrame) {
+    LOG_Bin(buf->buf, MAC_BufLen(buf));
+    buf->isServerFrame = false;
+  } else {
+    MAC_Send(buf, ack_req);
+  }
+}
+
 
 void CARRY_ParseMessage(mac_buf_t *buf)
 {
@@ -132,12 +161,22 @@ void CARRY_ParseMessage(mac_buf_t *buf)
   {
     BIN_Parse(buf, &info, dataSize);
   }
-  else if (toServer && carry.isConnectedToServer)
+  else if (toServer)
   {
-    LOG_Bin(&buf->frame.data[0], buf->rx_len - MAC_HEAD_LENGTH);
+    if(carry.isConnectedToServer) {
+      LOG_Bin(&buf->frame.data[0], buf->rx_len - MAC_HEAD_LENGTH);
+    } else {
+      // change header - source and destination address
+      // and send frame
+      MAC_FillFrameTo(buf, carry.toSinkId);
+      buf->dPtr = dataPointer + dataSize;
+      MAC_Send(buf, ackReq);
+    }
   }
   else if (toSink)
   {
+    // change header - source and destination address
+    // and send frame
     MAC_FillFrameTo(buf, carry.toSinkId);
     buf->dPtr = dataPointer + dataSize;
     MAC_Send(buf, ackReq);
@@ -146,4 +185,28 @@ void CARRY_ParseMessage(mac_buf_t *buf)
   {
     IASSERT(0);
   }
+}
+
+
+unsigned char CARRY_Read8(mac_buf_t *frame)
+{
+  return MAC_Read8(frame);
+}
+
+
+void CARRY_Write8(mac_buf_t *frame, unsigned char value)
+{
+  MAC_Write8(frame, value);
+}
+
+
+void CARRY_Read(mac_buf_t *frame, void *destination, unsigned int len)
+{
+  MAC_Read(frame, destination, len);
+}
+
+
+void CARRY_Write(mac_buf_t *frame, const void *source, unsigned int len)
+{
+  MAC_Write(frame, source, len);
 }

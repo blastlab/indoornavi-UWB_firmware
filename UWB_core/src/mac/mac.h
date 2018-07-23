@@ -65,6 +65,7 @@ typedef struct {
   mac_buf_state state;  ///< current buf state
   int rx_len;  ///< number of received bytes includeing 80
   bool isRangingFrame;
+  bool isServerFrame;  ///< send to server via USB or ETH
   short retransmit_fail_cnt;  ///< increased when after ack receive timeout
   unsigned int last_update_time;
 } mac_buf_t;

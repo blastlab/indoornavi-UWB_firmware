@@ -11,8 +11,8 @@ void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
   header[1] = len;
   mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src);
   if(buf != 0) {
-	  MAC_Write(buf, data, len);
-	  MAC_Send(buf, false);
+	  CARRY_Write(buf, data, len);
+	  CARRY_Send(buf, false);
   } else {
 	  LOG_WRN("Not enough buffer to send bin resp");
   }

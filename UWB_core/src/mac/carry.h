@@ -37,6 +37,18 @@ typedef struct __packed {
  */
 #define CARRY_HEAD_MIN_LEN (1 + 1 + sizeof(dev_addr_t) + 1)
 
+/**
+ * @brief used in CARRY_PrepareBufTo
+ * 
+ */
+#define CARRY_ADDR_SINK ADDR_BROADCAST
+
+/**
+ * @brief used in CARRY_PrepareBufTo
+ * 
+ */
+#define CARRY_ADDR_SERVER 0
+
 
 /**
  * @brief data about some trace to target
@@ -104,15 +116,13 @@ int CARRY_WriteTrace(mac_buf_t *buf, dev_addr_t target);
 mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target);
 
 
+
 /**
- * @brief find or create buffer to the target device
+ * @brief send buffer via UWB or USB to correct device
  * 
- * returned buffer can be partially filled
- * 
- * @param[in] target addres
- * @return mac_buf_t* result buffer or null
+ * @param buf filled buffer data to send
  */
-mac_buf_t *CARRY_GetBufTo(dev_addr_t target);
+void CARRY_Send(mac_buf_t* buf, bool ack_req);
 
 
 /**
@@ -121,5 +131,45 @@ mac_buf_t *CARRY_GetBufTo(dev_addr_t target);
  * @param[in] buf 
  */
 void CARRY_ParseMessage(mac_buf_t *buf);
+
+
+/**
+ * @brief read one byte from frame and move rw pointer
+ * 
+ * 
+ * @param[in] frame to read
+ * @return unsigned char 
+ */
+unsigned char CARRY_Read8(mac_buf_t *frame);
+
+
+/**
+ * @brief write one byte from frame and move rw pointer
+ * 
+ * 
+ * @param[in,out] frame to write
+ * @param value 
+ */
+void CARRY_Write8(mac_buf_t *frame, unsigned char value);
+
+
+/**
+ * @brief read data chunk from frame and move rw pointer
+ * 
+ * @param[in] frame to read
+ * @param[out] destination address
+ * @param[in] len number of bytes to write
+ */
+void CARRY_Read(mac_buf_t *frame, void *destination, unsigned int len);
+
+
+/**
+ * @brief write chunk of bytes from frame and move rw pointer
+ * 
+ * @param[in,out] frame to write
+ * @param[in] src address of data to write
+ * @param[in] len number of bytes to write
+ */
+void CARRY_Write(mac_buf_t *frame, const void *src, unsigned int len);
 
 #endif // _CARRY_H
