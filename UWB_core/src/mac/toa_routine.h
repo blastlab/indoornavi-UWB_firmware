@@ -15,6 +15,15 @@
 typedef struct __packed {
   uint8_t FC;
   uint8_t len;
+  uint8_t padding;
+  uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
+  dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
+} FC_TOA_INIT_s;
+
+typedef struct __packed {
+  uint8_t FC;
+  uint8_t len;
+  uint8_t padding;
   uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
   dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
 } FC_TOA_POLL_s;
@@ -34,6 +43,12 @@ typedef struct __packed {
   uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
   uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
 } FC_TOA_FIN_s;
+
+typedef struct __packed {
+  uint8_t FC;
+  uint8_t len;
+  measure_t meas;
+} FC_TOA_RES_s;
 
 /**
  * @brief Initialize TOA module

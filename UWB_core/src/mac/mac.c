@@ -66,6 +66,9 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
   if (mac.frame_under_tx_is_ranging) {
     // try ranging callback
     ret = SYNC_TxCb(tx_ts);
+    if(ret != 0) {
+      ret = TOA_TxCb(tx_ts);
+    }
     // reset ranging settings when SYNC release transceiver
     if (ret == 0) {
       mac.frame_under_tx_is_ranging = false;
@@ -113,21 +116,27 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeighbour()
-        SYNC_RxCb(buf->frame.data, &info);
+        int ret = SYNC_RxCb(buf->frame.data, &info);
+        if(ret == 0){
+          ret = TOA_RxCb(buf->frame.data, &info);
+        }
+        if(ret == 0) {
+          LOG_WRN("Unsupported MAC frame %X", buf->frame.data[0]);
+        }
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
         CARRY_ParseMessage(buf);
       } else if(type == FR_CR_BEACON){
-    	  prot_packet_info_t info;
+        prot_packet_info_t info;
         memset(&info, 0, sizeof(info));
-    	  info.direct_src = buf->frame.src;
-    	  BIN_ParseSingle(buf->dPtr, &info);
+        info.direct_src = buf->frame.src;
+        BIN_ParseSingle(buf->dPtr, &info);
       } else if(type == FR_CR_ACK) {
-    	  LOG_WRN("ACK frame is not supported");
+        LOG_WRN("ACK frame is not supported");
       } else {
-		LOG_ERR("This kind of frame is not supported: %x",
-		buf->frame.control[0]);
-		TRANSCEIVER_DefaultRx();
+        LOG_ERR("This kind of frame is not supported: %x",
+        buf->frame.control[0]);
+        TRANSCEIVER_DefaultRx();
       }
     } else {
       // frame not for you
@@ -145,6 +154,9 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
+  if(ret != 0) {
+    ret = TOA_RxToCb();
+  }
   if (ret == 0) {
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
     LOG_DBG("MAC_RxToCb");

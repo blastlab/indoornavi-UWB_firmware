@@ -8,22 +8,19 @@
 
 #include "toa_routine.h"
 #include "mac.h"
+#include "carry.h"
 
 extern toa_instance_t toa;
 extern mac_instance_t mac;
 
 const char toa_bad_len_msg[] = "%s bad len %d!=%d";
 #define PROT_CHECK_LEN(FC, len, expected)               \
-                                                        \
   do {                                                  \
     if ((len) < (expected)) {                           \
       LOG_ERR(toa_bad_len_msg, #FC, (len), (expected)); \
       return -1;                                        \
     }                                                   \
-                                                        \
-  }                                                     \
-                                                        \
-  while (0)
+  } while (0)
 
 void TOA_InitDly() {
   const int rx_to_tx_delay = 30;  // us
@@ -63,7 +60,6 @@ void TOA_InitDly() {
 
 int TOA_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
   TOA_ASSERT(0 < anc_cnt && anc_cnt < 8);
-  TOA_ASSERT(dst != ADDR_BROADCAST);
   mac_buf_t* buf = MAC_BufferPrepare(dst, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
   if (buf == 0) {
@@ -148,6 +144,35 @@ int TOA_SendFinal() {
   TOA_State(&toa.core, TOA_FIN_WAIT_TO_SEND);
   const int tx_flags = DWT_START_TX_DELAYED;
   return MAC_SendRanging(buf, tx_flags);
+}
+
+int TOA_SendRes(measure_t* measure) {
+  FC_TOA_RES_s packet = {
+    .FC = FC_TOA_RES,
+    .len = sizeof(FC_TOA_RES_s),
+    .meas = *measure
+  };
+
+  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK);
+  if(buf != 0) {
+    CARRY_Write(buf, &packet, packet.len);
+    CARRY_Send(buf, false);
+  }
+  return 0;
+}
+
+int FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
+  FC_TOA_INIT_s* packet = (FC_TOA_INIT_s*)data;
+  TOA_ASSERT(packet->FC == FC_TOA_INIT);
+  PROT_CHECK_LEN(FC_TOA_INIT, packet->len, sizeof(*packet));
+
+  int anc_cnt = packet->num_poll_anchor;
+  if (anc_cnt == 1) {
+    TOA_SendPoll(packet->poll_addr[0], packet->poll_addr, anc_cnt);
+  } else {
+    TOA_SendPoll(ADDR_BROADCAST, packet->poll_addr, anc_cnt);
+  }
+  return 0;
 }
 
 int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
@@ -240,7 +265,7 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
     int tof_dw = TOA_CalcTofDwTu(&toa.core, toa.core.resp_ind);
     int dist_cm = TOA_TofToCm(tof_dw * DWT_TIME_UNITS);
     TOA_TRACE("Dist %d", dist_cm);
-    TOA_AddLocalMeasure(toa.core.initiator, dist_cm);
+    TOA_MeasurePushLocal(toa.core.initiator, dist_cm);
   } else {
     TOA_TRACE("Dist err");
   }
@@ -251,9 +276,22 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
   return 0;
 }
 
+int FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
+  FC_TOA_RES_s* packet = (FC_TOA_RES_s*)data;
+  TOA_ASSERT(packet->FC == FC_TOA_RES);
+  PROT_CHECK_LEN(FC_TOA_FIN, packet->len, sizeof(*packet));
+
+  TOA_MeasurePush(&packet->meas);
+  return 0;
+}
+
 int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
   int ret;
   switch (*(uint8_t*)data) {
+    case FC_TOA_INIT:
+      FC_TOA_INIT_cb(data, info);
+      ret = 1;
+      break;
     case FC_TOA_POLL:
       FC_TOA_POLL_cb(data, info);
       ret = 1;
@@ -264,6 +302,10 @@ int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
       break;
     case FC_TOA_FIN:
       FC_TOA_FIN_cb(data, info);
+      ret = 1;
+      break;
+    case FC_TOA_RES:
+      FC_TOA_RES_cb(data, info);
       ret = 1;
       break;
     default:
