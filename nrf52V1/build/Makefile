@@ -34,7 +34,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
   $(SDK_ROOT)/components/ble/common/ble_advdata.c \
-  $(PROJ_DIR)/platform/ble.c \
+  $(PROJ_DIR)/platform/port_ble.c \
   $(PROJ_DIR)/platform/logs.c \
   $(PROJ_DIR)/platform/port.c \
   $(PROJ_DIR)/platform/port_battery.c \

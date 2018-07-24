@@ -18,7 +18,7 @@ const nrf_drv_timer_t TIMER_SLOT = NRF_DRV_TIMER_INSTANCE(1);
 const nrf_drv_rtc_t RTC = NRF_DRV_RTC_INSTANCE(1);
 
 static void rtc_handler(nrf_drv_rtc_int_type_t int_type) {
-#ifdef BEACON_MODE
+#if BEACON_MODE
 	if(!(RTC.p_reg->COUNTER % 1000) && int_type == NRF_DRV_RTC_INT_TICK) {
 		nrf_gpio_pin_toggle(LED_BLE);
 	}
@@ -71,7 +71,7 @@ void PORT_TimeInit() {
 }
 
 void PORT_TimeStartTimers() {
-#ifdef BEACON_MODE
+#if BEACON_MODE
 	PORT_BleSetAdvData(settings.mac.addr, 0xDECA);
 	PORT_BleAdvStart();
 #endif

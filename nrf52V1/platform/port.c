@@ -11,7 +11,7 @@ void PORT_ExtiInit();
 void PORT_UsbUartInit();
 
 void PORT_Init() {
-#ifdef BEACON_MODE
+#if BEACON_MODE
 	PORT_BleBeaconStart();
 #endif
 	PORT_TimeInit();

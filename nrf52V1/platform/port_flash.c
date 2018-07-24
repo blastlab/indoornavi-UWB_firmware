@@ -10,13 +10,17 @@
 #include "string.h"
 
 // save value in reset-safe backup register
-void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value) {
-
+void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
+{
+  PORT_ASSERT((uint32_t)reg >= (uint32_t)&NRF_POWER->GPREGRET);
+  *reg = value;
 }
 
 // read value from reset-safe backup register
-uint32_t PORT_BkpRegisterRead(uint32_t *reg) {
-	return 0;
+uint32_t PORT_BkpRegisterRead(uint32_t *reg)
+{
+  PORT_ASSERT((uint32_t)reg >= (uint32_t)&NRF_POWER->GPREGRET);
+  return *reg;
 }
 
 // erasing area in a flash under given address

@@ -19,7 +19,8 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/util/app_error_weak.c \
   $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
   $(SDK_ROOT)/components/libraries/util/nrf_assert.c \
-  $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \  
+  $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
+  $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
