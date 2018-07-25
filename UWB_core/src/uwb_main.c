@@ -9,6 +9,7 @@
 #include "mac/mac.h"
 #include "parsers/bin_struct.h"
 #include "parsers/txt_parser.h"
+#include "mac/toa_routine.h"
 
 void SendTurnOnMessage();
 void SendTurnOffMessage(uint8_t reason);
@@ -48,6 +49,26 @@ void RangingControl() {
   }
 }
 
+void RangingReader() {
+  const measure_t* meas = TOA_MeasurePeek();
+  if (meas != 0) {
+    if(settings.mac.role != RTLS_SINK) {
+      mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK);
+      if(buf != 0) {
+        FC_TOA_RES_s packet = {
+          .FC = FC_TOA_RES,
+          .len = sizeof(FC_TOA_RES_s),
+          .meas = *meas,
+        };
+        CARRY_Write(buf, &packet, packet.len);
+        CARRY_Send(buf, false);
+      }
+    }
+    PRINT_Measure(meas);
+    TOA_MeasurePop();
+  }
+}
+
 void UwbMain() {
   //CheckSleepMode();
   SETTINGS_Init();
@@ -72,6 +93,7 @@ void UwbMain() {
     PORT_LedOff(LED_ERR);
     //BatteryControl(); //todo: HardFault
     RangingControl();
+    RangingReader();
     BeaconSender();
     TXT_Control();
     PORT_WatchdogRefresh();

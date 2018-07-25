@@ -95,3 +95,9 @@ void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did)
             data->chan, _f[data->chan], _bw[data->chan],
             br, plen, prf, pac, data->code, data->ns_sfd, data->sfd_to);
 }
+
+void PRINT_Measure(const measure_t *data)
+{
+  LOG_INF("a %X>%X %d %d %d %d", data->did1, data->did2, data->dist_cm,
+          data->rssi_cdbm, data->fpp_cdbm, data->snr_cdbm);
+}

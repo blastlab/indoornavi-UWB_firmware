@@ -290,8 +290,7 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
     // when it was to you
     int tof_dw = TOA_CalcTofDwTu(&toa.core, toa.core.resp_ind);
     int dist_cm = TOA_TofToCm(tof_dw * DWT_TIME_UNITS);
-    TOA_TRACE("Dist %d", dist_cm);
-    TOA_MeasurePushLocal(toa.core.initiator, dist_cm);
+    TOA_MeasurePushLocal(info->direct_src, dist_cm);
   } else {
     TOA_TRACE("Dist err");
   }

@@ -26,11 +26,13 @@ void TOA_MeasurePushLocal(dev_addr_t addr, int distance) {
 }
 
 void TOA_MeasurePush(const measure_t* meas) {
+  // when is full, then do not add new measures
+  // *then you don't need to add read/write mutex
+  if((toa.measures_write_ind+1)%TOA_MEASURES_BUF_SIZE == toa.measures_read_ind) {
+    return;
+  }
   toa.measures[toa.measures_write_ind] = *meas;
   INCREMENT_MOD(toa.measures_write_ind, TOA_MEASURES_BUF_SIZE);
-  if (toa.measures_write_ind == toa.measures_read_ind) {
-    INCREMENT_MOD(toa.measures_read_ind, TOA_MEASURES_BUF_SIZE);
-  }
 }
 
 const measure_t* TOA_MeasurePeek() {

@@ -11,6 +11,7 @@
 #ifndef _PRINTER_H
 #define _PRINTER_H
 #include "bin_struct.h"
+#include "../mac/toa.h"
 #include "../logs.h"
 
 /**
@@ -69,5 +70,12 @@ void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did);
  * @param did identifier of device connected with this data
  */
 void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did);
+
+/**
+ * @brief print measure info
+ * 
+ * @param data pointer to structure with data to print
+ */
+void PRINT_Measure(const measure_t *data);
 
 #endif
