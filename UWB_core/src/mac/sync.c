@@ -217,7 +217,7 @@ void SYNC_Update(sync_neighbour_t *neig, int64_t ext_time, int64_t loc_time,
 }
 
 int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
-  SYNC_ASSERT(0 < anc_cnt && anc_cnt < 8);
+  SYNC_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
   SYNC_ASSERT(dst != ADDR_BROADCAST);
   mac_buf_t *buf = MAC_BufferPrepare(dst, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
@@ -230,8 +230,8 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
       .len = sizeof(FC_SYNC_POLL_s) + anc_cnt * sizeof(dev_addr_t),
       .num_poll_anchor = anc_cnt,
   };
-  memcpy(&packet.poll_addr[0], &anchors[0], anc_addr_len);
-  MAC_Write(buf, &packet, packet.len);
+  MAC_Write(buf, &packet, sizeof(FC_SYNC_POLL_s));
+  MAC_Write(buf, anchors, sizeof(dev_addr_t) * anc_cnt);
 
   sync.toa.resp_ind = 0;
   sync.toa.anc_in_poll_cnt = anc_cnt;

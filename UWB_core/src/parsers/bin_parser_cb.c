@@ -2,6 +2,7 @@
 #include "bin_parser.h"
 #include "bin_struct.h"
 #include "printer.h"
+#include "../mac/toa_routine.h"
 
 
 void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
@@ -35,6 +36,7 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
     SYNC_FindOrCreateNeighbour(info->direct_src, default_tree_level);
   }
 }
+
 
 void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_STAT_ASK);
@@ -182,18 +184,19 @@ void FC_RFSET_SET_cb(const void *data, const prot_packet_info_t *info) {
 }
 
 const prot_cb_t prot_cb_tab[] = {
+    {FC_BEACON, FC_BEACON_cb},
     {FC_TURN_ON, FC_TURN_ON_cb},
     {FC_TURN_OFF, FC_TURN_OFF_cb},
-    {FC_BEACON, FC_BEACON_cb},
-    {FC_STAT_ASK, FC_STAT_ASK_cb},
-    {FC_STAT_RESP, FC_STAT_RESP_cb},
-    {FC_VERSION_ASK, FC_VERSION_ASK_cb},
-    {FC_VERSION_RESP, FC_VERSION_RESP_cb},
     {FC_DEV_ACCEPTED, FC_DEV_ACCEPTED_cb},
     {FC_CARRY, 0},
     {FC_FU, 0},
+    {FC_VERSION_ASK, FC_VERSION_ASK_cb},
+    {FC_VERSION_RESP, FC_VERSION_RESP_cb},
+    {FC_STAT_ASK, FC_STAT_ASK_cb},
+    {FC_STAT_RESP, FC_STAT_RESP_cb},
     {FC_RFSET_ASK, FC_RFSET_ASK_cb},
     {FC_RFSET_RESP, FC_RFSET_RESP_cb},
     {FC_RFSET_SET, FC_RFSET_SET_cb},
+    {FC_TOA_INIT, FC_TOA_INIT_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

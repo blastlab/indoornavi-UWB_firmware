@@ -57,14 +57,38 @@ typedef struct __packed {
 void TOA_InitDly();
 
 /**
+ * @brief Send initiation message to start ranging from remote device
+ * 
+ * Remote device after receiving this message should send Poll message
+ * and start ranging procedure
+ * 
+ * @param[in] dst destination device address (tag)
+ * @param[in] anchors ist of anchor to measure
+ * @param[in] anc_cnt counter of anchors to measure
+ * @return int 0 if succeed error code otherwise
+ */
+int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
+
+/**
  * @brief Send Poll message to start SYNC process with a given anchor
  *
- * @param[in] dst destination device address
- * @param[in] anchors ist of anchor to measure ()
+ * @param[in] anchors ist of anchor to measure
  * @param[in] anc_cnt counter of anchors to measure
- * @return int
+ * @return int 0 if succeed error code otherwise
  */
-int TOA_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
+int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt);
+
+
+/**
+ * @brief Init message callback routine
+ * 
+ * This function should be added to binary parser callbacks array
+ * 
+ * @param[in] data pointer to data to parse
+ * @param[in] info extra packet info
+ */
+void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info);
+
 
 /**
  * @brief sync rx callback

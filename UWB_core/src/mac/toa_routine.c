@@ -58,9 +58,34 @@ void TOA_InitDly() {
   tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
 }
 
-int TOA_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
-  TOA_ASSERT(0 < anc_cnt && anc_cnt < 8);
-  mac_buf_t* buf = MAC_BufferPrepare(dst, false);
+int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
+  TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
+  mac_buf_t* buf = CARRY_PrepareBufTo(dst);
+  int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
+  if (buf == 0) {
+    return -1;
+  }
+
+  FC_TOA_INIT_s packet = {
+      .FC = FC_TOA_INIT,
+      .len = sizeof(FC_TOA_INIT_s) + anc_cnt * sizeof(dev_addr_t),
+      .num_poll_anchor = anc_cnt,
+  };
+  CARRY_Write(buf, &packet, sizeof(FC_TOA_INIT_s));
+  CARRY_Write(buf, anchors, sizeof(dev_addr_t) * anc_cnt);
+
+  toa.core.resp_ind = 0;
+  toa.core.anc_in_poll_cnt = anc_cnt;
+  toa.core.initiator = settings.mac.addr;
+  memcpy(&toa.core.addr_tab[0], anchors, anc_addr_len);
+
+  CARRY_Send(buf, false);
+  return 0;
+}
+
+int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt) {
+  TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
+  mac_buf_t* buf = MAC_BufferPrepare(anc_cnt == 1 ? anchors[0] : ADDR_BROADCAST, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
   if (buf == 0) {
     return -1;
@@ -71,8 +96,8 @@ int TOA_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
       .len = sizeof(FC_TOA_POLL_s) + anc_cnt * sizeof(dev_addr_t),
       .num_poll_anchor = anc_cnt,
   };
-  memcpy(&packet.poll_addr[0], &anchors[0], anc_addr_len);
-  MAC_Write(buf, &packet, packet.len);
+  MAC_Write(buf, &packet, sizeof(FC_TOA_POLL_s));
+  MAC_Write(buf, anchors, sizeof(dev_addr_t) * anc_cnt);
 
   toa.core.resp_ind = 0;
   toa.core.anc_in_poll_cnt = anc_cnt;
@@ -161,18 +186,19 @@ int TOA_SendRes(measure_t* measure) {
   return 0;
 }
 
-int FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
   FC_TOA_INIT_s* packet = (FC_TOA_INIT_s*)data;
   TOA_ASSERT(packet->FC == FC_TOA_INIT);
-  PROT_CHECK_LEN(FC_TOA_INIT, packet->len, sizeof(*packet));
-
-  int anc_cnt = packet->num_poll_anchor;
-  if (anc_cnt == 1) {
-    TOA_SendPoll(packet->poll_addr[0], packet->poll_addr, anc_cnt);
-  } else {
-    TOA_SendPoll(ADDR_BROADCAST, packet->poll_addr, anc_cnt);
+  int expected_size = sizeof(*packet) + packet->num_poll_anchor * sizeof(dev_addr_t);
+  if(packet->len != expected_size) {
+	  LOG_ERR(toa_bad_len_msg, "FC_TOA_INIT", packet->len, expected_size);
+	  return;
   }
-  return 0;
+
+  // Poll will be sent as MAC frame in your slot
+  // so next frame in slot won't be sent until rx timeout,
+  // error occurrence or success ranging result
+  TOA_SendPoll(packet->poll_addr, packet->num_poll_anchor);
 }
 
 int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
@@ -288,10 +314,6 @@ int FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
 int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
   int ret;
   switch (*(uint8_t*)data) {
-    case FC_TOA_INIT:
-      FC_TOA_INIT_cb(data, info);
-      ret = 1;
-      break;
     case FC_TOA_POLL:
       FC_TOA_POLL_cb(data, info);
       ret = 1;
