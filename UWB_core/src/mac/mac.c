@@ -73,6 +73,7 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
     if (ret == 0) {
       mac.frame_under_tx_is_ranging = false;
       dwt_forcetrxoff();
+      // do not change ret value
     }
   }
 
@@ -130,6 +131,7 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
         prot_packet_info_t info;
         memset(&info, 0, sizeof(info));
         info.direct_src = buf->frame.src;
+        TRANSCEIVER_DefaultRx();
         BIN_ParseSingle(buf->dPtr, &info);
       } else if(type == FR_CR_ACK) {
         LOG_WRN("ACK frame is not supported");
@@ -158,6 +160,7 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
     ret = TOA_RxToCb();
   }
   if (ret == 0) {
+    dwt_setrxtimeout(0);
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
     LOG_DBG("MAC_RxToCb");
   }
@@ -260,6 +263,8 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
 
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
+	  // return 0 to start receiving from tx callback
+	  // abd from your slot ISR there receiving wasn't interrupted
     return 0;
   }
   int len = MAC_BufLen(buf);
