@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "port.h"
+#include "platform/port.h"
 
 // return 0 when IRQ is inactive, 1 otherwise
 ITStatus EXTI_GetITEnStatus(uint32_t IRQn) {
@@ -41,5 +41,19 @@ void decamutexoff(decaIrqStatus_t s) {
   if (s) { // need to check the port state as we can't use level sensitive
            // interrupt on the STM ARM
     NVIC_EnableIRQ(DW_EXTI_IRQn);
+  }
+}
+
+
+decaIrqStatus_t PORT_EnterCritical() {
+  decaIrqStatus_t s = __get_PRIMASK();
+  __disable_irq();
+  return s;
+}
+
+void PORT_ExitCritical(decaIrqStatus_t s) {
+  if(!s)
+  {
+    __enable_irq();
   }
 }

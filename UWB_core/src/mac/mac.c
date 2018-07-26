@@ -2,18 +2,19 @@
 #include "../settings.h"
 #include "carry.h"
 #include "sync.h"
+#include "toa_routine.h"
 
 // global mac instance
 mac_instance_t mac;
 
-mac_buf_t *_MAC_BufGetOldestToTx();
-void _MAC_BufferReset(mac_buf_t *buf);
+static mac_buf_t *_MAC_BufGetOldestToTx();
+static void _MAC_BufferReset(mac_buf_t *buf);
 int MAC_TryTransmitFrameInSlot(int64_t glob_time);
 
-void MAC_TxCb(const dwt_cb_data_t *data);
-void MAC_RxCb(const dwt_cb_data_t *data);
-void MAC_RxToCb(const dwt_cb_data_t *data);
-void MAC_RxErrCb(const dwt_cb_data_t *data);
+static void MAC_TxCb(const dwt_cb_data_t *data);
+static void MAC_RxCb(const dwt_cb_data_t *data);
+static void MAC_RxToCb(const dwt_cb_data_t *data);
+static void MAC_RxErrCb(const dwt_cb_data_t *data);
 
 void MAC_Init() {
   // init transceiver
@@ -38,8 +39,9 @@ void MAC_Init() {
     TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
   }
 
-  // initialize synchronization engine
+  // initialize synchronization and ranging engine
   SYNC_Init();
+  TOA_InitDly();
 
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
@@ -52,7 +54,7 @@ void MAC_Init() {
   MAC_BeaconTimerReset();
 }
 
-void MAC_TxCb(const dwt_cb_data_t *data) {
+static void MAC_TxCb(const dwt_cb_data_t *data) {
   int64_t tx_ts = TRANSCEIVER_GetTxTimestamp();
 
   PORT_LedOn(LED_STAT);
@@ -64,10 +66,14 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
   if (mac.frame_under_tx_is_ranging) {
     // try ranging callback
     ret = SYNC_TxCb(tx_ts);
+    if(ret == 0) {
+      ret = TOA_TxCb(tx_ts);
+    }
     // reset ranging settings when SYNC release transceiver
     if (ret == 0) {
       mac.frame_under_tx_is_ranging = false;
       dwt_forcetrxoff();
+      // do not change ret value
     }
   }
 
@@ -88,7 +94,7 @@ void MAC_TxCb(const dwt_cb_data_t *data) {
   }
 }
 
-void MAC_RxCb(const dwt_cb_data_t *data) {
+static void MAC_RxCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_STAT);
   mac.last_rx_ts = PORT_TickHr();
   mac_buf_t *buf = MAC_Buffer();
@@ -98,7 +104,7 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
 
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
-    buf->rx_len = data->datalength;
+    buf->rx_len = data->datalength - 2; // ommit CRC
     info.direct_src = buf->frame.src;
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
@@ -110,17 +116,28 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
     if (broadcast || unicast) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
-        // int ret = SYNC_UpdateNeightbour()
-        SYNC_RxCb(buf->frame.data, &info);
+        // int ret = SYNC_UpdateNeighbour()
+        int ret = SYNC_RxCb(buf->frame.data, &info);
+        if(ret == 0){
+          ret = TOA_RxCb(buf->frame.data, &info);
+        }
+        if(ret == 0) {
+          LOG_WRN("Unsupported MAC frame %X", buf->frame.data[0]);
+        }
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
         CARRY_ParseMessage(buf);
-      } else if (type == FR_CR_BEACON) {
-    	  LOG_INF("Beacon received from %x", buf->frame.src);		// TODO do not merge this to develop; add beacons handling for neighbours detecion
-    	  TRANSCEIVER_DefaultRx();
+      } else if(type == FR_CR_BEACON){
+        prot_packet_info_t info;
+        memset(&info, 0, sizeof(info));
+        info.direct_src = buf->frame.src;
+        TRANSCEIVER_DefaultRx();
+        BIN_ParseSingle(buf->dPtr, &info);
+      } else if(type == FR_CR_ACK) {
+        LOG_WRN("ACK frame is not supported");
       } else {
         LOG_ERR("This kind of frame is not supported: %x",
-                buf->frame.control[0]);
+        buf->frame.control[0]);
         TRANSCEIVER_DefaultRx();
       }
     } else {
@@ -135,18 +152,22 @@ void MAC_RxCb(const dwt_cb_data_t *data) {
 }
 
 // timeout error -> check ranging, maybe ACK or default RX
-void MAC_RxToCb(const dwt_cb_data_t *data) {
+static void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
+  if(ret != 0) {
+    ret = TOA_RxToCb();
+  }
   if (ret == 0) {
+    dwt_setrxtimeout(0);
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
     LOG_DBG("MAC_RxToCb");
   }
 }
 
 // error during receiving frame
-void MAC_RxErrCb(const dwt_cb_data_t *data) {
+static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
   LOG_ERR("Rx error status:%X", data->status);
@@ -170,40 +191,42 @@ void MAC_BeaconTimerReset()
 }
 
 // get time from start of super frame in mac_get_port_sync_time units
-int MAC_ToSlotsTime(int64_t glob_time) {
+int MAC_ToSlotsTimeUs(int64_t glob_time) {
 	int64_t slots_period_dtu = (int64_t)settings.mac.slots_sum_time_us / (DWT_TIME_UNITS * 1e6f); // multiple in two lines (conversion 32-64B)
 	int slot_time_us = (glob_time % slots_period_dtu) * (DWT_TIME_UNITS * 1e6f);
 	return slot_time_us;
 }
 
 // update MAC slot timer to be in time with global time
-void MAC_UpdateSlotTimer(int32_t slot_time, int64_t local_time) {
+void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	extern sync_instance_t sync;
 	int64_t glob_time = SYNC_GlobTime(local_time);
-	int slot_time_us = MAC_ToSlotsTime(glob_time);
+	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
 	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
 
 	if (time_to_your_slot_us <= 0) {
 	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
 	}
 
-	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - slot_time);
-	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTick(), (int)sync.neightbour[0].drift[0]);
+	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - loc_slot_time_us);
+	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTickUs(), (int)sync.neighbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
+  CRITICAL(
+    int64_t local_time = TRANSCEIVER_GetTime();
+    uint32_t slot_time = PORT_SlotTimerTickUs();
+    mac.slot_time_offset = SYNC_GlobTime(local_time);
+    MAC_UpdateSlotTimer(slot_time, local_time);
+  )
   decaIrqStatus_t en = decamutexon();
-  int64_t local_time = TRANSCEIVER_GetTime();
-  uint32_t slot_time = PORT_SlotTimerTick();
-  mac.slot_time_offset = SYNC_GlobTime(local_time);
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
-  MAC_UpdateSlotTimer(slot_time, local_time);
 }
 
 // private function, called when buf should be send now as a frame in slot
-void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
+static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   int ret;
   // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
   if (buf->isRangingFrame) {
@@ -233,19 +256,27 @@ void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 // calc slot time and send try send packet if it is yours time
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {					// TODO: dodac uwzglednienie Guard Time, LOG_WRN gdy niespelniony warunek: (-guard_time < (slot_time - slot_number*slot_period) < guard_time)
   // calc time from begining of yours slot
-  int slot_time = MAC_ToSlotsTime(glob_time);
-  MAC_ASSERT(slot_time <= settings.mac.slots_sum_time_us);
-  MAC_ASSERT(0 <= slot_time);
+  int64_t slot_time = MAC_ToSlotsTimeUs(glob_time);
+  if (settings.mac.slots_sum_time_us < slot_time || slot_time < 0) {
+    return 0;
+  }
 
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
+	  // return 0 to start receiving from tx callback
+	  // abd from your slot ISR there receiving wasn't interrupted
     return 0;
   }
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
-  uint32_t end_us = settings.mac.slot_time_us - settings.mac.slot_guard_time_us;
-  if (slot_time + tx_est_time > end_us) {
-	LOG_DBG("%d", slot_time);
+  uint32_t end_us = settings.mac.slot_time_us * (mac.slot_number + 1);
+  end_us -= settings.mac.slot_guard_time_us;
+  if(tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
+    LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
+    MAC_Free(buf);
+  }
+  // when it is too late to send this packet
+  if (end_us < slot_time + tx_est_time) {
     return 0;
   }
 
@@ -267,7 +298,7 @@ void MAC_AckFrameIsr(uint8_t seq_num) {
   }
 }
 
-void _MAC_BufferReset(mac_buf_t *buf) {
+static void _MAC_BufferReset(mac_buf_t *buf) {
   buf->state = BUSY;
   buf->dPtr = buf->buf;
   buf->retransmit_fail_cnt = 0;
@@ -278,7 +309,7 @@ void _MAC_BufferReset(mac_buf_t *buf) {
 
 // get pointer to the oldest buffer with WAIT_FOR_TX or WAIT_FOR_TX_ACK
 // when there is no buffer to tx then return 0
-mac_buf_t *_MAC_BufGetOldestToTx() {
+static mac_buf_t *_MAC_BufGetOldestToTx() {
   volatile int oldest_index = MAC_BUF_CNT;
   int current_time = mac_port_buff_time();
   int oldest_time = -1;

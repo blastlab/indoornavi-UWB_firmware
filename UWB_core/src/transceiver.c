@@ -12,7 +12,7 @@ static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t *ts,
 static int TRANSCEIVER_CalcSfdTo();
 static int TRANSCEIVER_CalcPGdly(int ch);
 
-int TRANSCEIVER_Init() {
+void TRANSCEIVER_Init() {
   int ret;
   dwt_config_t *conf = &settings.transceiver.dwt_config;
 
@@ -87,8 +87,6 @@ int TRANSCEIVER_Init() {
   // turn on default rx mode
   dwt_setrxtimeout(0);
   dwt_setpreambledetecttimeout(0);
-
-  return 0;
 }
 
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb,
@@ -258,6 +256,9 @@ int TRANSCEIVER_EstimateTxTimeUs(unsigned int len) {
 
   // Find the preamble length
   tx_time += transceiver_plen * symbol_duration;
+
+  // CRC len
+  len += 2;
 
   // Bytes to bits
   len *= 8;

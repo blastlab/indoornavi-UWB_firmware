@@ -7,8 +7,9 @@
 #define MAC_BUF_CNT 5
 #define MAC_BUF_LEN 128
 
+#define TOA_MEASURES_BUF_SIZE 5
 #define TOA_MAX_DEV_IN_POLL 4
-#define SYNC_MAC_NEIGHTBOURS 5
+#define SYNC_MAC_NEIGHBOURS 5
 
 typedef enum
 {
@@ -29,16 +30,17 @@ typedef struct
 
 typedef struct
 {
-  dev_addr_t addr;
-  pan_dev_addr_t pan;
-  int slot_time_us;
-  int slot_guard_time_us;
-  int slots_sum_time_us;
-  int max_frame_fail_cnt;
-  mac_buff_time_t max_buf_inactive_time;
-  toa_settings_t sync_dly;
-  rtls_role role;
-  bool raport_anchor_anchor_distance;
+  dev_addr_t addr;  ///< local device address
+  pan_dev_addr_t pan;  ///< personal area network
+  int slot_time_us;  ///< one slot time in us (including guard time)
+  int slot_guard_time_us;  ///< guard time between slots
+  int slots_sum_time_us;  ///< slots sum time in us
+  int max_frame_fail_cnt;  ///< frame retransmit/delete threshold
+  mac_buff_time_t max_buf_inactive_time;  ///< maximal buf inactive time
+  toa_settings_t sync_dly;  ///< SYNC TOA delay settings
+  toa_settings_t toa_dly;  ///< TOA delay settings
+  rtls_role role;  ///< local device 
+  bool raport_anchor_anchor_distance;  ///< true 
 } mac_settings_t;
 
 // default one slot period (icluding guard time) converted from ms to us
