@@ -18,11 +18,12 @@ static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
   }
   else
   {
-    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->direct_src);
+    FC_CARRY_s* carry;
+    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->direct_src, &carry);
     if(mbuf != 0) {
       uint8_t *ibuf = (uint8_t*)buf;
-      MAC_Write(mbuf, buf, ibuf[1]); // length is always second byte of frame
-      MAC_Send(mbuf, true);
+      CARRY_Write(carry, mbuf, buf, ibuf[1]); // length is always second byte of frame
+      CARRY_Send(mbuf, true);
     }
     else
     {
@@ -225,6 +226,30 @@ static void TXT_ResetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
   PORT_Reboot();
 }
 
+static void TXT_Bin(const txt_buf_t *buf, const prot_packet_info_t *info)
+{
+  mac_buf_t* data = MAC_Buffer();
+  if(data != 0) {
+	  data->isServerFrame = true;
+	  // copy base64 string to continuum memory space
+	  data->dPtr = data->buf;
+	  const char* cmd = TXT_PointParamNumber(buf, buf->cmd, 1);
+	  while(cmd[0] != 0) {
+		  if(data->dPtr > data->buf + MAC_BUF_LEN) {
+			  LOG_ERR("TXT_Bin too long base64 message");
+			  return;
+		  }
+		  data->dPtr[0] = cmd[0];
+		  ++data->dPtr;
+		  INCREMENT_CYCLE(cmd, buf->start, buf->end);
+	  }
+	  data->dPtr = data->buf;
+	  // decode oryginal content and parse
+	  int size = BASE64_Decode(data->buf, data->buf, MAC_BUF_LEN);
+	  BIN_Parse(data, info, size);
+  }
+}
+
 const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"version", TXT_VersionCb},
                                {"_hang", TXT_HangCb},
@@ -232,6 +257,7 @@ const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"test", TXT_TestCb},
                                {"save", TXT_SaveCb},
                                {"reset", TXT_ResetCb},
+							   {"bin", TXT_Bin},
                                };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

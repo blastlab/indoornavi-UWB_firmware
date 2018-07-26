@@ -7,6 +7,11 @@ void CARRY_Init(bool isConnectedToServer)
   carry.isConnectedToServer = isConnectedToServer;
 }
 
+dev_addr_t CARRY_ParentAddres()
+{
+  return carry.toSinkId;
+}
+
 // return pointer to target or zero
 carry_target_t *_CARRY_FindTarget(dev_addr_t target)
 {
@@ -64,7 +69,7 @@ int CARRY_WriteTrace(mac_buf_t *buf, dev_addr_t target)
   return 0;
 }
 
-mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target)
+mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry)
 {
   mac_buf_t *buf;
   uint8_t target_flags = 0;
@@ -88,10 +93,15 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target)
   if (buf != 0)
   {
     FC_CARRY_s *p_target = (FC_CARRY_s *)buf->dPtr;
+    if(out_pcarry != 0) {
+      *out_pcarry = p_target;
+    }
     FC_CARRY_s prot;
+    prot.FC = FC_CARRY;
+    prot.len = sizeof(FC_CARRY_s);
     prot.src_addr = settings.mac.addr;
-    prot.flag_hops = target_flags;
-
+    prot.flags = target_flags;
+    prot.hopsNum = 0;
     MAC_Write(buf, &prot, sizeof(FC_CARRY_s));
     int hops_cnt = CARRY_WriteTrace(buf, target);
 
@@ -100,7 +110,7 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target)
     {
       CARRY_ASSERT(hops_cnt < CARRY_MAX_HOPS);
       buf->dPtr += hops_cnt * sizeof(dev_addr_t);
-      p_target->flag_hops = (p_target->flag_hops & ~CARRY_HOPS_NUM_MASK) | hops_cnt;
+      p_target->hopsNum = hops_cnt;
     }
   }
   return buf;
@@ -120,6 +130,7 @@ void CARRY_Send(mac_buf_t* buf, bool ack_req)
 
 void CARRY_ParseMessage(mac_buf_t *buf)
 {
+    CARRY_ASSERT(buf->dPtr[0] == FC_CARRY);
   prot_packet_info_t info;
   uint8_t *dataPointer;
   uint8_t dataSize;
@@ -127,7 +138,7 @@ void CARRY_ParseMessage(mac_buf_t *buf)
   // broadcast without carry header
   if (buf->frame.dst == ADDR_BROADCAST)
   {
-    dataPointer = &buf->frame.data[0];
+    dataPointer = buf->dPtr;
     ackReq = false;
     toSink = toServer = false;
     toMe = true;
@@ -136,9 +147,9 @@ void CARRY_ParseMessage(mac_buf_t *buf)
   else
   {
     // or standard data message with carry header
-    FC_CARRY_s *pcarry = (FC_CARRY_s *)&buf->frame.data[0];
-    uint8_t hops_num = pcarry->flag_hops & CARRY_HOPS_NUM_MASK;
-    uint8_t target = pcarry->flag_hops & CARRY_FLAG_TARGET_MASK;
+    FC_CARRY_s *pcarry = (FC_CARRY_s *)buf->dPtr;
+    uint8_t hops_num = pcarry->flags & CARRY_HOPS_NUM_MASK;
+    uint8_t target = pcarry->flags & CARRY_FLAG_TARGET_MASK;
     dataPointer = (uint8_t *)&pcarry->hops[0];
     dataPointer += hops_num * sizeof(pcarry->hops[0]);
     toSink = (target == CARRY_FLAG_TARGET_SERVER);
@@ -147,10 +158,10 @@ void CARRY_ParseMessage(mac_buf_t *buf)
     toMe |=
         target == CARRY_FLAG_TARGET_DEV && pcarry->hops[0] == settings.mac.addr;
     toMe |= target == CARRY_FLAG_TARGET_SINK && settings.mac.role == RTLS_SINK;
-    toMe |= (pcarry->flag_hops & CARRY_FLAG_REROUTE) &&
+    toMe |= (pcarry->flags & CARRY_FLAG_REROUTE) &&
             pcarry->hops[0] == settings.mac.addr;
     toServer = target == CARRY_FLAG_TARGET_SERVER;
-    ackReq = pcarry->flag_hops & CARRY_FLAG_ACK_REQ;
+    ackReq = pcarry->flags & CARRY_FLAG_ACK_REQ;
     info.carry = (struct FC_CARRY_s *)pcarry;
     info.direct_src = pcarry->src_addr;
     buf->dPtr = dataPointer;
@@ -194,8 +205,9 @@ unsigned char CARRY_Read8(mac_buf_t *frame)
 }
 
 
-void CARRY_Write8(mac_buf_t *frame, unsigned char value)
+void CARRY_Write8(FC_CARRY_s* carry, mac_buf_t *frame, unsigned char value)
 {
+  carry->len += 1;
   MAC_Write8(frame, value);
 }
 
@@ -206,7 +218,8 @@ void CARRY_Read(mac_buf_t *frame, void *destination, unsigned int len)
 }
 
 
-void CARRY_Write(mac_buf_t *frame, const void *source, unsigned int len)
+void CARRY_Write(FC_CARRY_s* carry, mac_buf_t *frame, const void *source, unsigned int len)
 {
+  carry->len += len;
   MAC_Write(frame, source, len);
 }

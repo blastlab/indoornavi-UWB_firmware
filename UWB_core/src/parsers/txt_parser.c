@@ -20,6 +20,7 @@ cchar *TXT_PointParamNumber(const txt_buf_t *buf, cchar *cmd, int num) {
     if (*ptr == 0) {
       return 0;
     }
+    --num;
   }
   return ptr;
 }
@@ -99,7 +100,7 @@ void TXT_Parse(const txt_buf_t *buf) {
       return;
     }
   }
-  LOG_ERR("Bad command (version, stat)");
+  LOG_ERR("Bad command");
 }
 
 // take input to data parser, ignore \r and split by \n

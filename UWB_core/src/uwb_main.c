@@ -10,6 +10,7 @@
 #include "parsers/bin_struct.h"
 #include "parsers/txt_parser.h"
 #include "mac/toa_routine.h"
+#include "parsers/printer.h"
 
 void SendTurnOnMessage();
 void SendTurnOffMessage(uint8_t reason);
@@ -53,14 +54,15 @@ void RangingReader() {
   const measure_t* meas = TOA_MeasurePeek();
   if (meas != 0) {
     if(settings.mac.role != RTLS_SINK) {
-      mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK);
+    	FC_CARRY_s* carry;
+      mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
       if(buf != 0) {
         FC_TOA_RES_s packet = {
           .FC = FC_TOA_RES,
           .len = sizeof(FC_TOA_RES_s),
           .meas = *meas,
         };
-        CARRY_Write(buf, &packet, packet.len);
+        CARRY_Write(carry, buf, &packet, packet.len);
         CARRY_Send(buf, false);
       }
     }
@@ -79,7 +81,7 @@ void UwbMain() {
   }
 
   PORT_Init();
-  MAC_Init();
+  MAC_Init(BIN_Parse);
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
 

@@ -40,6 +40,8 @@ typedef struct __packed {
 typedef struct __packed {
   uint8_t FC, len;
   uint64_t serial;  ///< device serial number from settings.version.serial
+  uint8_t hop_cnt;
+  dev_addr_t hops[0];
 } FC_BEACON_s;
 
 /**

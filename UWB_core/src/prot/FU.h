@@ -323,10 +323,10 @@ uint8_t *FU_GetCurrentFlashBase();
 /**
  * @brief process new message as device
  * 
- * @param fup message to process
+ * @param data message to process
  * @param info extra informations about message
  */
-void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info);
+void FU_HandleAsDevice(const void *data, const prot_packet_info_t *info);
 
 // === test module ===
 //#define TEST_FU // comment to lock unit tests

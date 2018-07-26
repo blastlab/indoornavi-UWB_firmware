@@ -9,8 +9,10 @@
 // bit 5, 4
 #define CARRY_FLAG_ACK_REQ (1 << 4)
 #define CARRY_FLAG_REROUTE (2 << 4)
-//
+// bit 3
+
+// bit 2, 1, 0
 #define CARRY_HOPS_NUM_MASK (0x07)
-#define CARRY_MAX_HOPS 8
+#define CARRY_MAX_HOPS 7
 
 #endif

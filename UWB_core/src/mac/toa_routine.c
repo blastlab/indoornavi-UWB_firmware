@@ -60,7 +60,8 @@ void TOA_InitDly() {
 
 int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
   TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
-  mac_buf_t* buf = CARRY_PrepareBufTo(dst);
+  FC_CARRY_s* carry;
+  mac_buf_t* buf = CARRY_PrepareBufTo(dst, &carry);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
   if (buf == 0) {
     return -1;
@@ -71,8 +72,8 @@ int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
       .len = sizeof(FC_TOA_INIT_s) + anc_cnt * sizeof(dev_addr_t),
       .num_poll_anchor = anc_cnt,
   };
-  CARRY_Write(buf, &packet, sizeof(FC_TOA_INIT_s));
-  CARRY_Write(buf, anchors, sizeof(dev_addr_t) * anc_cnt);
+  CARRY_Write(carry, buf, &packet, sizeof(FC_TOA_INIT_s));
+  CARRY_Write(carry, buf, anchors, sizeof(dev_addr_t) * anc_cnt);
 
   toa.core.resp_ind = 0;
   toa.core.anc_in_poll_cnt = anc_cnt;
@@ -177,10 +178,10 @@ int TOA_SendRes(measure_t* measure) {
     .len = sizeof(FC_TOA_RES_s),
     .meas = *measure
   };
-
-  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK);
+  FC_CARRY_s* carry;
+  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
   if(buf != 0) {
-    CARRY_Write(buf, &packet, packet.len);
+    CARRY_Write(carry, buf, &packet, packet.len);
     CARRY_Send(buf, false);
   }
   return 0;

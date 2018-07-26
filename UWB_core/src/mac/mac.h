@@ -82,6 +82,11 @@ typedef struct {
   unsigned int beacon_timer_timestamp;
 } mac_instance_t;
 
+/**
+ * @brief mac data parser callback function typedef
+ * 
+ */
+typedef void (*MAC_DataParserCb_t)(mac_buf_t *buf, const prot_packet_info_t *info, int size);
 
 /**
  * @brief used by mac, externally implemented in platform folder
@@ -94,9 +99,16 @@ void listener_isr(const dwt_cb_data_t *data);
 /**
  * @brief initialize mac and transceiver
  * 
+ * @param[in] callback function pointer
  */
-void MAC_Init();
+void MAC_Init(MAC_DataParserCb_t callback);
 
+
+/**
+ * @brief call MAC_Init and do not change data parser callback
+ * 
+ */
+void MAC_Reinit();
 
 /**
  * @brief return ms from last BeconTimerReset or received unicast message

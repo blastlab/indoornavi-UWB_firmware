@@ -207,9 +207,10 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   fup->hash = (uint8_t)FU_GetLocalHash();
   fup->frameLen += 2; // correct value for CRC calculation
   FU_FillCRC(fup);
-  mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src);
-  MAC_Write(buf, fup, fup->frameLen);
-  MAC_Send(buf, true);
+  FC_CARRY_s* carry;
+  mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src, &carry);
+  CARRY_Write(carry, buf, fup, fup->frameLen);
+  CARRY_Send(buf, true);
 }
 
 
@@ -357,7 +358,8 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
 /* Public functions ---------------------------------------------------------*/
 
 // obluga paczki przychodzacej
-void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info) {
+void FU_HandleAsDevice(const void *data, const prot_packet_info_t *info) {
+  const FU_prot* fup = (FU_prot*)data;
   if (FU_IsCRCError(fup)) {
     // check CRC
     FU_SendError(info, FU_ERR_BAD_FRAME_CRC);
