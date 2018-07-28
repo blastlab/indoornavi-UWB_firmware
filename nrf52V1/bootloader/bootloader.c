@@ -131,7 +131,6 @@ void Bootloader_BkpSave(int val)
 static void Bootloader_SaveSettings()
 {
 	bootloader_set_t new_set = settings;
-
 	// Erase settings page
 	nrf_nvmc_page_erase((uint32_t)&_flash_settings);
 

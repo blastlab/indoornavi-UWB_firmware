@@ -15,7 +15,7 @@
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
-
+#define PORT_Success HAL_OK
 
 #define LOG_USB_EN 1
 #define LOG_SD_EN 0

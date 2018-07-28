@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include "logs.h"
-#include "platform/port.h"
+#include "port.h"
 #include "nrf52.h"
 
 void PORT_iassert_fun(const char *msg, int line) {

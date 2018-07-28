@@ -106,6 +106,13 @@ void PORT_EnterStopMode() {
 
 }
 
+void PORT_Reboot() {
+  for (volatile int i = 99999; i > 0; --i)
+    ;               // disabled irq safe delay
+  PORT_SleepMs(10); // to be sure
+  NVIC_SystemReset();
+}
+
 void DW_EXTI_IRQ_Handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
 	do
 	{

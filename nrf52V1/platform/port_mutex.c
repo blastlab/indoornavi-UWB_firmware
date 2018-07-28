@@ -31,3 +31,16 @@ void decamutexoff(decaIrqStatus_t s) {
 		nrf_gpio_cfg_sense_set(DW_EXTI_IRQn, NRF_GPIO_PIN_SENSE_HIGH);
 	}
 }
+
+decaIrqStatus_t PORT_EnterCritical() {
+  decaIrqStatus_t s = __get_PRIMASK();
+  __disable_irq();
+  return s;
+}
+
+void PORT_ExitCritical(decaIrqStatus_t s) {
+  if(!s)
+  {
+    __enable_irq();
+  }
+}

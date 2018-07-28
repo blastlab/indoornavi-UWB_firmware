@@ -202,14 +202,9 @@ void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	extern sync_instance_t sync;
 	int64_t glob_time = SYNC_GlobTime(local_time);
 	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
-	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
 
-	if (time_to_your_slot_us <= 0) {
-	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
-	}
-
-	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - loc_slot_time_us);
-	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTickUs(), (int)sync.neighbour[0].drift[0]);
+	PORT_SlotTimerSetUsOffset(slot_time_us - loc_slot_time_us);
+	MAC_TRACE("SYNC %7d %4d", PORT_SlotTimerTickUs(), (int)sync.neighbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
@@ -254,7 +249,7 @@ static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 }
 
 // calc slot time and send try send packet if it is yours time
-int MAC_TryTransmitFrameInSlot(int64_t glob_time) {					// TODO: dodac uwzglednienie Guard Time, LOG_WRN gdy niespelniony warunek: (-guard_time < (slot_time - slot_number*slot_period) < guard_time)
+int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
   int64_t slot_time = MAC_ToSlotsTimeUs(glob_time);
   if (settings.mac.slots_sum_time_us < slot_time || slot_time < 0) {
@@ -270,13 +265,13 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {					// TODO: dodac uwzgledni
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
   uint32_t end_us = settings.mac.slot_time_us * (mac.slot_number + 1);
-  end_us -= settings.mac.slot_guard_time_us;
   if(tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
     LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
     MAC_Free(buf);
   }
   // when it is too late to send this packet
-  if (end_us < slot_time + tx_est_time) {
+  if (end_us < (slot_time + tx_est_time + settings.mac.slot_guard_time_us) % settings.mac.slots_sum_time_us) {
+	LOG_DBG("%d", slot_time);
     return 0;
   }
 

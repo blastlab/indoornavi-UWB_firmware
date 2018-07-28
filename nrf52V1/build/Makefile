@@ -52,6 +52,7 @@ SRC_FILES += \
   $(UWB_DIR)/src/mac/sync.c \
   $(UWB_DIR)/src/mac/toa.c \
   $(UWB_DIR)/src/mac/toa_calib.c \
+  $(UWB_DIR)/src/mac/toa_routine.c \
   $(UWB_DIR)/src/parsers/base64.c \
   $(UWB_DIR)/src/parsers/bin_parser.c \
   $(UWB_DIR)/src/parsers/bin_parser_cb.c \
@@ -103,6 +104,7 @@ INC_FOLDERS += \
   $(UWB_DIR)/src/mac \
   $(UWB_DIR)/src/parsers \
   $(UWB_DIR)/src/prot \
+  $(UWB_DIR)/src/platform \
   $(UWB_DIR)/src \
 
 # Libraries common to all targets

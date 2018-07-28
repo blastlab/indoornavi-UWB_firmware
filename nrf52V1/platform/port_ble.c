@@ -8,6 +8,7 @@
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "ble_advdata.h"
+#include "toa.h"
 
 #define APP_BLE_CONN_CFG_TAG            1                                 /* A tag identifying the SoftDevice BLE configuration. */
 #define NON_CONNECTABLE_ADV_INTERVAL    MSEC_TO_UNITS(100, UNIT_0_625_MS) /* The advertising interval for non-connectable advertisement (100 ms). This value can vary between 100ms to 10.24s). */
@@ -21,13 +22,21 @@
 										0x2e, 0xdc, 0x4d, 0x83, \
 										0x9d, 0x47, 0xd8, 0x8a, \
 										0xa7, 0xe0, 0x49, 0x2a 			  /* Full UUID: 30fd7d40-2edc-4d83-9d47-d88aa7e0492a */
+
+#define APP_UWB_DATA	 				0x00, 0x00, 0x00, 0x00, \
+										0x00, 0x00, 0x00, 0x00, \
+										0x00, 0x00, 0x00, 0x00, \
+										0xBE, 0xCA, 0x19, 0x95
+
+uint8_t APP_UWB_BLE_DATA[16];
+
 #define DEAD_BEEF                       0xDEADBEEF                        /* Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
 #define MANUFACTURER_DATA \
     APP_COMPANY_IDENTIFIER, \
 	APP_DEVICE_TYPE,      			/* Manufacturer specific information. Specifies the device type in this implementation.	*/ \
 	APP_ADV_DATA_LENGTH,			/* Manufacturer specific information. Specifies the length of the manufacturer specific data in this implementation. */ \
-    APP_BEACON_UUID,     			/* 128 bit UUID value. */ \
+	APP_BEACON_UUID,     			/* 128 bit UUID data. */ \
     APP_MAJOR_VALUE,     			/* Major arbitrary value that can be used to distinguish between Beacons. */ \
     APP_MINOR_VALUE,     			/* Minor arbitrary value that can be used to distinguish between Beacons. */ \
     APP_MEASURED_RSSI    			/* Manufacturer specific information. The Beacon's measured TX power in this implementation. */
@@ -63,11 +72,30 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name) {
 
 
 void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val) {
-	adv_data[25] = (0xFF00 & maj_val) >> 8;
-	adv_data[26] = 0x00FF & maj_val;
-	adv_data[27] = (0xFF00 & min_val) >> 8;
-	adv_data[28] = 0x00FF & min_val;
+	if(maj_val) {
+		adv_data[25] = (0xFF00 & maj_val) >> 8;
+		adv_data[26] = 0x00FF & maj_val;
+	}
+	if(min_val) {
+		adv_data[27] = (0xFF00 & min_val) >> 8;
+		adv_data[28] = 0x00FF & min_val;
+	}
 	sd_ble_gap_adv_data_set((uint8_t const *)&adv_data, ADV_DATA_LENGTH, (uint8_t const *)&scrp_data, SCRP_DATA_LENGTH);
+}
+
+void big_to_little(uint8_t *meas_addr) {
+	uint8_t buf = 0;
+	for(uint8_t i = 0; i < sizeof(measure_t); i+=2) {
+		buf = meas_addr[i];
+		meas_addr[i] = meas_addr[i + 1];
+		meas_addr[i + 1] = buf;
+	}
+}
+
+void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr) {
+//	big_to_little(meas_addr);
+	memcpy(&adv_data[9], meas_addr, sizeof(measure_t));
+	PORT_BleSetAdvData(0, 0);
 }
 
 static void advertising_init(void) {
