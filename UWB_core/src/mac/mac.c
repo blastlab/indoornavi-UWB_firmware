@@ -198,13 +198,12 @@ int MAC_ToSlotsTimeUs(int64_t glob_time) {
 }
 
 // update MAC slot timer to be in time with global time
-void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
+void MAC_UpdateSlotTimer(int32_t host_slot_time_us, int64_t uwb_local_time) {
 	extern sync_instance_t sync;
-	int64_t glob_time = SYNC_GlobTime(local_time);
-	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
-
-	PORT_SlotTimerSetUsOffset(slot_time_us - loc_slot_time_us);
-	MAC_TRACE("SYNC %7d %4d", PORT_SlotTimerTickUs(), (int)sync.neighbour[0].drift[0]);
+	int64_t glob_time = SYNC_GlobTime(uwb_local_time);
+	int uwb_slot_time_us = MAC_ToSlotsTimeUs(glob_time);
+	PORT_SlotTimerSetUsOffset(host_slot_time_us - uwb_slot_time_us);		// host slot time - UWB slot time;
+	MAC_TRACE("SYNC %7d %7d %4d", uwb_slot_time_us, host_slot_time_us, (int)sync.neighbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
@@ -251,7 +250,7 @@ static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 // calc slot time and send try send packet if it is yours time
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
-  int64_t slot_time = MAC_ToSlotsTimeUs(glob_time);
+  int slot_time = MAC_ToSlotsTimeUs(glob_time);
   if (settings.mac.slots_sum_time_us < slot_time || slot_time < 0) {
     return 0;
   }
@@ -264,17 +263,25 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   }
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
+  uint32_t start_us = settings.mac.slot_time_us * mac.slot_number;
   uint32_t end_us = settings.mac.slot_time_us * (mac.slot_number + 1);
+  end_us += settings.mac.slot_tolerance_time_us; 
+  end_us -= settings.mac.slot_guard_time_us;
   if(tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
-    LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
+    LOG_WRN("Frame with size %d can't be send within %dus slot", 
+    len, settings.mac.slot_time_us);
     MAC_Free(buf);
   }
-  // when it is too late to send this packet
-  if (end_us < (slot_time + tx_est_time + settings.mac.slot_guard_time_us) % settings.mac.slots_sum_time_us) {
-	LOG_DBG("%d", slot_time);
+  // when it is too late or too early to send this packet
+  int real_start_us, real_end_us;
+  real_start_us = (slot_time + settings.mac.slot_tolerance_time_us);
+  real_start_us %= settings.mac.slots_sum_time_us;
+  real_end_us = (slot_time + tx_est_time + settings.mac.slot_tolerance_time_us);
+  real_end_us %= settings.mac.slots_sum_time_us;
+  if (real_start_us < start_us || end_us < real_start_us ||
+      end_us < real_end_us) {
     return 0;
   }
-
   if (SYNC_GlobTime(glob_time) == mac.slot_time_offset) {
     dwt_rxreset();
   }

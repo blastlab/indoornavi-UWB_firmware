@@ -70,7 +70,7 @@ unsigned int PORT_TickHrToUs(unsigned int delta) {
 
 // return current slot timer tick counter
 uint32_t PORT_SlotTimerTickUs() {
-	return LL_TIM_GetCounter(PTIM_SLOT);
+	return LL_TIM_GetAutoReload(PTIM_SLOT) - LL_TIM_GetCounter(PTIM_SLOT);
 }
 
 // extend slot timer period for one iteration by delta_us

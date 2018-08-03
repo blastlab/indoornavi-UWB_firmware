@@ -102,9 +102,9 @@ uint32_t PORT_SlotTimerTickUs() {
 // extend slot timer period for one iteration by delta_us
 void PORT_SlotTimerSetUsOffset(int32 delta_us) {
 	TIMER_SLOT.p_reg->TASKS_CAPTURE[NRF_TIMER_CC_CHANNEL1] = 1;														// get actual timer count to CC[1]
-	if(TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] - delta_us > TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] + 50) {	// auto_reload + delta > actual_count + 50 (as reserve)
+	if(TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] + delta_us > TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL1] + 50) {	// auto_reload + delta > actual_count + 50 (as reserve)
 		slot_timer_buf = TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0];
-		TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] -= delta_us;
+		TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] += delta_us;
 	}
 }
 

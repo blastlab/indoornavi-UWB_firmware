@@ -125,5 +125,6 @@ static void ble_stack_init(void) {
 
 void PORT_BleBeaconStart(void) {
     ble_stack_init();
+    APP_ERROR_CHECK(sd_ble_gap_tx_power_set(0));
     advertising_init();
 }
