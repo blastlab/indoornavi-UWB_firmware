@@ -33,14 +33,10 @@ void decamutexoff(decaIrqStatus_t s) {
 }
 
 decaIrqStatus_t PORT_EnterCritical() {
-  decaIrqStatus_t s = __get_PRIMASK();
-  __disable_irq();
+  decaIrqStatus_t s = decamutexon();
   return s;
 }
 
 void PORT_ExitCritical(decaIrqStatus_t s) {
-  if(!s)
-  {
-    __enable_irq();
-  }
+	decamutexoff(s);
 }

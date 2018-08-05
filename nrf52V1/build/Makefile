@@ -33,6 +33,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
+  $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
   $(SDK_ROOT)/components/ble/common/ble_advdata.c \
   $(PROJ_DIR)/platform/port_ble.c \
   $(PROJ_DIR)/platform/logs.c \

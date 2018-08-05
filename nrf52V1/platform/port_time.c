@@ -7,6 +7,7 @@
 
 #include "port.h"
 #include "mac.h"
+#include "nrf_soc.h"
 #include "nrf_delay.h"
 #include "nrf_drv_timer.h"
 #include "nrf_drv_rtc.h"
@@ -38,6 +39,7 @@ static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_conte
 
 void PORT_TimeInit() {
 	slot_timer_buf = 0;
+	nrf_drv_clock_hfclk_request(NULL);
     nrf_drv_clock_init();					// when using SD, module is already initialized
     nrf_drv_clock_lfclk_request(NULL);
     nrf_drv_rtc_config_t config = NRF_DRV_RTC_DEFAULT_CONFIG;

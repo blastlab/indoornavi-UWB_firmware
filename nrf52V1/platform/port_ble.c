@@ -7,6 +7,7 @@
 #include "port.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
+#include "nrf_sdh_soc.h"
 #include "ble_advdata.h"
 #include "toa.h"
 
@@ -27,11 +28,7 @@
 										0x00, 0x00, 0x00, 0x00, \
 										0x00, 0x00, 0x00, 0x00, \
 										0xBE, 0xCA, 0x19, 0x95
-
-uint8_t APP_UWB_BLE_DATA[16];
-
 #define DEAD_BEEF                       0xDEADBEEF                        /* Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
-
 #define MANUFACTURER_DATA \
     APP_COMPANY_IDENTIFIER, \
 	APP_DEVICE_TYPE,      			/* Manufacturer specific information. Specifies the device type in this implementation.	*/ \
@@ -41,10 +38,9 @@ uint8_t APP_UWB_BLE_DATA[16];
     APP_MINOR_VALUE,     			/* Minor arbitrary value that can be used to distinguish between Beacons. */ \
     APP_MEASURED_RSSI    			/* Manufacturer specific information. The Beacon's measured TX power in this implementation. */
 
-
-static ble_gap_adv_params_t m_adv_params;                                 /**< Parameters to be passed to the stack when starting advertising. */
-
 #define ADV_DATA_LENGTH		0x1E
+#define SCRP_DATA_LENGTH 	0x18
+
 static uint8_t adv_data[ADV_DATA_LENGTH] = {
 		0x02,											// size of block
 		0x01,											// type of data (flags)
@@ -55,7 +51,6 @@ static uint8_t adv_data[ADV_DATA_LENGTH] = {
 		MANUFACTURER_DATA
 };
 
-#define SCRP_DATA_LENGTH 0x18
 static uint8_t scrp_data[SCRP_DATA_LENGTH] = {
 		0x05,
 		0x09,											// Complete Local Name
@@ -66,10 +61,14 @@ static uint8_t scrp_data[SCRP_DATA_LENGTH] = {
 		APP_BEACON_UUID,
 };
 
+static ble_gap_adv_params_t m_adv_params;                                 /**< Parameters to be passed to the stack when starting advertising. */
+uint8_t APP_UWB_BLE_DATA[16];
+
+extern void soc_evt_handler(uint32_t evt_id, void * p_context);
+
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name) {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
-
 
 void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val) {
 	if(maj_val) {
@@ -80,7 +79,9 @@ void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val) {
 		adv_data[27] = (0xFF00 & min_val) >> 8;
 		adv_data[28] = 0x00FF & min_val;
 	}
+#if BEACON_MODE
 	sd_ble_gap_adv_data_set((uint8_t const *)&adv_data, ADV_DATA_LENGTH, (uint8_t const *)&scrp_data, SCRP_DATA_LENGTH);
+#endif
 }
 
 void big_to_little(uint8_t *meas_addr) {
@@ -111,20 +112,36 @@ static void advertising_init(void) {
 }
 
 void PORT_BleAdvStart(void) {
+#if BEACON_MODE
     APP_ERROR_CHECK(sd_ble_gap_adv_start(&m_adv_params, APP_BLE_CONN_CFG_TAG));
+#endif
+}
+
+void PORT_BleAdvStop(void) {
+#if BEACON_MODE
+	APP_ERROR_CHECK(sd_ble_gap_adv_stop());
+#endif
+}
+
+void PORT_BleSetPower(int8_t power) {
+	settings.ble.tx_power = power;
+#if BEACON_MODE
+	APP_ERROR_CHECK(sd_ble_gap_tx_power_set(settings.ble.tx_power));
+#endif
 }
 
 static void ble_stack_init(void) {
-    APP_ERROR_CHECK(nrf_sdh_enable_request());
-
-    uint32_t ram_start = 0;
+	uint32_t ram_start = 0;
+	APP_ERROR_CHECK(nrf_sdh_enable_request());
     APP_ERROR_CHECK(nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start));
-
     APP_ERROR_CHECK(nrf_sdh_ble_enable(&ram_start));
+    NRF_SDH_SOC_OBSERVER(m_soc_observer, NRF_SDH_SOC_STACK_OBSERVER_PRIO, soc_evt_handler, NULL);
 }
 
 void PORT_BleBeaconStart(void) {
+#if BEACON_MODE
     ble_stack_init();
-    APP_ERROR_CHECK(sd_ble_gap_tx_power_set(0));
+    PORT_BleSetPower(settings.ble.tx_power);
     advertising_init();
+#endif
 }

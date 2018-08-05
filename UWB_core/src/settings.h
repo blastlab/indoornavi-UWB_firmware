@@ -14,6 +14,7 @@
 #include "mac/mac_settings.h"
 #include "mac/carry_settings.h"
 #include "transceiver_settings.h"
+#include "platform/ble_settings.h"
 
 /**
  * @brief generate hardware version description byte from major and minor
@@ -99,6 +100,7 @@ typedef struct
   transceiver_settings_t transceiver; //< transceiver settings
   mac_settings_t mac; //<  medium access control module settings
   carry_settings_t carry; //< carry protocol settings
+  ble_settings_t ble; //< bluetooth low energy protocol settings
 } settings_t;
 
 
@@ -120,10 +122,11 @@ typedef struct
  * @brief define default settings values
  * 
  */
-#define DEF_SETTINGS                                                          \
-  {                                                                           \
-    .version = VERSION_SETTINGS_DEF, .transceiver = TRANSCEIVER_SETTINGS_DEF, \
-    .mac = MAC_SETTINGS_DEF, .carry = CARRY_SETTINGS_DEF,                     \
+#define DEF_SETTINGS                                                          	\
+  {                                                                           	\
+    .version = VERSION_SETTINGS_DEF, .transceiver = TRANSCEIVER_SETTINGS_DEF, 	\
+    .mac = MAC_SETTINGS_DEF, .carry = CARRY_SETTINGS_DEF, 						\
+	.ble = BLE_SETTINGS_DEF 													\
   }
 
 

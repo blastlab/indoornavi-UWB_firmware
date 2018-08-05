@@ -29,8 +29,8 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 1
-
+#define DBG 	1
+#define USE_BLE	1
 
 /**
  * \brief Initialization for port modules
@@ -47,6 +47,8 @@ void PORT_BleBeaconStart(void);
 void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr);
 void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val);
 void PORT_BleAdvStart(void);
+void PORT_BleAdvStop(void);
+void PORT_BleSetPower(int8_t power);
 
 /**
  * \brief assert routine function.

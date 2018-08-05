@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "string.h"
 
 settings_otp_t _settings_otp = {
     .h_major = __H_MAJOR__,
@@ -30,9 +31,9 @@ bool settings_is_otp_erased()
 
 void SETTINGS_Init() {
 	// variable settings
-  settings = _startup_settings;
+  memcpy(&settings, &_startup_settings, sizeof(settings_t));
   settings_otp = &_settings_otp;	// TODO remove this line
-  return;						// TODO: implement OTP handling
+  return;							// TODO: implement OTP handling
 
   // otp settings - from flash or otp
   if(settings_is_otp_erased())

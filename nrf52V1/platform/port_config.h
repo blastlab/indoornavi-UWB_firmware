@@ -20,7 +20,7 @@
 //char PROG_DESTINATION1; // TODO should be defined in linker script
 //char PROG_DESTINATION2;
 
-#define FLASH_PAGE_SIZE 	NRF_FICR->CODEPAGESIZE
+#define FLASH_PAGE_SIZE 	((uint32_t)0x1000U)
 #define FLASH_BASE 			((uint32_t)0x0U)
 #define FLASH_BANK_SIZE  	((uint32_t)0x80000U)
 
@@ -34,10 +34,10 @@
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
-#define USE_DECA_DEVKIT
+#define USE_DECA_DEVKIT		1
 #define BEACON_MODE 		1
 
-#ifdef USE_DECA_DEVKIT
+#if USE_DECA_DEVKIT
 #define DW_RST_PIN			24
 #define DW_EXTI_IRQn 		19
 

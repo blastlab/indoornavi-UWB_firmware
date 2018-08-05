@@ -225,6 +225,30 @@ static void TXT_ResetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
   PORT_Reboot();
 }
 
+static void TXT_BleCb(const txt_buf_t *buf, const prot_packet_info_t *info)
+{
+#if USE_BLE
+	int power = TXT_GetParam(buf, "txpower:", 10);
+	switch(power) {
+		case -40:
+		case -20:
+		case -16:
+		case -12:
+		case -8:
+		case -4:
+		case 0:
+		case 3:
+		case 4:
+			PORT_BleSetPower(power);
+			LOG_INF("ble txpower set to %d", power);
+			break;
+		default: LOG_ERR("ble txpower: -40/-20/-16/-12/-8/-4/0/3/4");
+	}
+	return;
+#endif
+	LOG_ERR("BLE is disabled");
+}
+
 const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"version", TXT_VersionCb},
                                {"_hang", TXT_HangCb},
@@ -232,6 +256,7 @@ const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"test", TXT_TestCb},
                                {"save", TXT_SaveCb},
                                {"reset", TXT_ResetCb},
+							   {"ble", TXT_BleCb},
                                };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

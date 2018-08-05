@@ -2433,7 +2433,7 @@
 
 
 #ifndef RTC_DEFAULT_CONFIG_FREQUENCY
-#define RTC_DEFAULT_CONFIG_FREQUENCY 990
+#define RTC_DEFAULT_CONFIG_FREQUENCY 1000
 #endif
 
 // <q> RTC_DEFAULT_CONFIG_RELIABLE  - Ensures safe compare event triggering
@@ -6204,7 +6204,7 @@
 // <e> NRF_SDH_LOG_ENABLED - Enable logging in SoftDevice handler module.
 //==========================================================
 #ifndef NRF_SDH_LOG_ENABLED
-#define NRF_SDH_LOG_ENABLED 1
+#define NRF_SDH_LOG_ENABLED 0
 #endif
 // <o> NRF_SDH_LOG_LEVEL  - Default Severity level
  

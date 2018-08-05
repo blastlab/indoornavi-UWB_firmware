@@ -6,8 +6,23 @@
  */
 #include "port.h"
 #include "nrf.h"
-#include "nrf_nvmc.h"
+#include "nrf_soc.h"
 #include "string.h"
+
+
+static volatile bool flash_operation_ready;
+void soc_evt_handler(uint32_t evt_id, void * p_context) {
+	switch(evt_id)
+	{
+		case NRF_EVT_FLASH_OPERATION_SUCCESS:
+			flash_operation_ready = true;
+			break;
+
+		case NRF_EVT_FLASH_OPERATION_ERROR:
+			IASSERT(0);
+			break;
+	}
+}
 
 // save value in reset-safe backup register
 void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
@@ -25,6 +40,7 @@ uint32_t PORT_BkpRegisterRead(uint32_t *reg)
 
 // erasing area in a flash under given address
 int PORT_FlashErase(void *flash_addr, uint32_t length) {
+	uint32_t status = 0;
 	PORT_ASSERT((uint32_t)flash_addr >= FLASH_BASE);
 	PORT_ASSERT(length < FLASH_BANK_SIZE);
 	// calc number of pages
@@ -34,37 +50,36 @@ int PORT_FlashErase(void *flash_addr, uint32_t length) {
 		++nPages;
 	}
 	PORT_WatchdogRefresh();
-	for(uint32_t i = 0; i < nPages; i++) {
-		nrf_nvmc_page_erase((uint32_t)(flash_addr + i));
-		PORT_WatchdogRefresh();                      // necessarily refresh watchdog after page erase
+	for(uint32_t i = 0; i < nPages && status == 0; i++) {
+		flash_operation_ready = false;
+		status = sd_flash_page_erase(((uint32_t)flash_addr / FLASH_PAGE_SIZE) + i);
+		do {
+			PORT_WatchdogRefresh();
+		} while(!flash_operation_ready && BEACON_MODE);
 	}
-	return PORT_Success;
+	return status;
 }
 
 // saving given number of bytes under choosen address
 int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
-	uint8_t status = 0;
-	uint8_t *dst = (uint8_t *)destination;
+	uint32_t status = 0;
+	uint32_t *dst = (uint32_t *)destination;
 	uint32_t *src = (uint32_t *)p_source;
 	PORT_ASSERT(((uint32_t)destination % 8) == 0);
 	// return when same data is already saved i.e. after retransmission
 	if (memcmp(dst, p_source, length) == 0) {
 		return PORT_Success;
 	}
-	// Enable write
-    NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Wen;
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
-	// DataLength must be a multiple of 64 bit
-	for (uint32_t i = 0; i < length; i += 4, dst += 4, src += 1) {
-		((uint32_t *)dst)[0] = 0xFFFFFFFFUL & *src;
-		while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
-		if (*(uint32_t *)dst != *src) {             			// Check the written value
-			status = 2; 									// Flash content doesn't match SRAM content
-			break;
-		}
-	}
-	// Disable write
-    NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Ren;
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
+	int len = length;
+	do {
+		flash_operation_ready = false;
+		status = sd_flash_write(dst, src, (len >= FLASH_PAGE_SIZE) ? (FLASH_PAGE_SIZE / 4) : (len % FLASH_PAGE_SIZE / 4));
+		do {
+			PORT_WatchdogRefresh();
+		} while(!flash_operation_ready && BEACON_MODE);
+		dst += FLASH_PAGE_SIZE/4;
+		src += FLASH_PAGE_SIZE/4;
+		len -= FLASH_PAGE_SIZE;
+	} while(len > 0);
 	return status;
 }
