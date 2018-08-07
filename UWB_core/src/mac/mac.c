@@ -112,9 +112,9 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
     buf->rx_len = data->datalength - 2; // ommit CRC
-    info.direct_src = buf->frame.src;
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
+    info.direct_src = buf->frame.src;
 
     if(unicast) {
     	MAC_BeaconTimerReset();
@@ -133,10 +133,10 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
         }
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
-        _dataParser(buf, &info, buf->rx_len - MAC_HEAD_LENGTH);
+        _dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
       } else if(type == FR_CR_BEACON){
         TRANSCEIVER_DefaultRx();
-        _dataParser(buf, &info, buf->rx_len - MAC_HEAD_LENGTH);
+        _dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
       } else if(type == FR_CR_ACK) {
         LOG_WRN("ACK frame is not supported");
       } else {
@@ -174,7 +174,7 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
 static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
-  LOG_ERR("Rx error status:%X", data->status);
+  LOG_WRN("Rx error status:%X", data->status);
   TRANSCEIVER_DefaultRx();
 }
 
@@ -208,6 +208,8 @@ void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
 	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
 
+	mac.slot_time_offset = glob_time;
+
 	if (time_to_your_slot_us <= 0) {
 	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
 	}
@@ -221,7 +223,6 @@ void MAC_YourSlotIsr() {
   CRITICAL(
     int64_t local_time = TRANSCEIVER_GetTime();
     uint32_t slot_time = PORT_SlotTimerTickUs();
-    mac.slot_time_offset = SYNC_GlobTime(local_time);
     MAC_UpdateSlotTimer(slot_time, local_time);
   )
   decaIrqStatus_t en = decamutexon();

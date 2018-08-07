@@ -86,7 +86,7 @@ typedef struct {
  * @brief mac data parser callback function typedef
  * 
  */
-typedef void (*MAC_DataParserCb_t)(mac_buf_t *buf, const prot_packet_info_t *info, int size);
+typedef const uint8_t* (*MAC_DataParserCb_t)(const uint8_t data[], const prot_packet_info_t *info, int size);
 
 /**
  * @brief used by mac, externally implemented in platform folder

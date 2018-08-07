@@ -28,7 +28,7 @@
 typedef struct __packed {
   uint8_t FC, len;
   unsigned char flags;  ///< extra flags field, CARRY_FLAG_xx
-  unsigned char hopsNum;  ///< hops numer
+  unsigned char verHopsNum;  ///< version (upper nibble) hops number (lower nibble)
   dev_addr_t src_addr;  ///< source address
   dev_addr_t hops[0];  ///< destination .. next hop
 } FC_CARRY_s;
@@ -43,13 +43,13 @@ typedef struct __packed {
  * @brief used in CARRY_PrepareBufTo
  * 
  */
-#define CARRY_ADDR_SINK ADDR_BROADCAST
+#define CARRY_ADDR_SINK 0
 
 /**
  * @brief used in CARRY_PrepareBufTo
  * 
  */
-#define CARRY_ADDR_SERVER 0
+#define CARRY_ADDR_SERVER ADDR_BROADCAST
 
 
 /**
@@ -140,9 +140,10 @@ void CARRY_Send(mac_buf_t* buf, bool ack_req);
 /**
  * @brief function called from MAC module after receiving CARRY frame
  * 
- * @param[in] buf 
+ * @param[in] data pointer to data
+ * @param[in] info about frame
  */
-void CARRY_ParseMessage(mac_buf_t *buf);
+void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info);
 
 
 /**

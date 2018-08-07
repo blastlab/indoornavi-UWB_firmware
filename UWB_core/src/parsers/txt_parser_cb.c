@@ -246,7 +246,7 @@ static void TXT_Bin(const txt_buf_t *buf, const prot_packet_info_t *info)
 	  data->dPtr = data->buf;
 	  // decode oryginal content and parse
 	  int size = BASE64_Decode(data->buf, data->buf, MAC_BUF_LEN);
-	  BIN_Parse(data, info, size);
+	  BIN_Parse(data->dPtr, info, size);
   }
 }
 
@@ -257,7 +257,7 @@ const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"test", TXT_TestCb},
                                {"save", TXT_SaveCb},
                                {"reset", TXT_ResetCb},
-							   {"bin", TXT_Bin},
+                               {"bin", TXT_Bin},
                                };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

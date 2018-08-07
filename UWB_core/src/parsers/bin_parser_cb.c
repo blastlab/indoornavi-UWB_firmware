@@ -206,7 +206,7 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_TURN_ON, FC_TURN_ON_cb},
     {FC_TURN_OFF, FC_TURN_OFF_cb},
     {FC_DEV_ACCEPTED, FC_DEV_ACCEPTED_cb},
-    {FC_CARRY, 0},
+    {FC_CARRY, CARRY_ParseMessage}, //this code has different argumetns
     {FC_FU, FU_HandleAsDevice},
     {FC_VERSION_ASK, FC_VERSION_ASK_cb},
     {FC_VERSION_RESP, FC_VERSION_RESP_cb},
