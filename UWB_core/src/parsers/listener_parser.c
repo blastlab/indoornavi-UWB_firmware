@@ -42,6 +42,7 @@ void listener_parse(mac_buf_t *buf) {
 
 
 void listener_isr(const dwt_cb_data_t *data) {
+	IASSERT(settings.mac.role == RTLS_LISTENER);
   PORT_LedOn(LED_STAT);
   mac_buf_t *buf = MAC_Buffer();
 
@@ -50,12 +51,7 @@ void listener_isr(const dwt_cb_data_t *data) {
     TRANSCEIVER_DefaultRx();
 
     buf->rx_len = data->datalength;
-
-    if(settings.mac.role == RTLS_LISTENER) {
-    	listener_parse(buf);
-    } else {
-    	MAC_Init();
-    }
+    listener_parse(buf);
 
     MAC_Free(buf);
   } else {
