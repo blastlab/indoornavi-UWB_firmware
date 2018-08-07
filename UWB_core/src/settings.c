@@ -30,7 +30,7 @@ bool settings_is_otp_erased()
 
 void SETTINGS_Init() {
 	// variable settings
-  settings = _startup_settings;
+  memcpy(&settings, &_startup_settings, sizeof(settings));
 
   // otp settings - from flash or otp
   if(settings_is_otp_erased())

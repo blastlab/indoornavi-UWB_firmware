@@ -9,10 +9,6 @@
 //#include "IAP.h"
 #include "prot/fu.h"
 
-#if FU_BLOCK_SIZE % 8 != 0
-#error 8 bytes are programmed to flash at once
-#endif
-
 // ===
 // implementation
 // ===
@@ -22,11 +18,12 @@ typedef struct {
   uint16_t newCrc;
   uint32_t newVer;
   uint8_t newHash;
+  uint16_t blockSize;
   uint32_t fileSize;
 } FU_instance_t;
 
 // information about new firmware from SOT frame
-static FU_instance_t FU_instance;
+static FU_instance_t FU;
 static FU_prot FU_tx;
 
 // ==================
@@ -63,8 +60,7 @@ static inline uint8_t *FU_GetAddressToWrite() {
 // check
 int FU_AcceptFirmwareVersion(int Ver) {
   uint16_t fMinor = (Ver)&0xFFFF;
-  if ((fMinor % 2) * FU_MAX_PROGRAM_SIZE + FU_DESTINATION_1 !=
-      FU_GetAddressToWrite()) {
+  if ((fMinor % 2) == (settings.version.f_minor % 2)) {
     return 0;
   } else {
     return 1;
@@ -114,8 +110,8 @@ static inline bool FU_IsOpcode(uint8_t original, uint8_t toCkeck) {
  */
 static inline bool FU_IsVersionInside(const FU_prot *fup) {
   uint16_t dataLen = fup->frameLen - FU_PROT_HEAD_SIZE - 2; // -2 for CRC
-  if (fup->extra * FU_BLOCK_SIZE <= FU_VERSION_LOC &&
-      FU_VERSION_LOC < fup->extra * FU_BLOCK_SIZE + dataLen) {
+  if (fup->extra * FU.blockSize <= FU_VERSION_LOC &&
+      FU_VERSION_LOC < fup->extra * FU.blockSize + dataLen) {
     return 1;
   }
   return 0;
@@ -156,7 +152,7 @@ static bool FU_IsCRCError(const FU_prot *fup) {
 // return 1 data in flash and packet with new version is correct
 static uint8_t FU_IsFlashCRCError(const FU_prot *fup) {
   // number of written bytes before this current frame
-  int sizeP = fup->extra * FU_BLOCK_SIZE;
+  int sizeP = fup->extra * FU.blockSize;
   // number of file data bytes in frame, -2 for CRC
   int sizeFup = fup->frameLen - FU_PROT_HEAD_SIZE - 2;
   void *destination = FU_GetAddressToWrite();
@@ -164,8 +160,8 @@ static uint8_t FU_IsFlashCRCError(const FU_prot *fup) {
   PORT_CrcFeed(destination, sizeP);
   PORT_CrcFeed(fup->data, sizeFup);
   PORT_CrcFeed((uint8_t *)destination + sizeP + sizeFup,
-                FU_instance.fileSize - sizeP - sizeFup);
-  return PORT_CrcFeed(&FU_instance.newCrc, 2); // 0: ok, else error
+                FU.fileSize - sizeP - sizeFup);
+  return PORT_CrcFeed(&FU.newCrc, 2); // 0: ok, else error
 }
 
 // calculate CRC and add it at position fup[frameLen-2] and fup[frameLen-1]
@@ -209,8 +205,12 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   FU_FillCRC(fup);
   FC_CARRY_s* carry;
   mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src, &carry);
-  CARRY_Write(carry, buf, fup, fup->frameLen);
-  CARRY_Send(buf, true);
+  if(buf != 0) {
+	  CARRY_Write(carry, buf, fup, fup->frameLen);
+	  CARRY_Send(buf, true);
+  } else {
+	  LOG_WRN("Not enough buffers for FU");
+  }
 }
 
 
@@ -253,20 +253,24 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
   } else if (fup->fileSize > FU_MAX_PROGRAM_SIZE || fup->fileSize == 0) {
     FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
     return;
+  } else if(MAC_BUF_LEN <= fup->blockSize || fup->blockSize <= 0 || fup->blockSize%4 != 0) {
+	FU_SendError(info, FU_ERR_BAD_DATA_BLOCK_SIZE);
+	return;
   } else if (settings.version.boot_reserved != BOOTLOADER_MAGIC_NUMBER) {
     FU_SendError(info, FU_ERR_FIR_NOT_ACCEPTED_YET);
     return;
   }
 
   // overwrite new firmware info
-  FU_instance.newCrc = fup->firmwareCRC; // zapis CRC calego pliku .bin
-  FU_instance.newVer = fup->fversion;    // zapis numeru nowej wersji programu
-  FU_instance.fileSize = fup->fileSize;
-  FU_instance.newHash = fup->hash;
-  FU_instance.sesionPacketCounter = 0;
+  FU.newCrc = fup->firmwareCRC; // zapis CRC calego pliku .bin
+  FU.newVer = fup->fversion;    // zapis numeru nowej wersji programu
+  FU.fileSize = fup->fileSize;
+  FU.blockSize = fup->blockSize;
+  FU.newHash = fup->hash;
+  FU.sesionPacketCounter = 0;
 
   // check result
-  if (PORT_FlashErase(FU_GetAddressToWrite(), FU_instance.fileSize) !=
+  if (PORT_FlashErase(FU_GetAddressToWrite(), FU.fileSize) !=
       HAL_OK) {
     FU_SendError(info, FU_ERR_FLASH_ERASING);
     return;
@@ -297,14 +301,14 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
  * @param info extra informations about message
  */
 static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
-  if (FU_instance.fileSize == 0) {
+  if (FU.fileSize == 0) {
     FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
     return;
-  } else if (fup->hash != (uint8_t)FU_instance.newHash) {
+  } else if (fup->hash != (uint8_t)FU.newHash) {
     // sprawdz czy zgadza sie wersja z ta z ramki SOT
     FU_SendError(info, FU_ERR_BAD_FRAME_HASH);
     return;
-  } else if (fup->extra * FU_BLOCK_SIZE >= FU_instance.fileSize) {
+  } else if (fup->extra * FU.blockSize >= FU.fileSize) {
     FU_SendError(info, FU_ERR_BAD_OFFSET);
     return;
   } else if (FU_IsVersionInside(fup) &&
@@ -315,14 +319,14 @@ static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
   // gdy nie ma wersji firmwaru w tej paczce lub jest, ale zgadza sie CRC
   // to zaladuj program do flash
   uint16_t dataSize = fup->frameLen - FU_PROT_HEAD_SIZE - 2; // 2 for CRC
-  unsigned char *address = FU_GetAddressToWrite() + FU_BLOCK_SIZE * fup->extra;
+  unsigned char *address = FU_GetAddressToWrite() + FU.blockSize * fup->extra;
   PORT_WatchdogRefresh();
   int ret = PORT_FlashSave(address, fup->data, dataSize);
   if (ret != 0) {
     FU_SendError(info, FU_ERR_FLASH_WRITING);
     return;
   } else { // sukces
-    FU_instance.sesionPacketCounter += 1;
+    FU.sesionPacketCounter += 1;
     FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
     FU_tx.frameLen = FU_PROT_HEAD_SIZE;
     FU_SendResponse(&FU_tx, info);
@@ -344,8 +348,8 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
     FU_SendError(info, FU_ERR_BAD_F_VERSION);
   } else { // dostalismy wersje z poprawna wersja firmwaru, konczymy transmisje
     FU_Data(fup, info); // zapisz ostatnio porcje danych we flashu
-    FU_instance.fileSize = 0;
-    FU_instance.newHash = 0;
+    FU.fileSize = 0;
+    FU.newHash = 0;
     LOG_INF("FU successfully firmware uploaded");
     PORT_WatchdogRefresh();
     HAL_Delay(5); // to send messages
@@ -392,7 +396,7 @@ void FU_AcceptFirmware()
 void FU_Init(bool forceNoFirmwareCheck) {
   FU_ASSERT(FU_MAX_PROGRAM_SIZE % FLASH_PAGE_SIZE == 0);
   FU_ASSERT(FU_DESTINATION_2+FU_MAX_PROGRAM_SIZE <= (void*)(FLASH_BASE + FLASH_BANK_SIZE));
-  FU_instance.newVer = FU_GetLocalHash();
+  FU.newVer = FU_GetLocalHash();
   if(forceNoFirmwareCheck) {
   	FU_AcceptFirmware();
   }
