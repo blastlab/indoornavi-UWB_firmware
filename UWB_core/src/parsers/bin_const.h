@@ -28,10 +28,15 @@ typedef enum {
 	FC_STAT_RESP = (FC_STAT_ASK + 1), ///< device is asked about status
 	FC_STAT_SET = (FC_STAT_ASK + 2), ///< device should change status to new one
 	// empty
-	FC_TXSET_ASK = 0x1C, ///< device is asked about transceiver settings
-	FC_TXSET_RESP = (FC_TXSET_ASK + 1), ///< device is asked about transceiver settings
-	FC_TXSET_SET = (FC_TXSET_ASK + 2), ///< device should change transceiver settings to new one
+	FC_RFSET_ASK = 0x1C, ///< device is asked about transceiver settings
+	FC_RFSET_RESP = (FC_RFSET_ASK + 1), ///< device is asked about transceiver settings
+	FC_RFSET_SET = (FC_RFSET_ASK + 2), ///< device should change transceiver settings to new one
 	// empty
+	FC_TOA_INIT = 0x20, ///< to initialize toa routine
+	FC_TOA_POLL = (FC_TOA_INIT + 1), ///< first ranging message
+	FC_TOA_RESP = (FC_TOA_INIT + 2), ///< second ranging message
+	FC_TOA_FIN = (FC_TOA_INIT + 3), ///< third and last ranging message
+	FC_TOA_RES = (FC_TOA_INIT + 4), ///< ranging result message
 } FC_t;
 
 #endif

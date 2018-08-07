@@ -40,6 +40,8 @@ typedef struct __packed {
 typedef struct __packed {
   uint8_t FC, len;
   uint64_t serial;  ///< device serial number from settings.version.serial
+  uint8_t hop_cnt;
+  dev_addr_t hops[0];
 } FC_BEACON_s;
 
 /**
@@ -70,4 +72,29 @@ typedef struct __packed {
   uint64_t hash;  ///< firmware git hash commit
 } FC_VERSION_s;
 
+/**
+ * @brief see #FC_t description
+ * 
+ */
+typedef struct __packed {
+  uint8_t FC, len;
+} FC_DEV_ACCEPTED_s;
+
+
+typedef struct __packed {
+  uint8_t FC, len;
+  uint8_t chan;    ///< rf channel number {1,2,3,4,5,7}, change frequency and bw
+  uint8_t pac;     ///< * Acquisition Chunk Size (Relates to RX preamble length)
+  uint8_t plen;    ///< DWT_PLEN_64..DWT_PLEN_4096
+  uint8_t br;      ///< Baund Rate {DWT_BR_110K, DWT_BR_850K or DWT_BR_6M8}
+  uint8_t code;    ///< TX and RX preamble code 1..24
+  uint8_t ns_sfd;  ///< * Boolean should we use non-standard SFD for better performance
+  uint32_t power;  ///< *31:24     BOOST_0.125ms_PWR
+                   ///< 23:16     BOOST_0.25ms_PWR-TX_SHR_PWR
+                   ///< 15:8      BOOST_0.5ms_PWR-TX_PHR_PWR
+                   ///< 7:0       DEFAULT_PWR-TX_DATA_PWR
+  uint16_t sfd_to; ///< SFD timeout value (in symbols)
+  uint8_t pg_dly;  ///< rf Pulse Generator delay, adjust rf bandwidth
+  uint8_t prf;     ///< change rf pulse repetition frequency DWT_PRF_
+} FC_RF_SET_s;
 #endif

@@ -1,11 +1,12 @@
 #include "mac.h"
 #include "../settings.h"
-#include "carry.h"
 #include "sync.h"
+#include "toa_routine.h"
 
 // global mac instance
 mac_instance_t mac;
 
+static MAC_DataParserCb_t _dataParser;
 static mac_buf_t *_MAC_BufGetOldestToTx();
 static void _MAC_BufferReset(mac_buf_t *buf);
 int MAC_TryTransmitFrameInSlot(int64_t glob_time);
@@ -15,7 +16,9 @@ static void MAC_RxCb(const dwt_cb_data_t *data);
 static void MAC_RxToCb(const dwt_cb_data_t *data);
 static void MAC_RxErrCb(const dwt_cb_data_t *data);
 
-void MAC_Init() {
+void MAC_Init(MAC_DataParserCb_t callback) {
+	MAC_ASSERT(callback != 0);
+	_dataParser = callback;
   // init transceiver
   TRANSCEIVER_Init();
 
@@ -38,8 +41,9 @@ void MAC_Init() {
     TRANSCEIVER_SetCb(MAC_TxCb, MAC_RxCb, MAC_RxToCb, MAC_RxErrCb);
   }
 
-  // initialize synchronization engine
+  // initialize synchronization and ranging engine
   SYNC_Init();
+  TOA_InitDly();
 
   // slot timers
   PORT_SetSlotTimerPeriodUs(settings.mac.slots_sum_time_us);
@@ -50,6 +54,11 @@ void MAC_Init() {
 
   // prevent beacon sending at startup
   MAC_BeaconTimerReset();
+}
+
+void MAC_Reinit()
+{
+	MAC_Init(_dataParser);
 }
 
 static void MAC_TxCb(const dwt_cb_data_t *data) {
@@ -64,10 +73,14 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
   if (mac.frame_under_tx_is_ranging) {
     // try ranging callback
     ret = SYNC_TxCb(tx_ts);
+    if(ret == 0) {
+      ret = TOA_TxCb(tx_ts);
+    }
     // reset ranging settings when SYNC release transceiver
     if (ret == 0) {
       mac.frame_under_tx_is_ranging = false;
       dwt_forcetrxoff();
+      // do not change ret value
     }
   }
 
@@ -98,10 +111,10 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
 
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
-    buf->rx_len = data->datalength;
-    info.direct_src = buf->frame.src;
+    buf->rx_len = data->datalength - 2; // ommit CRC
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
+    info.direct_src = buf->frame.src;
 
     if(unicast) {
     	MAC_BeaconTimerReset();
@@ -111,13 +124,24 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeighbour()
-        SYNC_RxCb(buf->frame.data, &info);
+        int ret = SYNC_RxCb(buf->frame.data, &info);
+        if(ret == 0){
+          ret = TOA_RxCb(buf->frame.data, &info);
+        }
+        if(ret == 0) {
+          LOG_WRN("Unsupported MAC frame %X", buf->frame.data[0]);
+        }
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
-        CARRY_ParseMessage(buf);
+        _dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
+      } else if(type == FR_CR_BEACON){
+        TRANSCEIVER_DefaultRx();
+        _dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
+      } else if(type == FR_CR_ACK) {
+        LOG_WRN("ACK frame is not supported");
       } else {
         LOG_ERR("This kind of frame is not supported: %x",
-                buf->frame.control[0]);
+        buf->frame.control[0]);
         TRANSCEIVER_DefaultRx();
       }
     } else {
@@ -136,7 +160,11 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
   // ranging isr
   PORT_LedOn(LED_ERR);
   int ret = SYNC_RxToCb();
+  if(ret != 0) {
+    ret = TOA_RxToCb();
+  }
   if (ret == 0) {
+    dwt_setrxtimeout(0);
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
     LOG_DBG("MAC_RxToCb");
   }
@@ -146,7 +174,7 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
 static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
-  LOG_ERR("Rx error status:%X", data->status);
+  LOG_WRN("Rx error status:%X", data->status);
   TRANSCEIVER_DefaultRx();
 }
 
@@ -180,6 +208,8 @@ void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
 	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
 
+	mac.slot_time_offset = glob_time;
+
 	if (time_to_your_slot_us <= 0) {
 	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
 	}
@@ -190,13 +220,14 @@ void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
 
 // Function called from slot timer interrupt.
 void MAC_YourSlotIsr() {
+  CRITICAL(
+    int64_t local_time = TRANSCEIVER_GetTime();
+    uint32_t slot_time = PORT_SlotTimerTickUs();
+    MAC_UpdateSlotTimer(slot_time, local_time);
+  )
   decaIrqStatus_t en = decamutexon();
-  int64_t local_time = TRANSCEIVER_GetTime();
-  uint32_t slot_time = PORT_SlotTimerTickUs();
-  mac.slot_time_offset = SYNC_GlobTime(local_time);
   MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
   decamutexoff(en);
-  MAC_UpdateSlotTimer(slot_time, local_time);
 }
 
 // private function, called when buf should be send now as a frame in slot
@@ -237,12 +268,20 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
 
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
+	  // return 0 to start receiving from tx callback
+	  // abd from your slot ISR there receiving wasn't interrupted
     return 0;
   }
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
-  uint32_t end_us = settings.mac.slot_time_us - settings.mac.slot_guard_time_us;
-  if (slot_time + tx_est_time > end_us) {
+  uint32_t end_us = settings.mac.slot_time_us * (mac.slot_number + 1);
+  end_us -= settings.mac.slot_guard_time_us;
+  if(tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
+    LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
+    MAC_Free(buf);
+  }
+  // when it is too late to send this packet
+  if (end_us < slot_time + tx_est_time) {
     return 0;
   }
 
@@ -355,10 +394,9 @@ mac_buf_t *MAC_BufferPrepare(dev_addr_t target, bool can_append) {
     for (int i = 0; i < MAC_BUF_CNT; ++i) {
       buf = &mac.buf[i];
       if (buf->state == WAIT_FOR_TX || buf->state == WAIT_FOR_TX_ACK) {
-        // do not use mac_fill_frame_to, becouse the buff is already partially
+        // do not use mac_fill_frame_to, because the buff is already partially
         // filled
-        FC_CARRY_s *carry = (FC_CARRY_s *)&buf->frame.data[0];
-        if (carry->hops[0] == target) {
+        if (buf->frame.dst == target) {
           buf->state = BUSY;
           return buf;
         }

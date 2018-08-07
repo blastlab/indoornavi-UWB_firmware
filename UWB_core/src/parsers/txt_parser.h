@@ -18,6 +18,7 @@
 #include "../mac/carry.h"
 #include "bin_const.h"
 #include "bin_struct.h"
+#include "base64.h"
 
 typedef const char cchar;
 

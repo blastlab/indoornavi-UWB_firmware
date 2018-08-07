@@ -30,7 +30,7 @@ bool settings_is_otp_erased()
 
 void SETTINGS_Init() {
 	// variable settings
-  settings = _startup_settings;
+  memcpy(&settings, &_startup_settings, sizeof(settings));
 
   // otp settings - from flash or otp
   if(settings_is_otp_erased())
@@ -45,4 +45,15 @@ void SETTINGS_Init() {
   {
   	settings_otp = (const settings_otp_t*)HARDWARE_OTP_ADDR;
   }
+}
+
+void SETTINGS_Save()
+{
+  PORT_WatchdogRefresh();
+  CRITICAL(
+    PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
+    PORT_WatchdogRefresh();
+    PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
+  )
+  PORT_WatchdogRefresh();
 }

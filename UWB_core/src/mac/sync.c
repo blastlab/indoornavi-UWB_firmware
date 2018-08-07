@@ -4,13 +4,13 @@
 sync_instance_t sync;
 extern mac_instance_t mac;
 
-const char bad_len_msg[] = "%s bad len %d!=%d";
+const char sync_bad_len_msg[] = "%s bad len %d!=%d";
 #define PROT_CHECK_LEN(FC, len, expected)                                      \
   \
 do \
 {                                                                        \
     if ((len) < (expected)) {                                                  \
-      LOG_ERR(bad_len_msg, #FC, (len), (expected));                            \
+      LOG_ERR(sync_bad_len_msg, #FC, (len), (expected));                            \
       return -1;                                                               \
     }                                                                          \
   \
@@ -212,12 +212,12 @@ void SYNC_Update(sync_neighbour_t *neig, int64_t ext_time, int64_t loc_time,
   // add distance to measure table
   if (settings.mac.raport_anchor_anchor_distance) {
     int distance = TOA_TofToCm(tof_dw * DWT_TIME_UNITS);
-    TOA_AddMeasure(neig->addr, distance);
+    TOA_MeasurePushLocal(neig->addr, distance);
   }
 }
 
 int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
-  SYNC_ASSERT(0 < anc_cnt && anc_cnt < 8);
+  SYNC_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
   SYNC_ASSERT(dst != ADDR_BROADCAST);
   mac_buf_t *buf = MAC_BufferPrepare(dst, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
@@ -230,8 +230,8 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
       .len = sizeof(FC_SYNC_POLL_s) + anc_cnt * sizeof(dev_addr_t),
       .num_poll_anchor = anc_cnt,
   };
-  memcpy(&packet.poll_addr[0], &anchors[0], anc_addr_len);
-  MAC_Write(buf, &packet, packet.len);
+  MAC_Write(buf, &packet, sizeof(FC_SYNC_POLL_s));
+  MAC_Write(buf, anchors, sizeof(dev_addr_t) * anc_cnt);
 
   sync.toa.resp_ind = 0;
   sync.toa.anc_in_poll_cnt = anc_cnt;
@@ -463,7 +463,7 @@ int SYNC_TxCb(int64_t TsDwTx) {
     TRANSCEIVER_DefaultRx();
     TOA_State(&sync.toa, TOA_FIN_SENT);
     sync.toa.TsFinTx = TsDwTx;
-    int fin_us = (sync.toa.TsFinTx - sync.toa.TsPollTx) / UUS_TO_DWT_TIME;
+    int fin_us = ((TsDwTx - sync.toa.TsPollTx) & MASK_40BIT) / UUS_TO_DWT_TIME;
     SYNC_TRACE_TOA("SYNC FIN sent after %dus from POLL", fin_us);
     ret = 0; // to release transceiver
     break;

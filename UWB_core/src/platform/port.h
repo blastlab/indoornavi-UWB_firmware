@@ -316,6 +316,29 @@ decaIrqStatus_t decamutexon(void);
 void decamutexoff(decaIrqStatus_t s);
 
 
+/**
+ * \brief disable all maskable interrupts
+ * 
+ * \return decaIrqStatus_t previous state of interrupt mask
+ */
+decaIrqStatus_t PORT_EnterCritical();
+
+
+/**
+ * @brief enable maskbale interrupts according to previous state
+ * 
+ * @param s previous state of interrupt mask
+ */
+void PORT_ExitCritical(decaIrqStatus_t s);
+
+
+#define CRITICAL(_CODE_) \
+    { \
+        decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
+        _CODE_ \
+        PORT_ExitCritical(_irq_primask); \
+    }
+
 // ========  SPI  ==========
 
 

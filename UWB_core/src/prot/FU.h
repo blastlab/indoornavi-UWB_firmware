@@ -207,13 +207,6 @@ extern char PROG_SETTINGS1;  ///< from linker script, settings location (part A)
 
 
 /**
- * @brief size of one minimal piece of data in bytes
- * 
- */
-#define FU_BLOCK_SIZE 16
-
-
-/**
  * @brief raw firmware upgrade protocol struct
  * 
  * definition of field extra may vary depending on opcode
@@ -248,6 +241,7 @@ typedef struct {
                      ///< (from host) [4b:hMajor, 4b:hMinor, 8b:fMajor,
                      ///< 16b:fMinor]
   uint16_t firmwareCRC; ///< BigEndian
+  uint16_t blockSize; ///< Data block size in bytes in one data packet
   uint32_t fileSize;    ///< BigEndian
   uint16_t frameCRC;    ///< BigEndian
 } __packed FU_SOT_prot;
@@ -268,7 +262,7 @@ typedef struct {
 #define FU_ERR_BAD_FRAME_HASH 5  ///< incompatible frame hash
 #define FU_ERR_BAD_OFFSET 6  ///< bad offset value in data frame
 #define FU_ERR_BAD_OPCODE_SET 7  ///< bad FU opcode in frame
-#define FU_ERR_FIR_NOT_ACCEPTED_YET 8  ///< firmware need to be accepted before 
+#define FU_ERR_FIR_NOT_ACCEPTED_YET 8  ///< firmware need to be accepted before
   ///< firmware upgrade @see #FU_AcceptFirmware()
 #define FU_ERR_BAD_FLASH_CRC 10  ///< 
 #define FU_ERR_BAD_F_VERSION 11  ///< firmware version is for other partition
@@ -278,6 +272,7 @@ typedef struct {
 #define FU_ERR_BAD_PROT_VER 14  ///< incompatible firmware protocol version
 #define FU_ERR_VERSION_IN_PACKAGE 15  ///< received data package with version 
   ///< part (should be EOT packet) 
+#define FU_ERR_BAD_DATA_BLOCK_SIZE 16 ///< data block size must be >0 and %4==0
 
 
 /**
@@ -323,10 +318,10 @@ uint8_t *FU_GetCurrentFlashBase();
 /**
  * @brief process new message as device
  * 
- * @param fup message to process
+ * @param data message to process
  * @param info extra informations about message
  */
-void FU_HandleAsDevice(const FU_prot *fup, const prot_packet_info_t *info);
+void FU_HandleAsDevice(const void *data, const prot_packet_info_t *info);
 
 // === test module ===
 //#define TEST_FU // comment to lock unit tests

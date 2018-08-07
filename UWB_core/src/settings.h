@@ -156,4 +156,13 @@ extern settings_otp_t const *settings_otp;
  */
 void SETTINGS_Init();
 
+
+/**
+ * @brief Save values from settings to flash startup values.
+ * 
+ * This function feed watchdog and enter critical section.
+ * 
+ */
+void SETTINGS_Save();
+
 #endif

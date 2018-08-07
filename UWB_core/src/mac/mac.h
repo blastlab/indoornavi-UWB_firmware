@@ -51,7 +51,7 @@
 typedef struct {
   union {
     unsigned char buf[MAC_BUF_LEN];
-    struct _packed {
+    struct __packed {
       unsigned char control[2];
       unsigned char seq_num;
       pan_dev_addr_t pan;
@@ -65,6 +65,7 @@ typedef struct {
   mac_buf_state state;  ///< current buf state
   int rx_len;  ///< number of received bytes includeing 80
   bool isRangingFrame;
+  bool isServerFrame;  ///< send to server via USB or ETH
   short retransmit_fail_cnt;  ///< increased when after ack receive timeout
   unsigned int last_update_time;
 } mac_buf_t;
@@ -81,6 +82,11 @@ typedef struct {
   unsigned int beacon_timer_timestamp;
 } mac_instance_t;
 
+/**
+ * @brief mac data parser callback function typedef
+ * 
+ */
+typedef const uint8_t* (*MAC_DataParserCb_t)(const uint8_t data[], const prot_packet_info_t *info, int size);
 
 /**
  * @brief used by mac, externally implemented in platform folder
@@ -93,9 +99,16 @@ void listener_isr(const dwt_cb_data_t *data);
 /**
  * @brief initialize mac and transceiver
  * 
+ * @param[in] callback function pointer
  */
-void MAC_Init();
+void MAC_Init(MAC_DataParserCb_t callback);
 
+
+/**
+ * @brief call MAC_Init and do not change data parser callback
+ * 
+ */
+void MAC_Reinit();
 
 /**
  * @brief return ms from last BeconTimerReset or received unicast message

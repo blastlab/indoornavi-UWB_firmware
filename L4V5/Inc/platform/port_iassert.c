@@ -24,6 +24,7 @@ void PORT_iassert_fun(const char *msg, int line) {
 	}
 
 	NVIC_EnableIRQ(SysTick_IRQn);
+	NVIC_EnableIRQ(USB_IRQn);
 	PORT_LedOn(LED_ERR);
 
 	#if NDBG
