@@ -6,6 +6,7 @@
  */
 #include "port.h"
 #include "nrf.h"
+#include "nrf_sdh.h"
 #include "nrf_soc.h"
 #include "string.h"
 
@@ -28,14 +29,16 @@ void soc_evt_handler(uint32_t evt_id, void * p_context) {
 void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
 {
   PORT_ASSERT((uint32_t)reg >= (uint32_t)&NRF_POWER->GPREGRET);
-  *reg = value;
+  sd_power_gpregret_set(0, value);
 }
 
 // read value from reset-safe backup register
 uint32_t PORT_BkpRegisterRead(uint32_t *reg)
 {
   PORT_ASSERT((uint32_t)reg >= (uint32_t)&NRF_POWER->GPREGRET);
-  return *reg;
+  uint32_t value = 0;
+  sd_power_gpregret_get(0, &value);
+  return value;
 }
 
 // erasing area in a flash under given address
@@ -55,7 +58,7 @@ int PORT_FlashErase(void *flash_addr, uint32_t length) {
 		status = sd_flash_page_erase(((uint32_t)flash_addr / FLASH_PAGE_SIZE) + i);
 		do {
 			PORT_WatchdogRefresh();
-		} while(!flash_operation_ready && BEACON_MODE);
+		} while(!flash_operation_ready && nrf_sdh_is_enabled());
 	}
 	return status;
 }
@@ -76,7 +79,7 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
 		status = sd_flash_write(dst, src, (len >= FLASH_PAGE_SIZE) ? (FLASH_PAGE_SIZE / 4) : (len % FLASH_PAGE_SIZE / 4));
 		do {
 			PORT_WatchdogRefresh();
-		} while(!flash_operation_ready && BEACON_MODE);
+		} while(!flash_operation_ready && nrf_sdh_is_enabled());
 		dst += FLASH_PAGE_SIZE/4;
 		src += FLASH_PAGE_SIZE/4;
 		len -= FLASH_PAGE_SIZE;

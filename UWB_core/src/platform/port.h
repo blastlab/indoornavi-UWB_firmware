@@ -32,6 +32,13 @@
 #define DBG 	1
 #define USE_BLE	1
 
+#if USE_BLE
+#define BLE_CODE(_CODE_) \
+  { _CODE_ }
+#else
+#define BLE_CODE(_CODE_)
+#endif
+
 /**
  * \brief Initialization for port modules
  *
@@ -43,7 +50,7 @@
 void PORT_Init();
 
 // BLE beacon - this method must be called before LFCLK initialization due to softdevice's init method
-void PORT_BleBeaconStart(void);
+void PORT_BleBeaconInit(void);
 void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr);
 void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val);
 void PORT_BleAdvStart(void);

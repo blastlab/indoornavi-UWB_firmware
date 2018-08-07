@@ -361,16 +361,14 @@ void Bootloader_Init(uint32_t reset_reason)
 static void Bootloader_JumpToAddr(long addr)
 {
 	typedef void (*pFunction)(void);
-    uint32_t  JumpAddress = *(__IO uint32_t*)(addr + 4);
-    pFunction Jump = (pFunction)JumpAddress;
-    MainDeinit();
-
-    SysTick->CTRL = 0;
-    SysTick->LOAD = 0;
-    SysTick->VAL  = 0;
-
-    __set_MSP(*(__IO uint32_t*)addr);
-    Jump();
+	uint32_t  JumpAddress = *(__IO uint32_t*)(addr + 4);
+	pFunction Jump = (pFunction)JumpAddress;
+	MainDeinit();
+	SysTick->CTRL = 0;
+	SysTick->LOAD = 0;
+	SysTick->VAL  = 0;
+	__set_MSP(*(__IO uint32_t*)addr);
+	Jump();
 }
 
 
@@ -384,7 +382,7 @@ void Bootloader_JumpApp(int index)
 			nrf_gpio_pin_clear(LED_R1);
 			break;
     }
-    nrf_delay_ms(2);
+    nrf_delay_ms(50);
 
 	Bootloader_BkpSave(index+1); // add 1 to ommit zero index
 	if(index < sizeof(bootloader_apps)/sizeof(*bootloader_apps)) {

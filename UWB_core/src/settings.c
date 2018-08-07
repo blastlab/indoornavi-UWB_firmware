@@ -31,7 +31,7 @@ bool settings_is_otp_erased()
 
 void SETTINGS_Init() {
 	// variable settings
-  memcpy(&settings, &_startup_settings, sizeof(settings_t));
+  memcpy(&settings, &_startup_settings, sizeof(settings));
   settings_otp = &_settings_otp;	// TODO remove this line
   return;							// TODO: implement OTP handling
 

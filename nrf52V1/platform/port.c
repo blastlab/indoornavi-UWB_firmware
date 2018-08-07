@@ -11,7 +11,7 @@ void PORT_ExtiInit();
 void PORT_UsbUartInit();
 
 void PORT_Init() {
-	PORT_BleBeaconStart();
+	PORT_BleBeaconInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
 	PORT_BatteryInit();

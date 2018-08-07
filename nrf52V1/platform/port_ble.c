@@ -5,7 +5,9 @@
  *      Author: DawidPeplinski
  */
 #include "port.h"
+#include "FU.h"
 #include "nrf_sdh.h"
+#include "nrf_sdm.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
 #include "ble_advdata.h"
@@ -79,9 +81,9 @@ void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val) {
 		adv_data[27] = (0xFF00 & min_val) >> 8;
 		adv_data[28] = 0x00FF & min_val;
 	}
-#if BEACON_MODE
-	sd_ble_gap_adv_data_set((uint8_t const *)&adv_data, ADV_DATA_LENGTH, (uint8_t const *)&scrp_data, SCRP_DATA_LENGTH);
-#endif
+	if(settings.ble.is_enabled) {
+		sd_ble_gap_adv_data_set((uint8_t const *)&adv_data, ADV_DATA_LENGTH, (uint8_t const *)&scrp_data, SCRP_DATA_LENGTH);
+	}
 }
 
 void big_to_little(uint8_t *meas_addr) {
@@ -112,22 +114,22 @@ static void advertising_init(void) {
 }
 
 void PORT_BleAdvStart(void) {
-#if BEACON_MODE
-    APP_ERROR_CHECK(sd_ble_gap_adv_start(&m_adv_params, APP_BLE_CONN_CFG_TAG));
-#endif
+	if(settings.ble.is_enabled) {
+		APP_ERROR_CHECK(sd_ble_gap_adv_start(&m_adv_params, APP_BLE_CONN_CFG_TAG));
+	}
 }
 
 void PORT_BleAdvStop(void) {
-#if BEACON_MODE
-	APP_ERROR_CHECK(sd_ble_gap_adv_stop());
-#endif
+	if(settings.ble.is_enabled) {
+		APP_ERROR_CHECK(sd_ble_gap_adv_stop());
+	}
 }
 
 void PORT_BleSetPower(int8_t power) {
 	settings.ble.tx_power = power;
-#if BEACON_MODE
-	APP_ERROR_CHECK(sd_ble_gap_tx_power_set(settings.ble.tx_power));
-#endif
+	if(settings.ble.is_enabled) {
+		APP_ERROR_CHECK(sd_ble_gap_tx_power_set(settings.ble.tx_power));
+	}
 }
 
 static void ble_stack_init(void) {
@@ -138,10 +140,14 @@ static void ble_stack_init(void) {
     NRF_SDH_SOC_OBSERVER(m_soc_observer, NRF_SDH_SOC_STACK_OBSERVER_PRIO, soc_evt_handler, NULL);
 }
 
-void PORT_BleBeaconStart(void) {
-#if BEACON_MODE
-    ble_stack_init();
-    PORT_BleSetPower(settings.ble.tx_power);
-    advertising_init();
-#endif
+void PORT_BleBeaconInit(void) {
+	if(settings.mac.role != RTLS_SINK && settings.mac.role != RTLS_ANCHOR) {
+		settings.ble.is_enabled = 0;
+	}
+	if(settings.ble.is_enabled) {
+	    ble_stack_init();
+	    PORT_BleSetPower(settings.ble.tx_power);
+	    advertising_init();
+	}
+    sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase()));
 }

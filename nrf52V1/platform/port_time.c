@@ -7,6 +7,7 @@
 
 #include "port.h"
 #include "mac.h"
+#include "settings.h"
 #include "nrf_soc.h"
 #include "nrf_delay.h"
 #include "nrf_drv_timer.h"
@@ -19,11 +20,11 @@ const nrf_drv_timer_t TIMER_SLOT = NRF_DRV_TIMER_INSTANCE(1);
 const nrf_drv_rtc_t RTC = NRF_DRV_RTC_INSTANCE(1);
 
 static void rtc_handler(nrf_drv_rtc_int_type_t int_type) {
-#if BEACON_MODE
-	if(!(RTC.p_reg->COUNTER % 1000) && int_type == NRF_DRV_RTC_INT_TICK) {
-		nrf_gpio_pin_toggle(LED_BLE);
+	if(settings.ble.is_enabled) {
+		if(!(RTC.p_reg->COUNTER % 1000) && int_type == NRF_DRV_RTC_INT_TICK) {
+			nrf_gpio_pin_toggle(LED_BLE);
+		}
 	}
-#endif
 }
 static volatile uint32_t slot_timer_buf;
 
@@ -73,10 +74,10 @@ void PORT_TimeInit() {
 }
 
 void PORT_TimeStartTimers() {
-#if BEACON_MODE
-	PORT_BleSetAdvData(settings.mac.addr, 0xDECA);
-	PORT_BleAdvStart();
-#endif
+	if(settings.ble.is_enabled) {
+		PORT_BleSetAdvData(settings.mac.addr, 0xDECA);
+		PORT_BleAdvStart();
+	}
 	nrf_drv_timer_enable(&TIMER_SLOT);
 }
 

@@ -196,6 +196,10 @@ $(foreach target, $(TARGETS), $(call define_target, $(target)))
 flash: $(OUTPUT_DIRECTORY)/nrf52832_xxaa.hex
 	@echo Flashing: $<
 	nrfjprog -f nrf52 --program $< --sectorerase --reset
+	
+flash_no_reset: $(OUTPUT_DIRECTORY)/nrf52832_xxaa.hex
+	@echo Flashing: $<
+	nrfjprog -f nrf52 --program $< --sectorerase
 
 erase:
 	nrfjprog -f nrf52 --eraseall
