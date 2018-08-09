@@ -22,7 +22,8 @@ static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
     mac_buf_t *mbuf = CARRY_PrepareBufTo(info->direct_src, &carry);
     if(mbuf != 0) {
       uint8_t *ibuf = (uint8_t*)buf;
-      CARRY_Write(carry, mbuf, buf, ibuf[1]); // length is always second byte of frame
+      // length is always second byte of frame
+      CARRY_Write(carry, mbuf, buf, ibuf[1]);
       CARRY_Send(mbuf, true);
     }
     else
@@ -218,7 +219,7 @@ static void TXT_TestCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 
 static void TXT_SaveCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 {
-  SETTINGS_Save();
+  _TXT_Ask(info, FC_SETTINGS_SAVE);
 }
 
 static void TXT_ResetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
@@ -226,7 +227,7 @@ static void TXT_ResetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
   PORT_Reboot();
 }
 
-static void TXT_Bin(const txt_buf_t *buf, const prot_packet_info_t *info)
+static void TXT_BinCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 {
   mac_buf_t* data = MAC_Buffer();
   if(data != 0) {
@@ -250,14 +251,167 @@ static void TXT_Bin(const txt_buf_t *buf, const prot_packet_info_t *info)
   }
 }
 
-const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
-                               {"version", TXT_VersionCb},
-                               {"_hang", TXT_HangCb},
-                               {"rfset", TXT_RFSetCb},
-                               {"test", TXT_TestCb},
-                               {"save", TXT_SaveCb},
-                               {"reset", TXT_ResetCb},
-                               {"bin", TXT_Bin},
-                               };
+static void TXT_SetAnchorsCb(const txt_buf_t* buf,
+                             const prot_packet_info_t* info) {
+  int res, i = 1;
+  RANGING_TempAnchorsReset();
+  res = TXT_GetParamNum(buf, i, 16);
+  while (res > 0) {
+    if (!RANGING_TempAnchorsAdd(res) || (res & ADDR_ANCHOR_FLAG) == 0) {
+      LOG_ERR("setanchors failed (%X)", res);
+      RANGING_TempAnchorsReset();
+      return;
+    }
+    ++i;
+    res = TXT_GetParamNum(buf, i, 16);
+  }
+  LOG_INF("setanchors set %d anchors", i - 1);
+}
+
+static void TXT_SetTagsCb(const txt_buf_t* buf,
+                          const prot_packet_info_t* info) {
+  int res, i = 1;
+  if (RANGING_TempAnchorsCounter() == 0) {
+    LOG_ERR("settags need setanchors");
+    return;
+  }
+  res = TXT_GetParamNum(buf, i, 16);
+  while (res > 0) {
+    if (!RANGING_AddTagWithTempAnchors(res, 1)) {
+      LOG_ERR("settags failed after %X", res);
+      return;
+    }
+    ++i;
+    res = TXT_GetParamNum(buf, i, 16);
+  }
+  int anchors = RANGING_TempAnchorsCounter();
+  LOG_INF("settags set %d tags with %d anchors", i - 1, anchors);
+}
+
+static void TXT_MeasureCb(const txt_buf_t* buf,
+                          const prot_packet_info_t* info) {
+  int i = 2;
+  int tagDid = TXT_GetParamNum(buf, 1, 16);
+  int ancDid = TXT_GetParamNum(buf, i, 16);
+
+  if (tagDid < 0 || tagDid >= ADDR_BROADCAST) {
+    LOG_INF("measure cnt:%d", RANGING_MeasureCounter());
+    return;
+  }
+  RANGING_TempAnchorsReset();
+  while (ancDid > 0) {
+    if (!RANGING_TempAnchorsAdd(ancDid)) {
+      LOG_ERR("measure failed after %X", ancDid);
+      RANGING_TempAnchorsReset();
+      return;
+    }
+    ++i;
+    ancDid = TXT_GetParamNum(buf, i, 16);
+  }
+  if (!RANGING_AddTagWithTempAnchors(tagDid, RANGING_TempAnchorsCounter())) {
+    LOG_ERR("measure failed ancCnt:%d", RANGING_TempAnchorsCounter());
+    RANGING_TempAnchorsReset();
+    return;
+  }
+  RANGING_TempAnchorsReset();
+  LOG_INF("measure set %X with %d anchors", tagDid,
+          RANGING_TempAnchorsCounter());
+}
+
+static void TXT_DeleteTagsCb(const txt_buf_t* buf,
+                             const prot_packet_info_t* info) {
+  int res, i = 1, deleted = 0;
+  res = TXT_GetParamNum(buf, i, 16);
+  while (res > 0) {
+    if (RANGING_MeasureDeleteTag(res)) {
+      ++deleted;
+    }
+    ++i;
+    res = TXT_GetParamNum(buf, i, 16);
+  }
+  LOG_INF("deletetags deleted %d tags", deleted);
+}
+
+static void TXT_RangingTimeCb(const txt_buf_t* buf,
+                              const prot_packet_info_t* info) {
+  int period = TXT_GetParam(buf, "T:", 10);
+  int delay = TXT_GetParam(buf, "t:", 10);
+  int cnt = TXT_GetParam(buf, "N:", 10);
+
+  if (period < 0 && delay < 0 && cnt < 0) {
+    PRINT_RangingTime();
+    return;
+  }
+
+  delay = delay > 0 ? delay : settings.ranging.rangingDelayMs;
+  period = cnt > 0 ? cnt * delay : period;
+  period = period > 0 ? period : settings.ranging.rangingPeriodMs;
+
+  settings.ranging.rangingDelayMs = period;
+  settings.ranging.rangingPeriodMs = delay;
+  PRINT_RangingTime();
+}
+
+static void TXT_ToaTimeCb(const txt_buf_t* buf,
+                          const prot_packet_info_t* info) {
+  toa_settings_t* set = &settings.mac.toa_dly;
+  const char prefix[] = "toatime";
+  char resp_cmd[] = "resp_:";
+  bool respPresent = false;
+  int gt = TXT_GetParam(buf, "gt:", 10);
+  int fin = TXT_GetParam(buf, "fin:", 10);
+  int resp[TOA_MAX_DEV_IN_POLL];
+
+  for (int i = 0; i < TOA_MAX_DEV_IN_POLL; ++i) {
+    resp_cmd[4] = i + '1';
+    resp[i] = TXT_GetParam(buf, resp_cmd, 10);
+    respPresent = resp[i] > 0 ? true : respPresent;
+    resp[i] = resp[i] > 0 ? resp[i] : set->resp_dly_us[i];
+  }
+
+  if (gt < 0 && fin < 0 && respPresent == false) {
+    PRINT_ToaSettings(prefix, set, settings.mac.addr);
+    return;
+  }
+
+  gt = gt > 0 ? gt : set->guard_time_us;
+  fin = fin > 0 ? fin : set->fin_dly_us;
+
+  set->guard_time_us = gt;
+  set->fin_dly_us = fin;
+  for (int i = 0; i < TOA_MAX_DEV_IN_POLL; ++i) {
+    set->resp_dly_us[i] = resp[i];
+  }
+  PRINT_ToaSettings(prefix, set, settings.mac.addr);
+}
+
+static void TXT_AutoSetupCb(const txt_buf_t* buf,
+                            const prot_packet_info_t* info) {
+  int en = TXT_GetParam(buf, "en:", 10);
+
+  if (en < 0) {
+  } else {
+    // todo: przerobic na pakiet binarny i binparse
+    settings.mac.raport_anchor_anchor_distance = en > 0;
+  }
+}
+
+const txt_cb_t txt_cb_tab[] = {
+    {"stat", TXT_StatCb},
+    {"version", TXT_VersionCb},
+    {"_hang", TXT_HangCb},
+    {"rfset", TXT_RFSetCb},
+    {"test", TXT_TestCb},
+    {"save", TXT_SaveCb},
+    {"reset", TXT_ResetCb},
+    {"bin", TXT_BinCb},
+    {"setanchors", TXT_SetAnchorsCb},
+    {"settags", TXT_SetTagsCb},
+    {"measure", TXT_MeasureCb},
+    {"deletetags", TXT_DeleteTagsCb},
+    {"rangingtime", TXT_RangingTimeCb},
+    {"toatime", TXT_ToaTimeCb},
+    {"_autosetup", TXT_AutoSetupCb},
+};
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

@@ -117,6 +117,28 @@ void FC_DEV_ACCEPTED_cb(const void *data, const prot_packet_info_t *info) {
   PRINT_DeviceAccepted(&packet, info->direct_src);
 }
 
+void FC_SETTINGS_SAVE_cb(const void* data, const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_SETTINGS_SAVE);
+  int ret = SETTINGS_Save();
+  FC_SETTINGS_SAVE_RESULT_s packet;
+  packet.FC = FC_SETTINGS_SAVE_RESULT;
+  packet.len = sizeof(packet);
+  packet.result = ret;
+  if (info->direct_src == ADDR_BROADCAST) {
+    PRINT_SettingsSaveResult(&packet, settings.mac.addr);
+  } else {
+    BIN_SEND_RESP(FC_SETTINGS_SAVE_RESULT, &packet, packet.len, info);
+  }
+}
+
+void FC_SETTINGS_SAVE_RESULT_cb(const void* data,
+                                const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_SETTINGS_SAVE_RESULT);
+  FC_SETTINGS_SAVE_RESULT_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_SettingsSaveResult(&packet, info->direct_src);
+}
+
 void FC_RFSET_ASK_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_RFSET_ASK);
   FC_RF_SET_s packet;
@@ -206,8 +228,10 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_TURN_ON, FC_TURN_ON_cb},
     {FC_TURN_OFF, FC_TURN_OFF_cb},
     {FC_DEV_ACCEPTED, FC_DEV_ACCEPTED_cb},
-    {FC_CARRY, CARRY_ParseMessage}, //this code has different argumetns
+    {FC_CARRY, CARRY_ParseMessage},
     {FC_FU, FU_HandleAsDevice},
+    {FC_SETTINGS_SAVE, FC_SETTINGS_SAVE_cb},
+    {FC_SETTINGS_SAVE_RESULT, FC_SETTINGS_SAVE_RESULT_cb},
     {FC_VERSION_ASK, FC_VERSION_ASK_cb},
     {FC_VERSION_RESP, FC_VERSION_RESP_cb},
     {FC_STAT_ASK, FC_STAT_ASK_cb},

@@ -51,6 +51,24 @@ void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did)
     LOG_INF("Device accepted from %X", did);
 }
 
+void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t did)
+{
+    switch(data->result){
+    case 0:
+        LOG_INF("settings saved did:%X", did);
+        break;
+    case 1:
+        LOG_ERR("flash erasing error did:%X", did);
+        break;
+    case 2:
+        LOG_ERR("flash writing error did:%X", did);
+        break;
+    default:
+        LOG_ERR("SETTINGS_Save bad implementation did:%X", did);
+        break;
+    }
+}
+
 void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did)
 {
     const int _f[8] = {0, 3494, 3994, 4493, 3994, 6490, 0, 6490};
@@ -100,4 +118,18 @@ void PRINT_Measure(const measure_t *data)
 {
   LOG_INF("a %X>%X %d %d %d %d", data->did1, data->did2, data->dist_cm,
           data->rssi_cdbm, data->fpp_cdbm, data->snr_cdbm);
+}
+
+void PRINT_RangingTime()
+{
+    int period = settings.ranging.rangingPeriodMs;
+    int delay = settings.ranging.rangingDelayMs;
+    LOG_INF("rangingtime T:%d t:%d (N:%d)", period, delay, period/delay);
+}
+
+
+void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_t did)
+{
+    const char frm[] = "%s gt:%d fin:%d resp1:%d resp2:%d";
+    LOG_INF(frm, prefix, data->guard_time_us, data->fin_dly_us, data->resp_dly_us[0], data->resp_dly_us[1]);
 }

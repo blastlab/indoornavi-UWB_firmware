@@ -80,7 +80,20 @@ typedef struct __packed {
   uint8_t FC, len;
 } FC_DEV_ACCEPTED_s;
 
+/**
+ * @brief see #FC_t description
+ *
+ */
+typedef struct __packed {
+  uint8_t FC, len;
+  uint8_t result;  ///< 0 success, 1 erasing error, 2 writing error
+  uint8_t padding;
+} FC_SETTINGS_SAVE_RESULT_s;
 
+/**
+ * @brief see #FC_t description
+ *
+ */
 typedef struct __packed {
   uint8_t FC, len;
   uint8_t chan;    ///< rf channel number {1,2,3,4,5,7}, change frequency and bw
