@@ -11,6 +11,7 @@
 #include "parsers/txt_parser.h"
 #include "mac/toa_routine.h"
 #include "parsers/printer.h"
+#include "ranging.h"
 
 void SendTurnOnMessage();
 void SendTurnOffMessage(uint8_t reason);
@@ -40,13 +41,6 @@ void BeaconSender() {
 			SendBeaconMessage();
 			MAC_BeaconTimerReset();
   	}
-  }
-}
-
-void RangingControl() {
-  static unsigned int last_time = INT32_MAX;
-  if (PORT_TickMs() - last_time > 150) {
-    last_time = PORT_TickMs();
   }
 }
 
@@ -94,7 +88,7 @@ void UwbMain() {
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
     //BatteryControl(); //todo: HardFault
-    RangingControl();
+    RANGING_Control();
     RangingReader();
     BeaconSender();
     TXT_Control();
