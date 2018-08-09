@@ -30,6 +30,10 @@ void TOA_InitDly() {
 
   toa_settings_t* tset = &settings.mac.toa_dly;
 
+  if(tset->guard_time_us != 0) {
+	  return;
+  }
+
   tset->guard_time_us = 50;  // us
   tset->rx_after_tx_offset_us = tset->guard_time_us;
   tset->rx_after_tx_offset_us += TRANSCEIVER_EstimateTxTimeUs(0);
@@ -58,10 +62,14 @@ void TOA_InitDly() {
   tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
 }
 
-int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
+int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt) {
+  // Init should be sent to dst device when it is anchor
+  // otherwise to first anchor from array and tag address should be added
+  // as a last anchor
   TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
+  dev_addr_t tempTarget = dst & ADDR_ANCHOR_FLAG ? dst : anchors[0];
   FC_CARRY_s* carry;
-  mac_buf_t* buf = CARRY_PrepareBufTo(dst, &carry);
+  mac_buf_t* buf = CARRY_PrepareBufTo(tempTarget, &carry);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
   if (buf == 0) {
     return -1;
@@ -70,10 +78,13 @@ int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
   FC_TOA_INIT_s packet = {
       .FC = FC_TOA_INIT,
       .len = sizeof(FC_TOA_INIT_s) + anc_cnt * sizeof(dev_addr_t),
-      .num_poll_anchor = anc_cnt,
+      .num_poll_anchor = tempTarget == dst ? anc_cnt : anc_cnt + 1,
   };
   CARRY_Write(carry, buf, &packet, sizeof(FC_TOA_INIT_s));
   CARRY_Write(carry, buf, anchors, sizeof(dev_addr_t) * anc_cnt);
+  if(tempTarget != dst) {
+    CARRY_Write(carry, buf, &dst, sizeof(dev_addr_t));
+  }
 
   toa.core.resp_ind = 0;
   toa.core.anc_in_poll_cnt = anc_cnt;
@@ -196,10 +207,17 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	  return;
   }
 
-  // Poll will be sent as MAC frame in your slot
-  // so next frame in slot won't be sent until rx timeout,
-  // error occurrence or success ranging result
-  TOA_SendPoll(packet->poll_addr, packet->num_poll_anchor);
+  if(packet->poll_addr[0] == settings.mac.addr) {
+    // Tag is the target and you should send Init
+    int ancCnt = packet->num_poll_anchor-1;
+    TOA_SendInit(packet->poll_addr[ancCnt], packet->poll_addr, ancCnt);
+  } else {
+    // You are the target and you should send Poll
+    // Poll will be sent as MAC frame in your slot
+    // so next frame in slot won't be sent until rx timeout,
+    // error occurrence or success ranging result
+    TOA_SendPoll(packet->poll_addr, packet->num_poll_anchor);
+  }
 }
 
 int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {

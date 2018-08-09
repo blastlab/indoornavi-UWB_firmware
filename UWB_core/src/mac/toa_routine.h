@@ -5,6 +5,8 @@
  * @author Karol Trzcinski
  * @date 2018-07-20
  */
+#ifndef _TOA_ROUTINES_H
+#define _TOA_ROUTINES_H
 
 #include "../iassert.h"
 #include "../settings.h"
@@ -67,7 +69,7 @@ void TOA_InitDly();
  * @param[in] anc_cnt counter of anchors to measure
  * @return int 0 if succeed error code otherwise
  */
-int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
+int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt);
 
 /**
  * @brief Send Poll message to start SYNC process with a given anchor
@@ -113,3 +115,5 @@ int TOA_RxToCb();
  * @return int 1 if packed was parsed 0 otherwise
  */
 int TOA_TxCb(int64_t TsDwTx);
+
+#endif
