@@ -15,6 +15,7 @@
 #include "mac/carry_settings.h"
 #include "transceiver_settings.h"
 #include "platform/ble_settings.h"
+#include "ranging_settings.h"
 
 /**
  * @brief generate hardware version description byte from major and minor
@@ -94,15 +95,14 @@ typedef struct __packed
  *   in precisely defined location in non-volatile memory (FLASH) 
  * 
  */
-typedef struct
-{
-  settings_version_t version; //< current firmware version
-  transceiver_settings_t transceiver; //< transceiver settings
-  mac_settings_t mac; //<  medium access control module settings
-  carry_settings_t carry; //< carry protocol settings
-  ble_settings_t ble; //< bluetooth low energy protocol settings
+typedef struct {
+  settings_version_t version;          ///< current firmware version
+  transceiver_settings_t transceiver;  ///< transceiver settings
+  mac_settings_t mac;          ///<  medium access control module settings
+  carry_settings_t carry;      ///< carry protocol settings
+  ble_settings_t ble;         ///< bluetooth low energy protocol settings
+  ranging_settings_t ranging;  ///< ranging traces
 } settings_t;
-
 
 /**
  * @brief default firmware and hardware version settings
@@ -122,13 +122,12 @@ typedef struct
  * @brief define default settings values
  * 
  */
-#define DEF_SETTINGS                                                          	\
-  {                                                                           	\
-    .version = VERSION_SETTINGS_DEF, .transceiver = TRANSCEIVER_SETTINGS_DEF, 	\
-    .mac = MAC_SETTINGS_DEF, .carry = CARRY_SETTINGS_DEF, 						\
-	.ble = BLE_SETTINGS_DEF 													\
+#define DEF_SETTINGS                                                          \
+  {                                                                           \
+    .version = VERSION_SETTINGS_DEF, .transceiver = TRANSCEIVER_SETTINGS_DEF, \
+    .mac = MAC_SETTINGS_DEF, .carry = CARRY_SETTINGS_DEF,                     \
+    .ble = BLE_SETTINGS_DEF, .ranging = RANGING_SETTINGS_DEF,                                          \
   }
-
 
 /**
  * @brief global instance of settings object
@@ -165,7 +164,11 @@ void SETTINGS_Init();
  * 
  * This function feed watchdog and enter critical section.
  * 
+ * @return 0 when success
+ * @return 1 when erasing error
+ * @return 2 when writing error
+ *
  */
-void SETTINGS_Save();
+int SETTINGS_Save();
 
 #endif

@@ -60,7 +60,8 @@ uint8_t BIN_ParseSingle(const uint8_t *buf, const prot_packet_info_t *info);
  * @param[in] buf pointer to buffer with message
  * @param[in] info extra informations about frame
  * @param size number of bytes to parse
+ * @return uin8_t* pointer to data after processed messages
  */
-void BIN_Parse(mac_buf_t *buf, const prot_packet_info_t *info, int size);
+const uint8_t* BIN_Parse(const uint8_t data[], const prot_packet_info_t *info, int size);
 
 #endif // _PROT_PARSER_H

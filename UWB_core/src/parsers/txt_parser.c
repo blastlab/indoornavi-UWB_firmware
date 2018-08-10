@@ -12,14 +12,15 @@ cchar *TXT_PointParamNumber(const txt_buf_t *buf, cchar *cmd, int num) {
   cchar *ptr = cmd;
   while (num > 0) {
     while (*ptr != ' ' && *ptr != 0) {
-      ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+      INCREMENT_CYCLE(ptr, buf->start, buf->end);
     }
     while (*ptr == ' ') {
-      ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+      INCREMENT_CYCLE(ptr, buf->start, buf->end);
     }
     if (*ptr == 0) {
       return 0;
     }
+    --num;
   }
   return ptr;
 }
@@ -43,7 +44,7 @@ int TXT_AtoI(const txt_buf_t *buf, cchar *ptr, int base) {
 	  if(('0' <= *ptr && *ptr <= '9') || (base > 10 && 'a' <= tolower(*ptr) && tolower(*ptr) <= 'f'))
 	  {
 		  result *= base;
-		  result += *ptr <= '9' ? *ptr - '0' : tolower(*ptr) - 'a';
+		  result += *ptr <= '9' ? *ptr - '0' : tolower(*ptr) - 'a' + 10;
 	  } else
 	  {
 		  return result;
@@ -60,14 +61,23 @@ int TXT_GetParam(const txt_buf_t *buf, cchar *cmd, int base) {
 
   while (*ptr != 0) {
     for (i = 0; *ptr == cmd[i]; ++i) {
-      ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+      INCREMENT_CYCLE(ptr, buf->start, buf->end);
     }
     if (cmd[i] == 0) {
       return TXT_AtoI(buf, ptr, base);
     }
-    ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+    INCREMENT_CYCLE(ptr, buf->start, buf->end);
   }
   return -1;
+}
+
+int TXT_GetParamNum(const txt_buf_t *buf, int num, int base) {
+  cchar *ptr = TXT_PointParamNumber(buf, buf->cmd, num);
+  if(ptr != 0) {
+    return TXT_AtoI(buf, ptr, base);
+  } else {
+    return -1;
+  }
 }
 
 bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd) {
@@ -76,7 +86,7 @@ bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd) {
 		if (*cmd != *ptr) {
 			return false;
 		}
-		ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+    INCREMENT_CYCLE(ptr, buf->start, buf->end);
 		++cmd;
 	}
 	return true;
@@ -91,7 +101,7 @@ void TXT_Parse(const txt_buf_t *buf) {
   prot_packet_info_t info;
   memset(&info, 0, sizeof(info));
   int did = TXT_GetParam(buf, "did:", 16);
-  info.direct_src = did > 0 ? did : ADDR_BROADCAST;
+  info.direct_src = did > 0 ? did : CARRY_ADDR_SERVER;
 
   for (int i = 0; i < txt_cb_len; ++i) {
     if (TXT_StartsWith(buf, txt_cb_tab[i].cmd)) {
@@ -100,7 +110,7 @@ void TXT_Parse(const txt_buf_t *buf) {
       return;
     }
   }
-  LOG_ERR("Bad command (version, stat)");
+  LOG_ERR("Bad command");
 }
 
 // take input to data parser, ignore \r and split by \n

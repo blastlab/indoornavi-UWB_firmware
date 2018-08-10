@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "nrf_error.h"
-#include "nrf52.h"
+#include "nordic_common.h"
 
 #define __H_MAJOR__ 0
 #define __H_MINOR__ 1
@@ -15,7 +15,6 @@
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 #define UNUSED(x) ((void)(x))
-
 
 extern char PROG_FLASH_START;
 extern char PROG_FLASH_SIZE;

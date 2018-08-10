@@ -18,6 +18,9 @@
 #include "../mac/carry.h"
 #include "bin_const.h"
 #include "bin_struct.h"
+#include "base64.h"
+#include "ranging.h"
+#include "printer.h"
 
 typedef const char cchar;
 
@@ -82,6 +85,15 @@ int TXT_AtoI(const txt_buf_t *buf, cchar *ptr, int base);
  */
 int TXT_GetParam(const txt_buf_t *buf, cchar *cmd, int base);
 
+/**
+ * @brief get parametr number value, form "cmd:value" from circular buffer
+ * 
+ * @param[in] buf buffer to search in
+ * @param[in] num number of param to get, at 0 is cmd
+ * @param[in] base number base, eg. 10 or 16
+ * @return int parameter value or -1
+ */
+int TXT_GetParamNum(const txt_buf_t *buf, int num, int base);
 
 /**
  * @brief check if command starts with in circular buffer

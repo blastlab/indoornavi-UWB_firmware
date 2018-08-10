@@ -66,6 +66,7 @@ SRC_FILES += \
   $(UWB_DIR)/src/tools.c \
   $(UWB_DIR)/src/transceiver.c \
   $(UWB_DIR)/src/transceiver_translator.c \
+  $(UWB_DIR)/src/ranging.c \
   $(UWB_DIR)/src/uwb_main.c \
   
 # Include folders common to all targets

@@ -22,10 +22,10 @@ typedef enum
 
 typedef struct
 {
-  int fin_dly_us; // tx dly after last resp
-  int resp_dly_us[TOA_MAX_DEV_IN_POLL];
-  int guard_time_us;         // time margin during receive
-  int rx_after_tx_offset_us; // time distance between rx on and rx anticipation
+  int fin_dly_us; ///< tx dly after last resp
+  int resp_dly_us[TOA_MAX_DEV_IN_POLL]; ///< tx delay after poll receive
+  int guard_time_us;         ///< time margin during receive
+  int rx_after_tx_offset_us; ///< time to send preambule
 } toa_settings_t;
 
 typedef struct

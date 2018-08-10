@@ -79,6 +79,10 @@ void PORT_SlotTimerSetUsOffset(int32 delta_us) {
   if (LL_TIM_GetCounter(PTIM_SLOT) > 50 - delta_us) {
 	  uint32_t tim_cnt = LL_TIM_GetCounter(PTIM_SLOT);
 	  LL_TIM_SetCounter(PTIM_SLOT, tim_cnt + delta_us);
+	  if(LL_TIM_GetCounter(PTIM_SLOT) > LL_TIM_GetAutoReload(PTIM_SLOT)) {
+		  LL_TIM_SetCounter(PTIM_SLOT, 0);
+		  LL_TIM_GenerateEvent_UPDATE(PTIM_SLOT);
+	  }
   }
 }
 

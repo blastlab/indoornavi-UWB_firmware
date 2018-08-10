@@ -1,12 +1,12 @@
 #include "mac.h"
 #include "../settings.h"
-#include "carry.h"
 #include "sync.h"
 #include "toa_routine.h"
 
 // global mac instance
 mac_instance_t mac;
 
+static MAC_DataParserCb_t _dataParser;
 static mac_buf_t *_MAC_BufGetOldestToTx();
 static void _MAC_BufferReset(mac_buf_t *buf);
 int MAC_TryTransmitFrameInSlot(int64_t glob_time);
@@ -16,7 +16,9 @@ static void MAC_RxCb(const dwt_cb_data_t *data);
 static void MAC_RxToCb(const dwt_cb_data_t *data);
 static void MAC_RxErrCb(const dwt_cb_data_t *data);
 
-void MAC_Init() {
+void MAC_Init(MAC_DataParserCb_t callback) {
+	MAC_ASSERT(callback != 0);
+	_dataParser = callback;
   // init transceiver
   TRANSCEIVER_Init();
 
@@ -52,6 +54,11 @@ void MAC_Init() {
 
   // prevent beacon sending at startup
   MAC_BeaconTimerReset();
+}
+
+void MAC_Reinit()
+{
+	MAC_Init(_dataParser);
 }
 
 static void MAC_TxCb(const dwt_cb_data_t *data) {
@@ -105,9 +112,10 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
     buf->rx_len = data->datalength - 2; // ommit CRC
-    info.direct_src = buf->frame.src;
+    buf->dPtr = &buf->frame.data[0];
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
+    info.direct_src = buf->frame.src;
 
     if(unicast) {
     	MAC_BeaconTimerReset();
@@ -117,22 +125,19 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeighbour()
-        int ret = SYNC_RxCb(buf->frame.data, &info);
+        int ret = SYNC_RxCb(buf->dPtr, &info);
         if(ret == 0){
-          ret = TOA_RxCb(buf->frame.data, &info);
+          ret = TOA_RxCb(buf->dPtr, &info);
         }
         if(ret == 0) {
           LOG_WRN("Unsupported MAC frame %X", buf->frame.data[0]);
         }
       } else if (type == FR_CR_DATA) {
         TRANSCEIVER_DefaultRx();
-        CARRY_ParseMessage(buf);
+        _dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
       } else if(type == FR_CR_BEACON){
-        prot_packet_info_t info;
-        memset(&info, 0, sizeof(info));
-        info.direct_src = buf->frame.src;
         TRANSCEIVER_DefaultRx();
-        BIN_ParseSingle(buf->dPtr, &info);
+        _dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
       } else if(type == FR_CR_ACK) {
         LOG_WRN("ACK frame is not supported");
       } else {
@@ -170,7 +175,7 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
 static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
-  LOG_ERR("Rx error status:%X", data->status);
+  LOG_WRN("Rx error status:%X", data->status);
   TRANSCEIVER_DefaultRx();
 }
 
@@ -211,7 +216,6 @@ void MAC_YourSlotIsr() {
   CRITICAL(
     int64_t local_time = TRANSCEIVER_GetTime();
     uint32_t slot_time = PORT_SlotTimerTickUs();
-    mac.slot_time_offset = SYNC_GlobTime(local_time);
     MAC_UpdateSlotTimer(slot_time, local_time);
   )
   decaIrqStatus_t en = decamutexon();
@@ -391,10 +395,9 @@ mac_buf_t *MAC_BufferPrepare(dev_addr_t target, bool can_append) {
     for (int i = 0; i < MAC_BUF_CNT; ++i) {
       buf = &mac.buf[i];
       if (buf->state == WAIT_FOR_TX || buf->state == WAIT_FOR_TX_ACK) {
-        // do not use mac_fill_frame_to, becouse the buff is already partially
+        // do not use mac_fill_frame_to, because the buff is already partially
         // filled
-        FC_CARRY_s *carry = (FC_CARRY_s *)&buf->frame.data[0];
-        if (carry->hops[0] == target) {
+        if (buf->frame.dst == target) {
           buf->state = BUSY;
           return buf;
         }

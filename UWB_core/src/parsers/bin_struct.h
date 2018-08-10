@@ -40,6 +40,8 @@ typedef struct __packed {
 typedef struct __packed {
   uint8_t FC, len;
   uint64_t serial;  ///< device serial number from settings.version.serial
+  uint8_t hop_cnt;
+  dev_addr_t hops[0];
 } FC_BEACON_s;
 
 /**
@@ -76,9 +78,23 @@ typedef struct __packed {
  */
 typedef struct __packed {
   uint8_t FC, len;
+  dev_addr_t newParent;
 } FC_DEV_ACCEPTED_s;
 
+/**
+ * @brief see #FC_t description
+ *
+ */
+typedef struct __packed {
+  uint8_t FC, len;
+  uint8_t result;  ///< 0 success, 1 erasing error, 2 writing error
+  uint8_t padding;
+} FC_SETTINGS_SAVE_RESULT_s;
 
+/**
+ * @brief see #FC_t description
+ *
+ */
 typedef struct __packed {
   uint8_t FC, len;
   uint8_t chan;    ///< rf channel number {1,2,3,4,5,7}, change frequency and bw
