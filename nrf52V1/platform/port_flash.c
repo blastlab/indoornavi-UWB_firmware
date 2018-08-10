@@ -28,17 +28,24 @@ void soc_evt_handler(uint32_t evt_id, void * p_context) {
 // save value in reset-safe backup register
 void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
 {
-  PORT_ASSERT((uint32_t)reg >= (uint32_t)&NRF_POWER->GPREGRET);
-  sd_power_gpregret_set(0, value);
+	PORT_ASSERT((uint32_t)reg >= (uint32_t)BOOTLOADER_MAGIC_REG_ADDR);
+	if(value == *BOOTLOADER_MAGIC_REG)
+		return;
+	flash_operation_ready = false;
+	sd_flash_page_erase((uint32_t)BOOTLOADER_MAGIC_REG_ADDR/FLASH_PAGE_SIZE);
+	while(!flash_operation_ready && nrf_sdh_is_enabled());
+	uint32_t *dst = (uint32_t *)BOOTLOADER_MAGIC_REG_ADDR;
+	uint32_t *src = (uint32_t *)&value;
+	flash_operation_ready = false;
+	sd_flash_write(dst, src, 1);
+	while(!flash_operation_ready && nrf_sdh_is_enabled());
 }
 
 // read value from reset-safe backup register
 uint32_t PORT_BkpRegisterRead(uint32_t *reg)
 {
-  PORT_ASSERT((uint32_t)reg >= (uint32_t)&NRF_POWER->GPREGRET);
-  uint32_t value = 0;
-  sd_power_gpregret_get(0, &value);
-  return value;
+	PORT_ASSERT((uint32_t)reg >= (uint32_t)BOOTLOADER_MAGIC_REG_ADDR);
+	return *BOOTLOADER_MAGIC_REG;
 }
 
 // erasing area in a flash under given address

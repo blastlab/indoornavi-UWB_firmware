@@ -21,6 +21,9 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/util/nrf_assert.c \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
+  $(SDK_ROOT)/components/drivers_nrf/common/nrf_drv_common.c \
+  $(SDK_ROOT)/components/drivers_nrf/timer/nrf_drv_timer.c \
+  $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
@@ -34,13 +37,15 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/experimental_log/src \
   $(PROJ_DIR) \
   $(SDK_ROOT)/components/toolchain/gcc \
-  $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
   ../config \
   $(SDK_ROOT)/components/device \
   $(SDK_ROOT)/components/drivers_nrf/delay \
   $(SDK_ROOT)/components/toolchain/cmsis/include \
   $(SDK_ROOT)/components/drivers_nrf/hal \
   $(SDK_ROOT)/components/libraries/strerror \
+  $(SDK_ROOT)/components/drivers_nrf/common \
+  $(SDK_ROOT)/components/drivers_nrf/timer \
+  $(SDK_ROOT)/components/softdevice/s132/headers \
 
 # Libraries common to all targets
 LIB_FILES += \

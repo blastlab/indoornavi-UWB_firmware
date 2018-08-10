@@ -105,9 +105,6 @@ void PORT_EnterStopMode() {
 }
 
 void PORT_Reboot() {
-  for (volatile int i = 99999; i > 0; --i)
-    ;               // disabled irq safe delay
-  PORT_SleepMs(10); // to be sure
   NVIC_SystemReset();
 }
 

@@ -10,6 +10,8 @@
 #include "port.h"
 #include "nrf52.h"
 
+uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len);
+
 void PORT_iassert_fun(const char *msg, int line) {
 	#define SIZE 200
 	int counter = 0;

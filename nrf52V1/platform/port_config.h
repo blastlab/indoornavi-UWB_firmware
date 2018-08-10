@@ -17,15 +17,24 @@
 #define UNUSED(x) ((void)(x))
 
 
-//char PROG_DESTINATION1; // TODO should be defined in linker script
-//char PROG_DESTINATION2;
+extern char PROG_FLASH_START;
+extern char PROG_FLASH_SIZE;
+extern char PROG_PAGE_SIZE;
+extern char PROG_BOOTLOADER_MAX_SIZE;
 
-#define FLASH_PAGE_SIZE 	((uint32_t)0x1000U)
-#define FLASH_BASE 			((uint32_t)0x0U)
-#define FLASH_BANK_SIZE  	((uint32_t)0x80000U)
+#define FLASH_BASE						(uint32_t)((void *)(&PROG_FLASH_START))			// defined in linker's script
+#define FLASH_BANK_SIZE  				(uint32_t)((void *)(&PROG_FLASH_SIZE))			// flash size (with SD excluded)
+#define FLASH_PAGE_SIZE					(uint32_t)((void *)(&PROG_PAGE_SIZE))
+#define PROG_BOOTLOADER_MAX_SIZE_m		(uint32_t)((void *)(&PROG_BOOTLOADER_MAX_SIZE))
+
+#define BOOTLOADER_MAGIC_NUMBER 		(0xBECA95)
+#define BOOTLOADER_MAGIC_REG_ADDR		(uint32_t)(FLASH_BASE + PROG_BOOTLOADER_MAX_SIZE_m - 2*FLASH_PAGE_SIZE)
+#define BOOTLOADER_MAGIC_REG			(uint32_t *)BOOTLOADER_MAGIC_REG_ADDR
+#define BOOTLOADER_BKP_REG_ADDR			(uint32_t)(FLASH_BASE + PROG_BOOTLOADER_MAX_SIZE_m - 1*FLASH_PAGE_SIZE)
+#define STATUS_MAGIC_REG				(uint32_t *)BOOTLOADER_BKP_REG_ADDR
+#define STATUS_MAGIC_NUMBER_GO_SLEEP 	(0x12345678)
 
 #define PORT_Success NRF_SUCCESS
-
 
 #define LOG_USB_EN 1
 #define LOG_SD_EN 0
@@ -75,11 +84,4 @@
 #define LED_ERR LED_R1
 #define LED_BLE LED_B1
 #endif
-
-#define BOOTLOADER_MAGIC_NUMBER 		(0xBC)
-#define BOOTLOADER_MAGIC_REG 			((uint32_t*)&NRF_POWER->GPREGRET)
-#define STATUS_MAGIC_REG 				((uint32_t*)&NRF_POWER->GPREGRET2)
-#define STATUS_MAGIC_NUMBER_GO_SLEEP 	(0xFC)
-
-
 #endif

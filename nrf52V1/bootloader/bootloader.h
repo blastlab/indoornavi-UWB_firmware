@@ -10,20 +10,21 @@
 
 #include <stdint.h>
 
-#define BOOTLOADER_MAGIC_NUMBER			(0xBC)
-#define BOOTLOADER_MAGIC_REG			NRF_POWER->GPREGRET
-#define BOOTLOADER_BKP_REG				NRF_POWER->GPREGRET2
-#define STATUS_MAGIC_NUMBER_GO_SLEEP 	(0xFC)
-
-#define FLASH_PAGE_SIZE 			((uint32_t)0x1000U)
+#define FLASH_PAGE_SIZE 			((uint32_t)0x1000)
 #define FLASH_BASE 					((uint32_t)0x23000U)
-#define FLASH_BANK_SIZE  			((uint32_t)0x80000U)
-#define FLASH_SIZE					((uint32_t)0x5d000)
+#define FLASH_BANK_SIZE  			((uint32_t)0x5C000)
+#define FLASH_SIZE					FLASH_BANK_SIZE
 
 #define BOOTLOADER_MAX_SIZE  		(32*1024)
 #define APP_TO_SETTINGS_OFFSET		(FLASH_PAGE_SIZE)
-#define OTP_ADDR					(0x1FFF)
-#define APP_MAX_SIZE 				((256*1024 - BOOTLOADER_MAX_SIZE)/2) // TODO change to actual value // 256kB flash size
+#define APP_MAX_SIZE 				((FLASH_SIZE - BOOTLOADER_MAX_SIZE)/2)
+
+#define BOOTLOADER_MAGIC_NUMBER 		(0xBECA95)
+#define BOOTLOADER_MAGIC_REG_ADDR		(uint32_t)(FLASH_BASE + BOOTLOADER_MAX_SIZE - 2*FLASH_PAGE_SIZE)
+#define BOOTLOADER_MAGIC_REG			(uint32_t *)BOOTLOADER_MAGIC_REG_ADDR
+#define BOOTLOADER_BKP_REG_ADDR			(uint32_t)(FLASH_BASE + BOOTLOADER_MAX_SIZE - 1*FLASH_PAGE_SIZE)
+#define BOOTLOADER_BKP_REG				(uint32_t *)BOOTLOADER_BKP_REG_ADDR
+#define STATUS_MAGIC_NUMBER_GO_SLEEP 	(0x12345678)
 
 // mask most important hardware version bits
 #define H_VER_MASK					(0xF8)

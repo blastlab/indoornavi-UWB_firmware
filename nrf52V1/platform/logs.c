@@ -10,6 +10,7 @@
 #define LOG_BUF_LEN 256
 
 static char buf[LOG_BUF_LEN + 1];
+uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len);
 
 int LOG_Text(char type, const char *frm, ...) {
   int n, f;

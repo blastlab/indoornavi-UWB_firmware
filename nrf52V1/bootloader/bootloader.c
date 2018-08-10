@@ -10,7 +10,8 @@
 #include "nrf52.h"
 #include "nrf_gpio.h"
 #include "nrf_delay.h"
-#include "nrf_nvmc.h"
+#include "nrf_soc.h"
+#include "nrf_drv_timer.h"
 #include "bootloader.h"
 
 // do not touch
@@ -21,12 +22,6 @@
 #define FSTATUS_NEW	0xFF
 #define FSTATUS_WORK 0xFE
 #define FSTATUS_BROKEN_ONCE 0x7F
-
-typedef struct __attribute__((packed))
-{
-	const uint8_t hMajor, hMinor;
-	const uint64_t serial;
-} settings_otp_t;
 
 typedef struct __attribute__((packed))
 {
@@ -52,6 +47,7 @@ typedef struct
 
 const bootloader_set_t  _flash_settings __attribute__((section (".settings")));
 bootloader_set_t settings;
+uint8_t Bootloader_PageBuffer[FLASH_PAGE_SIZE];
 
 // array with application addresses
 const void* bootloader_apps[] = {
@@ -59,15 +55,9 @@ const void* bootloader_apps[] = {
 		(void*)APP2_ADDR
 	};
 
-int settings_offset = 9;
-
-uint8_t Bootloader_PageBuffer[FLASH_PAGE_SIZE];
-
-
 void Bootloader_JumpApp(int index);
 
-
-// implementtion
+// implementation
 void MainInit(void) {
 	nrf_gpio_cfg_output(LED_B1);
 	nrf_gpio_cfg_output(LED_G1);
@@ -85,17 +75,27 @@ void MainDeinit(void) {
 
 int Bootloader_ReadSpecialReg()
 {
-	return NRF_POWER->GPREGRET;
+	return *BOOTLOADER_MAGIC_REG;
 }
 
 void Bootloader_WriteSpecialReg(int val)
 {
-	BOOTLOADER_MAGIC_REG = val;
+	if(val == *BOOTLOADER_MAGIC_REG)
+		return;
+	sd_flash_page_erase((uint32_t)BOOTLOADER_MAGIC_REG_ADDR/FLASH_PAGE_SIZE);
+	uint32_t *dst = (uint32_t *)BOOTLOADER_MAGIC_REG_ADDR;
+	uint32_t *src = (uint32_t *)&val;
+	sd_flash_write(dst, src, 1);
 }
 
 void Bootloader_BkpSave(int val)
 {
-	BOOTLOADER_BKP_REG = val;
+	if(val == *BOOTLOADER_BKP_REG)
+			return;
+	sd_flash_page_erase((uint32_t)BOOTLOADER_BKP_REG_ADDR/FLASH_PAGE_SIZE);
+	uint32_t *dst = (uint32_t *)BOOTLOADER_BKP_REG_ADDR;
+	uint32_t *src = (uint32_t *)&val;
+	sd_flash_write(dst, src, 1);
 }
 
 //static void Bootloader_ProtectFlash(bool enable)
@@ -131,22 +131,14 @@ void Bootloader_BkpSave(int val)
 static void Bootloader_SaveSettings()
 {
 	bootloader_set_t new_set = settings;
+	uint32_t len = sizeof(bootloader_set_t);
+	len = (len % 4) ? len + (4 - len % 4) : len;				// only full 4 bytes words can be written to flash
 	// Erase settings page
-	nrf_nvmc_page_erase((uint32_t)&_flash_settings);
+	sd_flash_page_erase((uint32_t)(&_flash_settings)/FLASH_PAGE_SIZE);
 
-	uint8_t *dst = (uint8_t *)&_flash_settings;
+	uint32_t *dst = (uint32_t *)&_flash_settings;
 	uint32_t *src = (uint32_t *)&new_set;
-	// Enable write
-    NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Wen;
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
-    // Write to flash
-	for (uint32_t i = 0; i < sizeof(new_set); i += 4, dst += 4, src += 1) {
-		((uint32_t *)dst)[0] = 0xFFFFFFFFUL & *src;
-		while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
-	}
-	// Disable write
-    NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Ren;
-    while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
+	sd_flash_write(dst, src, len/4);
 
 	// check result
 	if(memcmp(&_flash_settings, &new_set, sizeof(new_set)) != 0) {
@@ -154,14 +146,16 @@ static void Bootloader_SaveSettings()
 	}
 }
 
+const nrf_drv_timer_t BL_TIMER = NRF_DRV_TIMER_INSTANCE(2);
+static void bl_timer_event_handler(nrf_timer_event_t event_type, void* p_context) {}
+
 void Bootloader_StartIWDG()
 {
-//	extern IWDG_HandleTypeDef hiwdg;					// TODO
-//	hiwdg.Instance = IWDG;
-//	hiwdg.Init.Prescaler = IWDG_PRESCALER_64; //IWDG_PRESCALER_256;
-//	hiwdg.Init.Window = 4095;
-//	hiwdg.Init.Reload = 4095;
-//	HAL_IWDG_Init(&hiwdg);
+    nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
+    nrf_drv_timer_init(&BL_TIMER, &timer_cfg, bl_timer_event_handler);
+    nrf_drv_timer_extended_compare(
+         &BL_TIMER, NRF_TIMER_CC_CHANNEL0, nrf_drv_timer_ms_to_ticks(&BL_TIMER, 8000), NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+    nrf_drv_timer_enable(&BL_TIMER);
 }
 
 void Bootloader_MarkFirmwareAsOld(int app)
@@ -175,28 +169,17 @@ void Bootloader_MarkFirmwareAsOld(int app)
 	memcpy((uint8_t*)(addr_to_read), &magic, sizeof(magic)); // and set magic number at the beginning
 
 	nrf_delay_ms(100); // to wait for eventually watchdogs before
-	__disable_irq();
 
 	do {
 		// Page erase
-		nrf_nvmc_page_erase((uint32_t)addr_to_write);
+		sd_flash_page_erase((uint32_t)addr_to_write/FLASH_PAGE_SIZE);
 		// write settings
-		uint8_t *dst = (uint8_t *)addr_to_write;
+		uint32_t *dst = (uint32_t *)addr_to_write;
 		uint32_t *src = (uint32_t *)addr_to_read;
 		// Enable write
-	    NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Wen;
-	    while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
-	    // Write to flash
-		for (uint32_t i = 0; i < size; i += 4, dst += 4, src += 1) {
-			((uint32_t *)dst)[0] = 0xFFFFFFFFUL & *src;
-			while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
-		}
-		// Disable write
-	    NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Ren;
-	    while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {}
+	    sd_flash_write(dst, src, size/4);
 	// check result
 	} while(memcmp((void*)addr_to_write, (void*)addr_to_read, size) != 0);
-	__enable_irq();
 }
 
 int Bootloader_CheckNewFirmware(int app)
@@ -224,8 +207,13 @@ int Bootloader_CheckNewFirmware(int app)
 			settings.stat[i].fail_cnt = 0;
 			settings.stat[i].pass_cnt = 0;
 		}
+		// prepare to run app next time
+		Bootloader_WriteSpecialReg(0);			// only when new app appears
+		Bootloader_BkpSave(0);
 		// start IWDG
+		Bootloader_SaveSettings();
 		Bootloader_StartIWDG();
+		Bootloader_JumpApp(app);
 	}
 	return new_ver;
 }
@@ -278,7 +266,7 @@ int Bootloader_CheckHardwareVersions()
 
 int Bootloader_CheckSettingsPointer(app_set_t* pset, const char* app_start_addr)
 {
-	const uint8_t* FLASH_END = (uint8_t *)FLASH_BASE + FLASH_SIZE;					// TODO check this
+	const uint8_t* FLASH_END = (uint8_t *)FLASH_BASE + FLASH_SIZE;
 
 	// check pointer to firmware_version
 	if(!((char*)FLASH_BASE < (char*)pset->firmware_version && (char*)pset->firmware_version < (char*)FLASH_END))
@@ -316,10 +304,13 @@ int Bootloader_UpdateAppPassFailCounter(int previous_app)
 	return 0;
 }
 
+static inline bool Bootloader_IfNewFirmware(uint32_t reset_reason) {	// all pass/fail counters are set to 0 whenever new application appears in flash
+	return !settings.stat[0].pass_cnt && !settings.stat[1].pass_cnt && !settings.stat[0].fail_cnt && !settings.stat[1].fail_cnt; // (reset_reason & WDG_RST) &&
+}
 
 void Bootloader_Init(uint32_t reset_reason)
 {
-    int previous_app = BOOTLOADER_BKP_REG - 1;
+    int previous_app = *BOOTLOADER_BKP_REG - 1;
 	app_set_t* pset = &settings.stat[0];
 	uint8_t change_cnt = 0;
 
@@ -330,31 +321,27 @@ void Bootloader_Init(uint32_t reset_reason)
 
 	memcpy(&settings, &_flash_settings, sizeof(settings));
 
-	// software reset - run last App
-	if(BOOTLOADER_BKP_REG != 0 && (reset_reason & SOFT_RST)) {
-		Bootloader_JumpApp(previous_app);
-	 }
-
+	// check reset source
+	if(Bootloader_IfNewFirmware(reset_reason)) {
+		change_cnt += Bootloader_UpdateAppPassFailCounter(previous_app);
+		Bootloader_BkpSave(0);
+	}
 	// set proper pointers in pset[i].settings
 	// check if is new firmware
+	change_cnt += Bootloader_CheckHardwareVersions();
 	for(int i = 0; i < 2; ++i) {
 		change_cnt += Bootloader_CheckSettingsPointer(&pset[i], bootloader_apps[i]);
 		change_cnt += Bootloader_CheckNewFirmware(i);
-	}
-
-	change_cnt += Bootloader_CheckHardwareVersions();
-
-	// check reset source
-	if(reset_reason & WDG_RST) {											// TODO change this!!!!!!!!!!!!!!!!
-		change_cnt += Bootloader_UpdateAppPassFailCounter(previous_app);
 	}
 
 	if(change_cnt > 0) {
 		Bootloader_SaveSettings();
 	}
 
-	// prepare to run app next time
-	Bootloader_WriteSpecialReg(0);
+	// software reset - run last App
+	if(*BOOTLOADER_BKP_REG != 0 && (reset_reason & SOFT_RST)) {
+		Bootloader_JumpApp(previous_app);
+	 }
 }
 
 
@@ -409,7 +396,7 @@ static int Bootloader_ScoreApplication(int i)
 	const app_set_t* pset = &settings.stat[i];
 
 	if(Bootloader_CheckForApplication((long)bootloader_apps[i]) != 0) {
-		++score; // firmware is present
+		score += 2; // firmware is present
 
 #if !SIMPLIFIED
 		// check hardware version
@@ -427,7 +414,7 @@ static int Bootloader_ScoreApplication(int i)
 			}
 		}
 #else
-		score = pset->pass_cnt - pset->fail_cnt;
+		score += pset->pass_cnt - pset->fail_cnt;
 		score *= score > 0;
 		score += 1;
 #endif
@@ -450,7 +437,7 @@ void Bootloader_JumpToApi()
 	score1 = Bootloader_ScoreApplication(0);
 	score2 = Bootloader_ScoreApplication(1);
 
-	if(score1 > score2){								// TODO
+	if(score1 > score2) {
 		Bootloader_JumpApp(0);
 	} else if(score1 < score2) {
 		Bootloader_JumpApp(1);
