@@ -80,6 +80,13 @@ void CARRY_Init(bool isConnectedToServer);
  */
 dev_addr_t CARRY_ParentAddres();
 
+
+/**
+ * @brief set address in sink direction
+ *
+ */
+void CARRY_SetYourParent(dev_addr_t did);
+
 /**
  * @brief set new device parent
  * 

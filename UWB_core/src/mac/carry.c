@@ -12,6 +12,11 @@ dev_addr_t CARRY_ParentAddres()
   return carry.toSinkId;
 }
 
+void CARRY_SetYourParent(dev_addr_t did)
+{
+	carry.toSinkId = did;
+}
+
 // return pointer to target or zero
 carry_target_t *CARRY_GetTarget(dev_addr_t target)
 {

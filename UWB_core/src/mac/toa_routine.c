@@ -95,7 +95,7 @@ int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt) {
   return 0;
 }
 
-int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt) {
+int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt) {
   TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
   mac_buf_t* buf = MAC_BufferPrepare(anc_cnt == 1 ? anchors[0] : ADDR_BROADCAST, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);

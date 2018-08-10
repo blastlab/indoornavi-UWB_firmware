@@ -24,6 +24,7 @@ void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
 void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_TURN_ON);
   PRINT_TurnOn(data, info->direct_src);
+
 }
 
 void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
@@ -32,18 +33,20 @@ void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
 }
 
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
+    FC_CARRY_s* carry;
+    mac_buf_t* buf;
   BIN_ASSERT(*(uint8_t *)data == FC_BEACON);
   PRINT_Beacon(data, info->direct_src);
   if(info->direct_src & ADDR_ANCHOR_FLAG) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->direct_src, default_tree_level);
   }
-  FC_BEACON_s packet = *(FC_BEACON_s*)data;
+  FC_BEACON_s packet;
+  memcpy(&packet, data, sizeof(packet));
   packet.len += sizeof(dev_addr_t);
   packet.hop_cnt += 1;
   if(CARRY_ParentAddres() != 0) {
-    FC_CARRY_s* carry;
-	  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+	  buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
 	  if(buf != 0) {
 		  CARRY_Write(carry, buf, &packet, sizeof(packet));
 		  CARRY_Write(carry, buf, (uint8_t*)data + sizeof(FC_BEACON_s), sizeof(dev_addr_t) * (packet.hop_cnt-1));
@@ -52,6 +55,17 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 	  } else {
 		  LOG_WRN("BEACON parser not enough buffers");
 	  }
+  }
+  if(settings.mac.role == RTLS_SINK) {
+	  dev_addr_t parent = packet.hops[packet.hop_cnt-1];
+	  CARRY_ParentSet(info->direct_src, parent);
+	  FC_DEV_ACCEPTED_s acc;
+	  acc.FC = FC_DEV_ACCEPTED;
+	  acc.len = sizeof(acc);
+	  acc.newParent = info->direct_src;
+	  buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+	  CARRY_Write(carry, buf, &acc, acc.len);
+	  CARRY_Send(buf, true);
   }
 }
 
@@ -114,6 +128,7 @@ void FC_DEV_ACCEPTED_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_DEV_ACCEPTED);
   FC_DEV_ACCEPTED_s packet;
   memcpy(&packet, data, sizeof(packet));
+  CARRY_SetYourParent(packet.newParent);
   PRINT_DeviceAccepted(&packet, info->direct_src);
 }
 

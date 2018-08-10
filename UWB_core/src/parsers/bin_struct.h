@@ -78,6 +78,7 @@ typedef struct __packed {
  */
 typedef struct __packed {
   uint8_t FC, len;
+  dev_addr_t newParent;
 } FC_DEV_ACCEPTED_s;
 
 /**

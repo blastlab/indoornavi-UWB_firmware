@@ -78,7 +78,7 @@ int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt);
  * @param[in] anc_cnt counter of anchors to measure
  * @return int 0 if succeed error code otherwise
  */
-int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt);
+int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt);
 
 
 /**

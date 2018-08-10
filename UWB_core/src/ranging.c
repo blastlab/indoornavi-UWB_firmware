@@ -97,11 +97,13 @@ int RANGING_TempAnchorsCounter() {
 bool RANGING_AddTagWithTempAnchors(dev_addr_t did, int maxAncInMeasure) {
   for (int i = 0; i < ranging.tempAncListCnt; i += maxAncInMeasure) {
     int cnt = MIN(maxAncInMeasure, ranging.tempAncListCnt);
-    if (!RANGING_MeasureAdd(did, &ranging.tempAncList[i], cnt)) {
-      if (i >= maxAncInMeasure) {
-        RANGING_MeasureDeleteLast(i - maxAncInMeasure);
-        return false;
-      }
+    if(did != ranging.tempAncList[i]) {
+		if (!RANGING_MeasureAdd(did, &ranging.tempAncList[i], cnt)) {
+		  if (i >= maxAncInMeasure) {
+			RANGING_MeasureDeleteLast(i - maxAncInMeasure);
+			return false;
+		  }
+		}
     }
   }
   return true;
@@ -113,8 +115,11 @@ bool RANGING_SendNextInit() {
   if (meas == 0) {
     return 0;
   }
-  TOA_SendInit(meas->tagDid, meas->ancDid, meas->numberOfAnchors);
-  return 1;
+  if(meas->tagDid == settings.mac.addr){
+	  TOA_SendPoll(meas->ancDid, meas->numberOfAnchors);
+  } else {
+	  TOA_SendInit(meas->tagDid, meas->ancDid, meas->numberOfAnchors);
+  }return 1;
 }
 
 void RANGING_MeasureNewLoop() {

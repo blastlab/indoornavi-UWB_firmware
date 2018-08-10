@@ -297,13 +297,18 @@ static void TXT_SetTagsCb(const txt_buf_t* buf,
 
 static void TXT_MeasureCb(const txt_buf_t* buf,
                           const prot_packet_info_t* info) {
+  static int readIt = 0;
   int i = 2;
   int tagDid = TXT_GetParamNum(buf, 1, 16);
   int ancDid = TXT_GetParamNum(buf, i, 16);
 
-  if (tagDid < 0 || tagDid >= ADDR_BROADCAST) {
+  if (tagDid < 0 || tagDid >= ADDR_BROADCAST) { // no parameters
     LOG_INF("measure cnt:%d", RANGING_MeasureCounter());
     return;
+  } else if(tagDid == ADDR_BROADCAST) { // one parameter - ADDR_BROADCAST
+	  readIt = readIt >= settings.ranging.measureCnt ? 0 : readIt;
+	  LOG_INF("measure %X with [%X]", tagDid, settings.ranging.measure[readIt]);
+	  INCREMENT_MOD(readIt, settings.ranging.measureCnt);
   }
   RANGING_TempAnchorsReset();
   while (ancDid > 0) {
@@ -320,9 +325,9 @@ static void TXT_MeasureCb(const txt_buf_t* buf,
     RANGING_TempAnchorsReset();
     return;
   }
-  RANGING_TempAnchorsReset();
   LOG_INF("measure set %X with %d anchors", tagDid,
           RANGING_TempAnchorsCounter());
+  RANGING_TempAnchorsReset();
 }
 
 static void TXT_DeleteTagsCb(const txt_buf_t* buf,
@@ -417,6 +422,7 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   } else if (child <= 0) {  // one parametr
     child = parent;
     if (child == ADDR_BROADCAST) {
+    	readIt = readIt >= settings.carry.targetCounter ? 0 : readIt;
       child = settings.carry.target[readIt].addr;
       INCREMENT_MOD(readIt, settings.carry.targetCounter);
     }
