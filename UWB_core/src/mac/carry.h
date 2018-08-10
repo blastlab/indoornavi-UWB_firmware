@@ -53,36 +53,10 @@ typedef struct __packed {
 
 
 /**
- * @brief data about some trace to target
- * @deprecated use anchor->parent model
- * 
- */
-typedef struct {
-  dev_addr_t path[CARRY_MAX_HOPS];  ///< trace path
-  int path_len;  ///< number of hops in path
-  int pass_cnt;  ///< number of successful packet transmission via this path
-  int fail_cnt;  ///< number of failed packet transmission via this path
-  mac_buff_time_t last_update_time;  ///< trace last active time
-} carry_trace_t;
-
-
-/**
- * @brief target info struct
- * 
- */
-typedef struct {
-  dev_addr_t addr;
-  carry_trace_t trace[CARRY_MAX_TRACE];
-  mac_buff_time_t last_update_time;
-} carry_target_t;
-
-
-/**
  * @brief global singleton
  * 
  */
 typedef struct {
-  carry_target_t target[CARRY_MAX_TARGETS];
   bool isConnectedToServer;
   dev_addr_t toSinkId;
 } carry_instance_t;
@@ -107,15 +81,37 @@ void CARRY_Init(bool isConnectedToServer);
 dev_addr_t CARRY_ParentAddres();
 
 /**
+ * @brief set new device parent
+ * 
+ * @param target device address
+ * @param parent new target address
+ */
+bool CARRY_ParentSet(dev_addr_t target, dev_addr_t parent);
+
+/**
+ * @brief get current device parent
+ * 
+ * @param target device address 
+ * @return dev_addr_t parent of this device
+ */
+dev_addr_t CARRY_ParentGet(dev_addr_t target);
+
+/**
+ * @brief delete each saved parent
+ *
+ */
+void CARRY_ParentDeleteAll();
+
+/**
  * @brief write trace to target, including target address
  * 
  * target address is the last one
  * 
- * @param[in] buf 
+ * @param[in] buf address to write trace
  * @param[in] target 
  * @return int hops counter 0..#CARRY_MAX_HOPS
  */
-int CARRY_WriteTrace(mac_buf_t *buf, dev_addr_t target);
+int CARRY_WriteTrace(uint8_t *buf, dev_addr_t target, dev_addr_t* nextDid);
 
 
 /**
