@@ -17,6 +17,7 @@ typedef enum {
 	FC_FU = 0x05, ///< firmware upgrade message
 	FC_SETTINGS_SAVE = 0x06, ///< save current settings in non volatile memory
 	FC_SETTINGS_SAVE_RESULT = 0x07, ///< settings save result
+	FC_RESET = 0x08, ///< reset device
 	// empty
 	FC_TOA_INIT = 0x10, ///< to initialize toa routine
 	FC_TOA_POLL = (FC_TOA_INIT + 1), ///< first ranging message
@@ -24,7 +25,7 @@ typedef enum {
 	FC_TOA_FIN = (FC_TOA_INIT + 3), ///< third and last ranging message
 	FC_TOA_RES = (FC_TOA_INIT + 4), ///< ranging result message
 	// empty
-	// FC_SYNC_INIT = 0x10, ///<
+	// FC_SYNC_INIT = 0x16, ///<
 	FC_SYNC_POLL = 0x17, ///< first ranging message in sync procedure
 	FC_SYNC_RESP = (FC_SYNC_POLL + 1), ///< second ranging message in sync procedure
 	FC_SYNC_FIN = (FC_SYNC_POLL + 2), ///< third and last message in sync procedure

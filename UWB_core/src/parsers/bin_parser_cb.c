@@ -139,6 +139,11 @@ void FC_SETTINGS_SAVE_RESULT_cb(const void* data,
   PRINT_SettingsSaveResult(&packet, info->direct_src);
 }
 
+void FC_RESET_cb(const void *data, const prot_packet_info_t *info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_RESET);
+  PORT_Reboot();
+}
+
 void FC_RFSET_ASK_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_RFSET_ASK);
   FC_RF_SET_s packet;
@@ -232,6 +237,7 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_FU, FU_HandleAsDevice},
     {FC_SETTINGS_SAVE, FC_SETTINGS_SAVE_cb},
     {FC_SETTINGS_SAVE_RESULT, FC_SETTINGS_SAVE_RESULT_cb},
+    {FC_RESET, FC_RESET_cb},
     {FC_VERSION_ASK, FC_VERSION_ASK_cb},
     {FC_VERSION_RESP, FC_VERSION_RESP_cb},
     {FC_STAT_ASK, FC_STAT_ASK_cb},

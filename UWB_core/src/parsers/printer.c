@@ -133,3 +133,8 @@ void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_
     const char frm[] = "%s gt:%d fin:%d resp1:%d resp2:%d";
     LOG_INF(frm, prefix, data->guard_time_us, data->fin_dly_us, data->resp_dly_us[0], data->resp_dly_us[1]);
 }
+
+void PRINT_Parent(dev_addr_t parent, dev_addr_t child, int level)
+{
+	LOG_INF("parent of %X is %X (%d)", child, parent, level);
+}

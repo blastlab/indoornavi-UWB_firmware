@@ -101,4 +101,13 @@ void PRINT_RangingTime();
  */
 void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_t did);
 
+/**
+ * @brief print parent for device
+ * 
+ * @param parent did
+ * @param child did
+ * @param level number of hops between sink and device
+ */
+void PRINT_Parent(dev_addr_t parent, dev_addr_t child, int level);
+
 #endif

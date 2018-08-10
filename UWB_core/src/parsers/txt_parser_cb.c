@@ -222,9 +222,16 @@ static void TXT_SaveCb(const txt_buf_t *buf, const prot_packet_info_t *info)
   _TXT_Ask(info, FC_SETTINGS_SAVE);
 }
 
+static void TXT_ClearCb(const txt_buf_t *buf, const prot_packet_info_t *info)
+{
+	RANGING_MeasureDeleteAll();
+	CARRY_ParentDeleteAll();
+	LOG_INF("cleared");
+}
+
 static void TXT_ResetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 {
-  PORT_Reboot();
+  _TXT_Ask(info, FC_RESET);
 }
 
 static void TXT_BinCb(const txt_buf_t *buf, const prot_packet_info_t *info)
@@ -396,6 +403,50 @@ static void TXT_AutoSetupCb(const txt_buf_t* buf,
   }
 }
 
+static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+  int parent = TXT_GetParamNum(buf, 1, 16);
+  int child = TXT_GetParamNum(buf, 2, 16);
+  int fail_cnt = 0;
+  int i = 2;
+  int level = 0;
+  static int readIt = 0;
+
+  if (parent <= 0 && child <= 0) {  // no parametrs
+    LOG_INF("parent cnt:%d", settings.carry.targetCounter);
+    return;
+  } else if (child <= 0) {  // one parametr
+    child = parent;
+    if (child == ADDR_BROADCAST) {
+      child = settings.carry.target[readIt].addr;
+      INCREMENT_MOD(readIt, settings.carry.targetCounter);
+    }
+    parent = CARRY_ParentGet(child);
+    dev_addr_t temp_parent = parent;
+    while (temp_parent != ADDR_BROADCAST) {
+      temp_parent = CARRY_ParentGet(temp_parent);
+      ++level;
+    }
+    PRINT_Parent(parent, child, level);
+  } else if ((parent & ADDR_ANCHOR_FLAG) == 0 || parent > 0xFFFF) {
+    LOG_ERR("parent must be an anchor (%X)", parent);
+    return;
+  } else {
+    while (child > 0) {
+      if (child == settings.mac.addr) {
+        LOG_ERR("parent can't be set for sink");
+      } else {
+        if (!CARRY_ParentSet(child, parent)) {
+          ++fail_cnt;
+        }
+      }
+      ++i;
+      child = TXT_GetParamNum(buf, i, 16);
+    }
+    LOG_INF("parent %X for %d devices, failed for %d", parent, i - 2 - fail_cnt,
+            fail_cnt);
+  }
+}
+
 const txt_cb_t txt_cb_tab[] = {
     {"stat", TXT_StatCb},
     {"version", TXT_VersionCb},
@@ -403,6 +454,7 @@ const txt_cb_t txt_cb_tab[] = {
     {"rfset", TXT_RFSetCb},
     {"test", TXT_TestCb},
     {"save", TXT_SaveCb},
+    {"clear", TXT_ClearCb},
     {"reset", TXT_ResetCb},
     {"bin", TXT_BinCb},
     {"setanchors", TXT_SetAnchorsCb},
@@ -412,6 +464,7 @@ const txt_cb_t txt_cb_tab[] = {
     {"rangingtime", TXT_RangingTimeCb},
     {"toatime", TXT_ToaTimeCb},
     {"_autosetup", TXT_AutoSetupCb},
+    {"parent", TXT_ParentCb},
 };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);
