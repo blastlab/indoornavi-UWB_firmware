@@ -55,6 +55,7 @@ void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr);
 void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val);
 void PORT_BleAdvStart(void);
 void PORT_BleAdvStop(void);
+bool PORT_BleIsEnabled(void);
 void PORT_BleSetPower(int8_t power);
 
 /**

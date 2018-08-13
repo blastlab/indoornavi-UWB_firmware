@@ -105,7 +105,8 @@ void PORT_EnterStopMode() {
 }
 
 void PORT_Reboot() {
-  NVIC_SystemReset();
+	PORT_SleepMs(25);
+	NVIC_SystemReset();
 }
 
 void DW_EXTI_IRQ_Handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {

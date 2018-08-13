@@ -1817,7 +1817,7 @@
 // <7=> 7
 
 #ifndef GPIOTE_CONFIG_IRQ_PRIORITY
-#define GPIOTE_CONFIG_IRQ_PRIORITY 6
+#define GPIOTE_CONFIG_IRQ_PRIORITY 7
 #endif
 
 // </e>
@@ -2782,7 +2782,7 @@
 // <7=> 7
 
 #ifndef TIMER_DEFAULT_CONFIG_IRQ_PRIORITY
-#define TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 6
+#define TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 7
 #endif
 
 // <q> TIMER0_ENABLED  - Enable TIMER0 instance
@@ -3144,7 +3144,7 @@
 
 
 #ifndef WDT_CONFIG_RELOAD_VALUE
-#define WDT_CONFIG_RELOAD_VALUE 20
+#define WDT_CONFIG_RELOAD_VALUE 100
 #endif
 
 // <o> WDT_CONFIG_IRQ_PRIORITY  - Interrupt priority
@@ -3376,14 +3376,14 @@
 
 
 #ifndef CRC16_ENABLED
-#define CRC16_ENABLED 0
+#define CRC16_ENABLED 1
 #endif
 
 // <q> CRC32_ENABLED  - crc32 - CRC32 calculation routines
 
 
 #ifndef CRC32_ENABLED
-#define CRC32_ENABLED 0
+#define CRC32_ENABLED 1
 #endif
 
 // <q> ECC_ENABLED  - ecc - Elliptic Curve Cryptography Library

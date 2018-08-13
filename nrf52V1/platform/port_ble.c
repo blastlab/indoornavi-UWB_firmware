@@ -125,6 +125,10 @@ void PORT_BleAdvStop(void) {
 	}
 }
 
+bool PORT_BleIsEnabled(void) {
+	return nrf_sdh_is_enabled() && settings.ble.is_enabled;
+}
+
 void PORT_BleSetPower(int8_t power) {
 	settings.ble.tx_power = power;
 	if(settings.ble.is_enabled) {
@@ -138,9 +142,11 @@ static void ble_stack_init(void) {
     APP_ERROR_CHECK(nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start));
     APP_ERROR_CHECK(nrf_sdh_ble_enable(&ram_start));
     NRF_SDH_SOC_OBSERVER(m_soc_observer, NRF_SDH_SOC_STACK_OBSERVER_PRIO, soc_evt_handler, NULL);
+    NVIC_SetPriority(SWI2_EGU2_IRQn, GPIOTE_CONFIG_IRQ_PRIORITY - 1);
 }
 
 void PORT_BleBeaconInit(void) {
+	IASSERT(TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == GPIOTE_CONFIG_IRQ_PRIORITY);
 	if(settings.mac.role != RTLS_SINK && settings.mac.role != RTLS_ANCHOR) {
 		settings.ble.is_enabled = 0;
 	}

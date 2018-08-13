@@ -56,6 +56,7 @@ const void* bootloader_apps[] = {
 	};
 
 void Bootloader_JumpApp(int index);
+static int Bootloader_CheckForApplication(long addr);
 
 // implementation
 void MainInit(void) {
@@ -168,7 +169,7 @@ void Bootloader_MarkFirmwareAsOld(int app)
 	memcpy((uint8_t*)addr_to_read, (uint8_t*)addr_to_write, size); // copy flash content
 	memcpy((uint8_t*)(addr_to_read), &magic, sizeof(magic)); // and set magic number at the beginning
 
-	nrf_delay_ms(100); // to wait for eventually watchdogs before
+	nrf_delay_ms(200); // to wait for eventually watchdogs before
 
 	do {
 		// Page erase
@@ -199,7 +200,7 @@ int Bootloader_CheckNewFirmware(int app)
 		new_ver = 1;
 	}
 
-	if(new_ver){
+	if(new_ver && Bootloader_CheckForApplication((long)bootloader_apps[app]) != 0){
 		// coppy version
 		memcpy(&pset->saved_version, pset->firmware_version, sizeof(pset->saved_version));
 		// set each counters to 0
@@ -305,7 +306,7 @@ int Bootloader_UpdateAppPassFailCounter(int previous_app)
 }
 
 static inline bool Bootloader_IfNewFirmware(uint32_t reset_reason) {	// all pass/fail counters are set to 0 whenever new application appears in flash
-	return !settings.stat[0].pass_cnt && !settings.stat[1].pass_cnt && !settings.stat[0].fail_cnt && !settings.stat[1].fail_cnt; // (reset_reason & WDG_RST) &&
+	return !settings.stat[0].pass_cnt && !settings.stat[1].pass_cnt && !settings.stat[0].fail_cnt && !settings.stat[1].fail_cnt;
 }
 
 void Bootloader_Init(uint32_t reset_reason)
@@ -322,7 +323,7 @@ void Bootloader_Init(uint32_t reset_reason)
 	memcpy(&settings, &_flash_settings, sizeof(settings));
 
 	// check reset source
-	if(Bootloader_IfNewFirmware(reset_reason)) {
+	if(Bootloader_IfNewFirmware(reset_reason) && *BOOTLOADER_BKP_REG != 0) {
 		change_cnt += Bootloader_UpdateAppPassFailCounter(previous_app);
 		Bootloader_BkpSave(0);
 	}

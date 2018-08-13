@@ -18,11 +18,11 @@
 void uart_error_handle(app_uart_evt_t * p_event) {
     if (p_event->evt_type == APP_UART_COMMUNICATION_ERROR)
     {
-        APP_ERROR_HANDLER(p_event->data.error_communication);
+//        APP_ERROR_HANDLER(p_event->data.error_communication);
     }
     else if (p_event->evt_type == APP_UART_FIFO_ERROR)
     {
-        APP_ERROR_HANDLER(p_event->data.error_code);
+//        APP_ERROR_HANDLER(p_event->data.error_code);
     }
     else if (p_event->evt_type == APP_UART_DATA_READY)
     {

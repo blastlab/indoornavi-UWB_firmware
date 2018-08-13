@@ -56,7 +56,7 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 		  LOG_WRN("BEACON parser not enough buffers");
 	  }
   }
-  if(settings.mac.role == RTLS_SINK) {
+  if(false && settings.mac.role == RTLS_SINK) {				// TODO repair this
 	  dev_addr_t parent = packet.hops[packet.hop_cnt-1];
 	  CARRY_ParentSet(info->direct_src, parent);
 	  FC_DEV_ACCEPTED_s acc;
