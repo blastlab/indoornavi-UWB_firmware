@@ -79,6 +79,14 @@ void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t 
  */
 void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did);
 
+/** 
+ * @brief print ble settings
+ * 
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did);
+
 /**
  * @brief print measure info
  * 

@@ -54,6 +54,8 @@ int SETTINGS_Save()
 {
 	int ret = 0;
 	PORT_WatchdogRefresh();
+	if(!memcmp((void*)&_startup_settings, &settings, sizeof(settings)))
+		return 3;
 	CRITICAL(
 		ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
 		ret = ret == 0 ? 0 : 1;

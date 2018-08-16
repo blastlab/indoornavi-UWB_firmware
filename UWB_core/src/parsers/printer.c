@@ -63,6 +63,9 @@ void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t 
     case 2:
         LOG_ERR("flash writing error did:%X", did);
         break;
+    case 3:
+        LOG_INF("no changes to be saved did:%X", did);
+        break;
     default:
         LOG_ERR("SETTINGS_Save bad implementation did:%X", did);
         break;
@@ -112,6 +115,10 @@ void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did)
     LOG_INF("ch:%d-%d/%d br:%d plen:%d prf:%d pac:%d code:%d nsSfd:%d sfdTo:%d",
             data->chan, _f[data->chan], _bw[data->chan],
             br, plen, prf, pac, data->code, data->ns_sfd, data->sfd_to);
+}
+
+void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did) {
+	LOG_INF("ble txpower: %d (-40/-20/-16/-12/-8/-4/0/3/4) enable: %d (0/1) did: %4x", data->tx_power, data->is_enabled, did);
 }
 
 void PRINT_Measure(const measure_t *data)

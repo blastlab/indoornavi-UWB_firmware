@@ -453,48 +453,44 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   }
 }
 
-static void TXT_BleCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_BleCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
 BLE_CODE(
 	int power = TXT_GetParam(buf, "txpower:", 10);
 	int enable = TXT_GetParam(buf, "enable:", 10);
-	if(power != -1) {
-		switch(power) {
-			case -40:
-			case -20:
-			case -16:
-			case -12:
-			case -8:
-			case -4:
-			case 0:
-			case 3:
-			case 4:
-				PORT_BleSetPower(power);
-				LOG_INF("ble txpower set to %d", power);
-				break;
-			default: LOG_ERR("ble txpower: -40/-20/-16/-12/-8/-4/0/3/4");
-		}
-	}
-	else if(enable != -1) {
-		uint8_t is_enabled = settings.ble.is_enabled;
-		switch(enable) {
-			case 0:
-			case 1:
-				settings.ble.is_enabled = enable;
-				LOG_INF("Ble beacon %s", (enable) ? "enabled" : "disabled");
-				if(is_enabled != settings.ble.is_enabled) {
-					LOG_INF("Saving and rebooting...");
-					SETTINGS_Save();
-					PORT_Reboot();
-				}
-				break;
 
-			default: LOG_ERR("ble enable: 0/1");
-		}
+	FC_BLE_SET_s packet;
+	uint8_t changes = 0;
+	switch(power)
+	{
+		case -40:
+		case -20:
+		case -16:
+		case -12:
+		case -8:
+		case -4:
+		case 0:
+		case 3:
+		case 4:
+			packet.tx_power = power;
+			changes++;
+			break;
+		default:
+			packet.tx_power = -1;
 	}
-	else {
-		LOG_ERR("ble txpower:/enable:");
+	switch(enable)
+	{
+		case 0:
+		case 1:
+			packet.is_enabled = enable;
+			changes++;
+			break;
+		default:
+			packet.is_enabled = -1;
 	}
+	packet.FC = changes ? FC_BLE_SET : FC_BLE_ASK;
+	packet.len = changes ? sizeof(packet) : 2;
+
+	_TXT_Finalize(&packet, info);
 	return;
 )
 	LOG_ERR("BLE is disabled");

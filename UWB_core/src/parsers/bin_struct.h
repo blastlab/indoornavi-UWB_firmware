@@ -111,4 +111,10 @@ typedef struct __packed {
   uint8_t pg_dly;  ///< rf Pulse Generator delay, adjust rf bandwidth
   uint8_t prf;     ///< change rf pulse repetition frequency DWT_PRF_
 } FC_RF_SET_s;
+
+typedef struct __packed {
+	uint8_t FC, len;
+	int8_t tx_power;
+	uint8_t is_enabled;
+} FC_BLE_SET_s;
 #endif

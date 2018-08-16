@@ -72,7 +72,7 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name) {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
 
-void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val) {
+void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val, int8_t rssi_at_m) {
 	if(maj_val) {
 		adv_data[25] = (0xFF00 & maj_val) >> 8;
 		adv_data[26] = 0x00FF & maj_val;
@@ -80,6 +80,9 @@ void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val) {
 	if(min_val) {
 		adv_data[27] = (0xFF00 & min_val) >> 8;
 		adv_data[28] = 0x00FF & min_val;
+	}
+	if(rssi_at_m) {
+		adv_data[29] = rssi_at_m;
 	}
 	if(settings.ble.is_enabled) {
 		sd_ble_gap_adv_data_set((uint8_t const *)&adv_data, ADV_DATA_LENGTH, (uint8_t const *)&scrp_data, SCRP_DATA_LENGTH);
@@ -98,11 +101,11 @@ void big_to_little(uint8_t *meas_addr) {
 void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr) {
 //	big_to_little(meas_addr);
 	memcpy(&adv_data[9], meas_addr, sizeof(measure_t));
-	PORT_BleSetAdvData(0, 0);
+	PORT_BleSetAdvData(0, 0, 0);
 }
 
 static void advertising_init(void) {
-	PORT_BleSetAdvData(0x0001, 0x0002);
+	PORT_BleSetAdvData(0x0001, 0x0002, APP_MEASURED_RSSI);
 
     // Initialize advertising parameters (used when starting advertising).
     memset(&m_adv_params, 0, sizeof(m_adv_params));
@@ -130,6 +133,21 @@ bool PORT_BleIsEnabled(void) {
 }
 
 void PORT_BleSetPower(int8_t power) {
+	int8_t rssi_at_m = 0;
+	switch(power)
+	{
+		case -40: rssi_at_m = -85; break;
+		case -20: rssi_at_m = -78; break;
+		case -16: rssi_at_m = -71; break;
+		case -12: rssi_at_m = -68; break;
+		case -8: rssi_at_m = -65; break;
+		case -4: rssi_at_m = -63; break;
+		case 0: rssi_at_m = -61; break;
+		case 3: rssi_at_m = -57; break;
+		case 4:	rssi_at_m = -55; break;
+		default: LOG_ERR("Wrong ble txpower value"); return;
+	}
+	PORT_BleSetAdvData(0, 0, rssi_at_m);
 	settings.ble.tx_power = power;
 	if(settings.ble.is_enabled) {
 		APP_ERROR_CHECK(sd_ble_gap_tx_power_set(settings.ble.tx_power));
@@ -152,8 +170,8 @@ void PORT_BleBeaconInit(void) {
 	}
 	if(settings.ble.is_enabled) {
 	    ble_stack_init();
-	    PORT_BleSetPower(settings.ble.tx_power);
 	    advertising_init();
+	    PORT_BleSetPower(settings.ble.tx_power);
 	}
     sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase()));
 }
