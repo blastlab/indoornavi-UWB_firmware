@@ -217,10 +217,8 @@ void MAC_YourSlotIsr() {
     int64_t local_time = TRANSCEIVER_GetTime();
     uint32_t slot_time = PORT_SlotTimerTickUs();
     MAC_UpdateSlotTimer(slot_time, local_time);
-  )
-  decaIrqStatus_t en = decamutexon();
-  MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
-  decamutexoff(en);
+    )
+    MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
 }
 
 // private function, called when buf should be send now as a frame in slot

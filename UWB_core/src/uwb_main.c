@@ -49,17 +49,7 @@ void RangingReader() {
   const measure_t* meas = TOA_MeasurePeek();
   if (meas != 0) {
     if(settings.mac.role != RTLS_SINK) {
-    	FC_CARRY_s* carry;
-      mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
-      if(buf != 0) {
-        FC_TOA_RES_s packet = {
-          .FC = FC_TOA_RES,
-          .len = sizeof(FC_TOA_RES_s),
-          .meas = *meas,
-        };
-        CARRY_Write(carry, buf, &packet, packet.len);
-        CARRY_Send(buf, false);
-      }
+      TOA_SendRes(meas);
     }
     PRINT_Measure(meas);
     TOA_MeasurePop();
@@ -72,7 +62,7 @@ void UwbMain() {
   Desynchronize(); // base on device address
 
   if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_SINK;
+	  settings.mac.role = RTLS_SINK;
   }
 
   PORT_Init();

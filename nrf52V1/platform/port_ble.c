@@ -50,7 +50,7 @@ static uint8_t adv_data[ADV_DATA_LENGTH] = {
 
 		0x1A,
 		0xFF,											// Manufacturer Specific Data
-		MANUFACTURER_DATA
+		MANUFACTURER_DATA,
 };
 
 static uint8_t scrp_data[SCRP_DATA_LENGTH] = {
@@ -78,8 +78,8 @@ void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val, int8_t rssi_at_m) {
 		adv_data[26] = 0x00FF & maj_val;
 	}
 	if(min_val) {
-		adv_data[27] = (0xFF00 & min_val) >> 8;
-		adv_data[28] = 0x00FF & min_val;
+		adv_data[27] = 0x00;
+		adv_data[28] = 0x00FF & min_val;	// using minor value as rssi at 1m
 	}
 	if(rssi_at_m) {
 		adv_data[29] = rssi_at_m;
@@ -105,7 +105,7 @@ void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr) {
 }
 
 static void advertising_init(void) {
-	PORT_BleSetAdvData(0x0001, 0x0002, APP_MEASURED_RSSI);
+	PORT_BleSetAdvData(0x0001, APP_MEASURED_RSSI, APP_MEASURED_RSSI);
 
     // Initialize advertising parameters (used when starting advertising).
     memset(&m_adv_params, 0, sizeof(m_adv_params));
@@ -147,7 +147,7 @@ void PORT_BleSetPower(int8_t power) {
 		case 4:	rssi_at_m = -55; break;
 		default: LOG_ERR("Wrong ble txpower value"); return;
 	}
-	PORT_BleSetAdvData(0, 0, rssi_at_m);
+	PORT_BleSetAdvData(0, rssi_at_m, rssi_at_m);
 	settings.ble.tx_power = power;
 	if(settings.ble.is_enabled) {
 		APP_ERROR_CHECK(sd_ble_gap_tx_power_set(settings.ble.tx_power));

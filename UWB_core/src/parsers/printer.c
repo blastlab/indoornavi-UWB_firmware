@@ -118,7 +118,7 @@ void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did)
 }
 
 void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did) {
-	LOG_INF("ble txpower: %d (-40/-20/-16/-12/-8/-4/0/3/4) enable: %d (0/1) did: %4x", data->tx_power, data->is_enabled, did);
+	LOG_INF("ble txpower: %d (-40/-20/-16/-12/-8/-4/0/3/4) enable: %d (0/1) did: %X", data->tx_power, data->is_enabled, did);
 }
 
 void PRINT_Measure(const measure_t *data)

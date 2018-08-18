@@ -152,7 +152,13 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry)
     prot.flags = target_flags;
     prot.verHopsNum = 0; // zero hops number and verion
     CARRY_SetVersion(&prot);
-    int hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), target, &buf->frame.dst);
+    int hops_cnt;
+    if(target == CARRY_ADDR_SINK) {
+      hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), carry.toSinkId == 0 ? ADDR_BROADCAST : carry.toSinkId, &buf->frame.dst);
+    }
+    else {
+      hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), target, &buf->frame.dst);
+    }
     CARRY_ASSERT(hops_cnt < CARRY_MAX_HOPS);
     prot.verHopsNum += hops_cnt;
     prot.len += hops_cnt * sizeof(dev_addr_t); // hops data

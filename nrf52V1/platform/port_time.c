@@ -75,7 +75,7 @@ void PORT_TimeInit() {
 
 void PORT_TimeStartTimers() {
 	if(settings.ble.is_enabled) {
-		PORT_BleSetAdvData(settings.mac.addr, 0xDECA, 0);
+		PORT_BleSetAdvData(settings.mac.addr, 0, 0);
 		PORT_BleAdvStart();
 	}
 	nrf_drv_timer_enable(&TIMER_SLOT);

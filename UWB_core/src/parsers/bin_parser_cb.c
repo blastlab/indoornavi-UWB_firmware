@@ -56,7 +56,7 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 		  LOG_WRN("BEACON parser not enough buffers");
 	  }
   }
-  if(false && settings.mac.role == RTLS_SINK) {				// TODO repair this
+  if(false && settings.mac.role == RTLS_SINK) {						// TODO repair this - auto setting parents
 	  dev_addr_t parent = packet.hops[packet.hop_cnt-1];
 	  CARRY_ParentSet(info->direct_src, parent);
 	  FC_DEV_ACCEPTED_s acc;
@@ -244,6 +244,7 @@ void FC_RFSET_SET_cb(const void *data, const prot_packet_info_t *info) {
 }
 
 void FC_BLE_ASK_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
   BIN_ASSERT(*(uint8_t *)data == FC_BLE_ASK);
   FC_BLE_SET_s packet;
   packet.FC = FC_BLE_RESP;
@@ -255,17 +256,21 @@ void FC_BLE_ASK_cb(const void *data, const prot_packet_info_t *info) {
   } else {
 	BIN_SEND_RESP(FC_BLE_RESP, &packet, packet.len, info);
   }
+)
 }
 
 void FC_BLE_RESP_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
   // message is copied to local struct to avoid unaligned access exception
   BIN_ASSERT(*(uint8_t *)data == FC_BLE_RESP);
   FC_BLE_SET_s packet;
   memcpy(&packet, data, sizeof(packet));
   PRINT_BleSet(data, info->direct_src);
+)
 }
 
 void FC_BLE_SET_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
   // message is copied to local struct to avoid unaligned access exception
   BIN_ASSERT(*(uint8_t *)data == FC_BLE_SET);
   FC_BLE_SET_s packet;
@@ -278,7 +283,9 @@ void FC_BLE_SET_cb(const void *data, const prot_packet_info_t *info) {
 	  settings.ble.is_enabled = packet.is_enabled;
   }
   SETTINGS_Save();
-  uint8_t ask_data[] = {FC_BLE_ASK, 2};
+  uint8_t ask_data[2];
+  ask_data[0] = FC_BLE_ASK;
+  ask_data[1] = 2;
   FC_BLE_ASK_cb(&ask_data, info);
   PORT_WatchdogRefresh();
   PORT_SleepMs(50);  // to send response
@@ -286,6 +293,7 @@ void FC_BLE_SET_cb(const void *data, const prot_packet_info_t *info) {
   if(ble_enabled_buf != settings.ble.is_enabled) {
 	  PORT_Reboot();
   }
+)
 }
 
 const prot_cb_t prot_cb_tab[] = {
@@ -306,6 +314,7 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_RFSET_RESP, FC_RFSET_RESP_cb},
     {FC_RFSET_SET, FC_RFSET_SET_cb},
     {FC_TOA_INIT, FC_TOA_INIT_cb},
+	{FC_TOA_RES, FC_TOA_RES_cb},
 	{FC_BLE_ASK, FC_BLE_ASK_cb},
 	{FC_BLE_RESP, FC_BLE_RESP_cb},
 	{FC_BLE_SET, FC_BLE_SET_cb},

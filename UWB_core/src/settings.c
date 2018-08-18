@@ -56,15 +56,13 @@ int SETTINGS_Save()
 	PORT_WatchdogRefresh();
 	if(!memcmp((void*)&_startup_settings, &settings, sizeof(settings)))
 		return 3;
-	CRITICAL(
-		ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
-		ret = ret == 0 ? 0 : 1;
-		PORT_WatchdogRefresh();
-		if(ret == 0) {
-			ret = PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
-		}
-		ret = ret == 0 ? 0 : 2;
-	)
+	ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
+	ret = ret == 0 ? 0 : 1;
+	PORT_WatchdogRefresh();
+	if(ret == 0) {
+		ret = PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
+	}
+	ret = ret == 0 ? 0 : 2;
     PORT_WatchdogRefresh();
     return ret;
 }

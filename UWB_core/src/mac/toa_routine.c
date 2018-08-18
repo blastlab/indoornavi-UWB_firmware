@@ -67,7 +67,7 @@ int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt) {
   // otherwise to first anchor from array and tag address should be added
   // as a last anchor
   TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
-  dev_addr_t tempTarget = dst & ADDR_ANCHOR_FLAG ? dst : anchors[0];
+  dev_addr_t tempTarget = dst & ADDR_ANCHOR_FLAG ? dst : anchors[0];		// TODO repair this, no measures with tags
   FC_CARRY_s* carry;
   mac_buf_t* buf = CARRY_PrepareBufTo(tempTarget, &carry);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
@@ -183,7 +183,7 @@ int TOA_SendFinal() {
   return MAC_SendRanging(buf, tx_flags);
 }
 
-int TOA_SendRes(measure_t* measure) {
+int TOA_SendRes(const measure_t* measure) {
   FC_TOA_RES_s packet = {
     .FC = FC_TOA_RES,
     .len = sizeof(FC_TOA_RES_s),
@@ -320,13 +320,14 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
   return 0;
 }
 
-int FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
   FC_TOA_RES_s* packet = (FC_TOA_RES_s*)data;
   TOA_ASSERT(packet->FC == FC_TOA_RES);
-  PROT_CHECK_LEN(FC_TOA_FIN, packet->len, sizeof(*packet));
-
+  if (packet->len < sizeof(*packet)) {
+	  LOG_ERR(toa_bad_len_msg, FC_TOA_FIN, packet->len, sizeof(*packet));
+	  return;
+  }
   TOA_MeasurePush(&packet->meas);
-  return 0;
 }
 
 int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
@@ -342,10 +343,6 @@ int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
       break;
     case FC_TOA_FIN:
       FC_TOA_FIN_cb(data, info);
-      ret = 1;
-      break;
-    case FC_TOA_RES:
-      FC_TOA_RES_cb(data, info);
       ret = 1;
       break;
     default:

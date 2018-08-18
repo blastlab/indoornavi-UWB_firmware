@@ -346,8 +346,8 @@ static void TXT_DeleteTagsCb(const txt_buf_t* buf,
 
 static void TXT_RangingTimeCb(const txt_buf_t* buf,
                               const prot_packet_info_t* info) {
-  int period = TXT_GetParam(buf, "t:", 10);
-  int delay = TXT_GetParam(buf, "T:", 10);
+  int period = TXT_GetParam(buf, "T:", 10);
+  int delay = TXT_GetParam(buf, "t:", 10);
   int cnt = TXT_GetParam(buf, "N:", 10);
 
   if (period < 0 && delay < 0 && cnt < 0) {
@@ -359,8 +359,8 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf,
   period = cnt > 0 ? cnt * delay : period;
   period = period > 0 ? period : settings.ranging.rangingPeriodMs;
 
-  settings.ranging.rangingDelayMs = period;
-  settings.ranging.rangingPeriodMs = delay;
+  settings.ranging.rangingDelayMs = delay;
+  settings.ranging.rangingPeriodMs = period;
   PRINT_RangingTime();
 }
 

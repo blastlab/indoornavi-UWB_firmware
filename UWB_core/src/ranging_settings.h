@@ -30,6 +30,6 @@ typedef struct {
 } ranging_settings_t;
 
 #define RANGING_SETTINGS_DEF \
-  { .measureCnt = 0, .rangingPeriodMs = 500, .rangingDelayMs = 10 }
+  { .measureCnt = 0, .rangingPeriodMs = 500, .rangingDelayMs = 50 }
 
 #endif
