@@ -27,10 +27,8 @@ void PORT_Init() {
 void PORT_GpioInit() {
 	nrf_gpio_cfg_output(LED_ERR);
 	nrf_gpio_cfg_output(LED_STAT);
-	nrf_gpio_cfg_output(LED_BLE);
-	nrf_gpio_pin_set(LED_ERR);
-	nrf_gpio_pin_set(LED_STAT);
-	nrf_gpio_pin_set(LED_BLE);
+	PORT_LedOff(LED_STAT);
+	PORT_LedOn(LED_ERR);
 	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
 }
 
@@ -58,13 +56,12 @@ void PORT_WatchdogRefresh() {
 void PORT_LedOn(int LED_x) {
 	switch(LED_x){
 		case LED_G1:
-			nrf_gpio_pin_clear(LED_G1);
-			break;
 		case LED_R1:
-			nrf_gpio_pin_clear(LED_R1);
-			break;
-		case LED_B1:
-			nrf_gpio_pin_clear(LED_B1);
+#if USE_DECA_DEVKIT
+			nrf_gpio_pin_clear(LED_x);
+#else
+			nrf_gpio_pin_set(LED_x);
+#endif
 			break;
 		default:
 			IASSERT(0);
@@ -76,13 +73,12 @@ void PORT_LedOn(int LED_x) {
 void PORT_LedOff(int LED_x) {
 	switch(LED_x){
 		case LED_G1:
-			nrf_gpio_pin_set(LED_G1);
-			break;
 		case LED_R1:
-			nrf_gpio_pin_set(LED_R1);
-			break;
-		case LED_B1:
-			nrf_gpio_pin_set(LED_B1);
+#if USE_DECA_DEVKIT
+			nrf_gpio_pin_set(LED_x);
+#else
+			nrf_gpio_pin_clear(LED_x);
+#endif
 			break;
 		default:
 			IASSERT(0);

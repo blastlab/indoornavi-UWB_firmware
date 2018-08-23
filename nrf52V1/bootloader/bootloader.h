@@ -31,10 +31,16 @@
 
 #define MAX_PASS_FAIL_COUNTER		4
 
+#define USE_DECA_DEVKIT 0
+
 // leds
+#if USE_DECA_DEVKIT
 #define LED_G1 30
 #define LED_R1 22
-#define LED_B1 31
+#else
+#define LED_G1 2
+#define LED_R1 15
+#endif
 
 void MainInit(void);
 void Bootloader_Init(uint32_t RCC_CSR);

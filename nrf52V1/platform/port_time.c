@@ -19,13 +19,7 @@
 const nrf_drv_timer_t TIMER_SLOT = NRF_DRV_TIMER_INSTANCE(1);
 const nrf_drv_rtc_t RTC = NRF_DRV_RTC_INSTANCE(1);
 
-static void rtc_handler(nrf_drv_rtc_int_type_t int_type) {
-	if(settings.ble.is_enabled) {
-		if(!(RTC.p_reg->COUNTER % 1000) && int_type == NRF_DRV_RTC_INT_TICK) {
-			nrf_gpio_pin_toggle(LED_BLE);
-		}
-	}
-}
+static void rtc_handler(nrf_drv_rtc_int_type_t int_type) { }
 static volatile uint32_t slot_timer_buf;
 
 static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_context) {
@@ -45,7 +39,7 @@ void PORT_TimeInit() {
     nrf_drv_clock_lfclk_request(NULL);
     nrf_drv_rtc_config_t config = NRF_DRV_RTC_DEFAULT_CONFIG;
     APP_ERROR_CHECK(nrf_drv_rtc_init(&RTC, &config, rtc_handler));
-    nrf_drv_rtc_tick_enable(&RTC, true);
+//    nrf_drv_rtc_tick_enable(&RTC, true);	// tick event not used
     nrf_drv_rtc_enable(&RTC);
 
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;					// TIMER: f = 1 MHz; T = 1 us

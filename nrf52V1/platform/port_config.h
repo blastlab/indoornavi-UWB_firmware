@@ -59,28 +59,25 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 // leds
 #define LED_G1 30
 #define LED_R1 22
-#define LED_B1 31
 #define LED_STAT LED_G1
 #define LED_ERR LED_R1
-#define LED_BLE LED_B1
 #else
-#define DW_RST_PIN			27
-#define DW_EXTI_IRQn 		26
+#define DW_RST_PIN			24
+#define DW_EXTI_IRQn 		19
 
-#define DW_SPI_SS_PIN		25
-#define DW_SPI_MISO_PIN		23
-#define DW_SPI_MOSI_PIN		24
-#define DW_SPI_SCK_PIN		22
+#define DW_SPI_SS_PIN		17
+#define DW_SPI_MISO_PIN		18
+#define DW_SPI_MOSI_PIN		20
+#define DW_SPI_SCK_PIN		16
 
-#define USB_UART_RX_PIN 	8
-#define USB_UART_TX_PIN 	6
+#define USB_UART_RX_PIN 	11
+#define USB_UART_TX_PIN 	5
 
 // leds
-#define LED_G1 17//30
-#define LED_R1 18//22
-#define LED_B1 19//31
+#define LED_G1 2
+#define LED_R1 15
 #define LED_STAT LED_G1
 #define LED_ERR LED_R1
-#define LED_BLE LED_B1
 #endif
+
 #endif

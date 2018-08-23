@@ -60,16 +60,13 @@ static int Bootloader_CheckForApplication(long addr);
 
 // implementation
 void MainInit(void) {
-	nrf_gpio_cfg_output(LED_B1);
 	nrf_gpio_cfg_output(LED_G1);
 	nrf_gpio_cfg_output(LED_R1);
-	nrf_gpio_pin_set(LED_B1);
-	nrf_gpio_pin_set(LED_G1);
-	nrf_gpio_pin_set(LED_R1);
+	nrf_gpio_pin_clear(LED_G1);
+	nrf_gpio_pin_clear(LED_R1);
 }
 
 void MainDeinit(void) {
-	nrf_gpio_cfg_default(LED_B1);
 	nrf_gpio_cfg_default(LED_G1);
 	nrf_gpio_cfg_default(LED_R1);
 }
@@ -364,10 +361,10 @@ void Bootloader_JumpApp(int index)
 {
     switch(index) {
 		case 0:
-			nrf_gpio_pin_clear(LED_G1);
+			nrf_gpio_pin_set(LED_G1);
 			break;
 		case 1:
-			nrf_gpio_pin_clear(LED_R1);
+			nrf_gpio_pin_set(LED_R1);
 			break;
     }
     nrf_delay_ms(50);
@@ -443,8 +440,8 @@ void Bootloader_JumpToApi()
 	} else if(score1 < score2) {
 		Bootloader_JumpApp(1);
 	} else if(score1 == 0 && score2 == 0) { // there is any api
-		nrf_gpio_pin_clear(LED_G1);
-		nrf_gpio_pin_clear(LED_R1);
+		nrf_gpio_pin_set(LED_G1);
+		nrf_gpio_pin_set(LED_R1);
 		Bootloader_JumpToSystem();
 	} else if(score1 == score2) {
 		int app = settings.app_to_choose_when_equal;
@@ -453,7 +450,7 @@ void Bootloader_JumpToApi()
 		Bootloader_StartIWDG();
 		Bootloader_JumpApp(app);
 	} else {
-		nrf_gpio_pin_clear(LED_G1);
+		nrf_gpio_pin_set(LED_G1);
 		Bootloader_JumpApp(0);
 	}
 }
