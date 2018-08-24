@@ -48,6 +48,7 @@ SRC_FILES += \
   $(PROJ_DIR)/platform/port_spi.c \
   $(PROJ_DIR)/platform/port_time.c \
   $(PROJ_DIR)/platform/port_usb.c \
+  $(PROJ_DIR)/platform/port_imu.c \
   $(UWB_DIR)/src/decadriver/deca_device.c \
   $(UWB_DIR)/src/decadriver/deca_params_init.c \
   $(UWB_DIR)/src/mac/carry.c \

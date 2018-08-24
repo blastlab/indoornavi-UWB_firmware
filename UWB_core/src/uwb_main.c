@@ -79,6 +79,7 @@ void UwbMain() {
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
     //BatteryControl(); //todo: HardFault
+    PORT_ImuMotionControl();
     RANGING_Control();
     RangingReader();
     BeaconSender();

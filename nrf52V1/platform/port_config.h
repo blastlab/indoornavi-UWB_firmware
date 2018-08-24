@@ -42,42 +42,56 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
-#define USE_DECA_DEVKIT		1
+#define USE_DECA_DEVKIT		0
 
 #if USE_DECA_DEVKIT
 #define DW_RST_PIN			24
 #define DW_EXTI_IRQn 		19
 
-#define DW_SPI_SS_PIN		17
 #define DW_SPI_MISO_PIN		18
 #define DW_SPI_MOSI_PIN		20
 #define DW_SPI_SCK_PIN		16
+#define DW_SPI_SS_PIN		17
+
+#define GEN_SPI_MISO_PIN	0
+#define GEN_SPI_MOSI_PIN	0
+#define GEN_SPI_SCK_PIN		0
+
+#define IMU_SPI_SS_PIN		0
+#define IMU_EXTI_IRQ1		0
+#define IMU_EXTI_IRQ2		0
 
 #define USB_UART_RX_PIN 	11
 #define USB_UART_TX_PIN 	5
 
-// leds
-#define LED_G1 30
-#define LED_R1 22
-#define LED_STAT LED_G1
-#define LED_ERR LED_R1
+#define LED_G1 				30
+#define LED_R1 				22
+#define LED_STAT 			LED_G1
+#define LED_ERR 			LED_R1
 #else
 #define DW_RST_PIN			24
 #define DW_EXTI_IRQn 		19
 
-#define DW_SPI_SS_PIN		17
 #define DW_SPI_MISO_PIN		18
 #define DW_SPI_MOSI_PIN		20
 #define DW_SPI_SCK_PIN		16
+#define DW_SPI_SS_PIN		17
+
+#define GEN_SPI_MISO_PIN	7
+#define GEN_SPI_MOSI_PIN	6
+#define GEN_SPI_SCK_PIN		4
+
+#define IMU_SPI_SS_PIN		3
+#define IMU_EXTI_IRQ1		23
+#define IMU_EXTI_IRQ2		13
 
 #define USB_UART_RX_PIN 	11
 #define USB_UART_TX_PIN 	5
 
-// leds
-#define LED_G1 2
-#define LED_R1 15
-#define LED_STAT LED_G1
-#define LED_ERR LED_R1
+#define LED_G1 				2
+#define LED_R1 				15
+#define LED_STAT 			LED_G1
+#define LED_ERR 			LED_R1
 #endif
 
 #endif

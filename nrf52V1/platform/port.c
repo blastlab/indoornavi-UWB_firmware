@@ -1,6 +1,7 @@
 #include "port.h"
 #include "nrf_drv_gpiote.h"
 #include "nrf_drv_wdt.h"
+#include "settings.h"
 
 void PORT_TimeInit();
 void PORT_GpioInit();
@@ -9,6 +10,7 @@ void PORT_BatteryInit();
 void PORT_CrcInit();
 void PORT_ExtiInit();
 void PORT_UsbUartInit();
+void ImuIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 void PORT_Init() {
 	PORT_BleBeaconInit();
@@ -17,6 +19,7 @@ void PORT_Init() {
 	PORT_BatteryInit();
 	PORT_CrcInit();
 	PORT_SpiInit();
+	PORT_ImuInit();
 	PORT_GpioInit();
 	PORT_ExtiInit();
 #if !DBG
@@ -28,7 +31,7 @@ void PORT_GpioInit() {
 	nrf_gpio_cfg_output(LED_ERR);
 	nrf_gpio_cfg_output(LED_STAT);
 	PORT_LedOff(LED_STAT);
-	PORT_LedOn(LED_ERR);
+	PORT_LedOff(LED_ERR);
 	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
 }
 
@@ -115,12 +118,25 @@ void DW_EXTI_IRQ_Handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 
 void PORT_ExtiInit() {
     APP_ERROR_CHECK(nrf_drv_gpiote_init());
-    nrf_drv_gpiote_in_config_t in_config = {
+    nrf_drv_gpiote_in_config_t dw_int_config = {
 		.is_watcher = false,
 		.hi_accuracy = false,
 		.pull = NRF_GPIO_PIN_NOPULL,
 		.sense = NRF_GPIOTE_POLARITY_LOTOHI,
     };
-    APP_ERROR_CHECK(nrf_drv_gpiote_in_init(DW_EXTI_IRQn, &in_config, DW_EXTI_IRQ_Handler));
+    APP_ERROR_CHECK(nrf_drv_gpiote_in_init(DW_EXTI_IRQn, &dw_int_config, DW_EXTI_IRQ_Handler));
     nrf_drv_gpiote_in_event_enable(DW_EXTI_IRQn, true);
+
+#if IMU_EXTI_IRQ1
+    if(settings.mac.role != RTLS_TAG)
+    	return;
+    nrf_drv_gpiote_in_config_t imu_int_config = {
+		.is_watcher = false,
+		.hi_accuracy = false,
+		.pull = NRF_GPIO_PIN_PULLUP,
+		.sense = NRF_GPIOTE_POLARITY_HITOLO,
+    };
+    APP_ERROR_CHECK(nrf_drv_gpiote_in_init(IMU_EXTI_IRQ1, &imu_int_config, ImuIrqHandler));
+    nrf_drv_gpiote_in_event_enable(IMU_EXTI_IRQ1, true);
+#endif
 }

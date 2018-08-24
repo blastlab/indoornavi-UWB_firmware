@@ -2672,7 +2672,7 @@
 // <e> SPI1_ENABLED - Enable SPI1 instance
 //==========================================================
 #ifndef SPI1_ENABLED
-#define SPI1_ENABLED 0
+#define SPI1_ENABLED 1
 #endif
 // <q> SPI1_USE_EASY_DMA  - Use EasyDMA
 
@@ -2692,7 +2692,7 @@
 // <2147483648=> 8 MHz
 
 #ifndef SPI1_DEFAULT_FREQUENCY
-#define SPI1_DEFAULT_FREQUENCY 1073741824
+#define SPI1_DEFAULT_FREQUENCY 2147483648
 #endif
 
 // </e>
