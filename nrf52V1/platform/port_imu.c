@@ -7,10 +7,12 @@
 
 #include "port.h"
 #include "nrf_drv_gpiote.h"
+#include "nrf_sdh.h"
+#include "bin_parser.h"
 #include "mac.h"
 
 #define IMU_ACCEL_WOM_THRESHOLD 0b00001000
-#define	IMU_NO_MOTION_PERIOD	10000			// When the time (in milis) run out and no motion is detected, device will go to sleep
+#define	IMU_NO_MOTION_PERIOD	30000			// When the time (in milis) run out and no motion is detected, device will go to sleep
 
 // 		LSM6DSM registers
 typedef enum {
@@ -19,8 +21,13 @@ typedef enum {
 	WHO_AM_I 		= 0x0f,
 	CTRL1_XL		= 0x10,
 	CTRL3_C 		= 0x12,
+	CTRL6_C			= 0x15,
 	CTRL8_XL 		= 0x17,
 	CTRL10_C 		= 0x19,
+	WAKE_UP_SRC		= 0x1b,
+	TAP_CFG			= 0x58,
+	WAKE_UP_THS		= 0x5b,
+	WAKE_UP_DUR		= 0x5c,
 	MD1_CFG			= 0x5e,		// routing interrupts i.e. wakeup to INT1
 } lsm6dsm_register_t;
 
@@ -68,23 +75,24 @@ void PORT_ImuInit(void) {
 	ImuReset();
 	ImuWriteRegister(CTRL10_C, 0b101);				// enabling FUNC_EN and SIGN_MOTION_EN
 	ImuWriteRegister(INT1_CTRL, 0b01000000); 		// enabling INT1_SIGN_MOT
-	ImuWriteRegister(CTRL3_C, 0b00110100);			// setting interrupt to active low and open-drain mode
 	ImuWriteRegister(FUNC_CFG_ACCESS, 0b10000000);	// enabling embedded functions register configuration
 	ImuWriteRegister(SM_THS, 1);					// setting a significant motion detection threshold			TODO: change interrupt to wakeup feature
 	ImuWriteRegister(FUNC_CFG_ACCESS, 0);			// disabling embedded functions register configuration
-	ImuWriteRegister(CTRL1_XL, 0b01001100);			// enabling accel, setting ODR (hi-pwoer mode) and full-scale
+	ImuWriteRegister(CTRL1_XL, 0b01100000);			// enabling accel, setting ODR (hi-pwoer mode) and full-scale
 #endif
 }
 
 void PORT_ImuMotionControl(void) {
 #if !USE_DECA_DEVKIT
-	return;	// TODO: imu sleeping method not ready yet
-
 	if(settings.mac.role != RTLS_TAG)
 		return;
 	if((PORT_TickMs() - motion_tick) > IMU_NO_MOTION_PERIOD) {
+CRITICAL(
 		imu_sleep_mode = 1;
-		TRANSCEIVER_EnterDeepSleep();
+		PORT_LedOff(LED_G1);
+		PORT_LedOff(LED_R1);
+		TRANSCEIVER_EnterDeepSleep();		// don't need to suspend SDH - tags aren't using it
+		)
 // prepare to sleep
 		while(imu_sleep_mode) {
 			__WFI();
@@ -92,7 +100,7 @@ void PORT_ImuMotionControl(void) {
 // exit from sleep
 		uint8_t *dummy_buf = malloc(256);
 		TRANSCEIVER_WakeUp(dummy_buf, 256);
-//		MAC_Init();
+		MAC_Init(BIN_Parse);
 		free(dummy_buf);
 	}
 #endif

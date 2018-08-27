@@ -63,6 +63,7 @@ void PORT_SpiInit() {
 
 #pragma GCC optimize("O3")
 inline void PORT_SpiTx(uint32_t length, const uint8_t *buf) {
+#if GEN_SPI_SCK_PIN
 	IASSERT(nrf_drv_is_in_RAM(buf));
 	NRF_SPIM1->TXD.PTR = (uint32_t)buf;
 	NRF_SPIM1->TXD.MAXCNT = length;
@@ -73,9 +74,11 @@ inline void PORT_SpiTx(uint32_t length, const uint8_t *buf) {
 	NRF_SPIM1->RXD.LIST = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
+#endif
 }
 #pragma GCC optimize("O3")
 inline void PORT_SpiRx(uint32_t length, uint8_t *buf) {
+#if GEN_SPI_SCK_PIN
 	IASSERT(nrf_drv_is_in_RAM(buf));
 	NRF_SPIM1->TXD.PTR = (uint32_t)NULL;
 	NRF_SPIM1->TXD.MAXCNT = 0;
@@ -86,6 +89,7 @@ inline void PORT_SpiRx(uint32_t length, uint8_t *buf) {
 	NRF_SPIM1->RXD.LIST = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
+#endif
 }
 
 #pragma GCC optimize("O3")

@@ -19,8 +19,8 @@ void PORT_Init() {
 	PORT_UsbUartInit();
 	PORT_CrcInit();
 	PORT_SpiInit();
-	PORT_ImuInit();
 	PORT_GpioInit();
+	PORT_ImuInit();
 	PORT_ExtiInit();
 #if !DBG
 	PORT_WatchdogInit();
@@ -128,15 +128,15 @@ void PORT_ExtiInit() {
     nrf_drv_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 
 #if IMU_EXTI_IRQ1
-    if(settings.mac.role != RTLS_TAG)
-    	return;
-    nrf_drv_gpiote_in_config_t imu_int_config = {
+   if(settings.mac.role != RTLS_TAG)
+	   return;
+	nrf_drv_gpiote_in_config_t imu_int_config = {
 		.is_watcher = false,
 		.hi_accuracy = false,
-		.pull = NRF_GPIO_PIN_PULLUP,
-		.sense = NRF_GPIOTE_POLARITY_HITOLO,
-    };
-    APP_ERROR_CHECK(nrf_drv_gpiote_in_init(IMU_EXTI_IRQ1, &imu_int_config, ImuIrqHandler));
-    nrf_drv_gpiote_in_event_enable(IMU_EXTI_IRQ1, true);
+		.pull = NRF_GPIO_PIN_PULLDOWN,
+		.sense = NRF_GPIOTE_POLARITY_LOTOHI,
+	};
+	APP_ERROR_CHECK(nrf_drv_gpiote_in_init(IMU_EXTI_IRQ1, &imu_int_config, ImuIrqHandler));
+	nrf_drv_gpiote_in_event_enable(IMU_EXTI_IRQ1, true);
 #endif
 }
