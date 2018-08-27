@@ -14,9 +14,9 @@ void ImuIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 void PORT_Init() {
 	PORT_BleBeaconInit();
+	PORT_BatteryInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
-	PORT_BatteryInit();
 	PORT_CrcInit();
 	PORT_SpiInit();
 	PORT_ImuInit();

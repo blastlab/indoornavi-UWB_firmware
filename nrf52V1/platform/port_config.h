@@ -1,7 +1,7 @@
 #ifndef _PORT_CONST_H
 #define _PORT_CONST_H
 
-#include "decadriver/deca_device_api.h" // decaIrqStatus_t
+#include "decadriver/deca_device_api.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include "nrf_error.h"
@@ -64,6 +64,9 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 #define USB_UART_RX_PIN 	11
 #define USB_UART_TX_PIN 	5
 
+#define BATT_ADC_TRIG_PIN 	0
+#define HW_TYPE_PULL 		0
+
 #define LED_G1 				30
 #define LED_R1 				22
 #define LED_STAT 			LED_G1
@@ -87,6 +90,9 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 
 #define USB_UART_RX_PIN 	11
 #define USB_UART_TX_PIN 	5
+
+#define BATT_ADC_TRIG_PIN 	27
+#define HW_TYPE_PULL 		10
 
 #define LED_G1 				2
 #define LED_R1 				15

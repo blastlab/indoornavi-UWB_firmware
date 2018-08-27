@@ -33,6 +33,8 @@ SRC_FILES += \
   $(SDK_ROOT)/components/drivers_nrf/uart/nrf_drv_uart.c \
   $(SDK_ROOT)/components/drivers_nrf/wdt/nrf_drv_wdt.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_nvmc.c \
+  $(SDK_ROOT)/components/drivers_nrf/saadc/nrf_drv_saadc.c \
+  $(SDK_ROOT)/components/drivers_nrf/hal/nrf_saadc.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
@@ -40,7 +42,7 @@ SRC_FILES += \
   $(PROJ_DIR)/platform/port_ble.c \
   $(PROJ_DIR)/platform/logs.c \
   $(PROJ_DIR)/platform/port.c \
-  $(PROJ_DIR)/platform/port_battery.c \
+  $(PROJ_DIR)/platform/port_adc.c \
   $(PROJ_DIR)/platform/port_crc.c \
   $(PROJ_DIR)/platform/port_flash.c \
   $(PROJ_DIR)/platform/port_iassert.c \
@@ -99,6 +101,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/drivers_nrf/uart \
   $(SDK_ROOT)/components/drivers_nrf/wdt \
   $(SDK_ROOT)/components/drivers_nrf/delay \
+  $(SDK_ROOT)/components/drivers_nrf/saadc \
   $(SDK_ROOT)/components/drivers_nrf/hal \
   $(SDK_ROOT)/components/softdevice/common \
   $(SDK_ROOT)/components/softdevice/s132/headers \

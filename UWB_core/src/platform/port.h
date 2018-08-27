@@ -183,6 +183,7 @@ void PORT_BatteryMeasure();
  */
 int PORT_BatteryVoltage();
 
+uint8_t PORT_GetHwType();
 
 // ========  TIME  ==========
 
