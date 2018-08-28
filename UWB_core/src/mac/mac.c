@@ -292,6 +292,37 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   return 1;
 }
 
+void MAC_TransmitFrame() {
+  int ret;
+  mac_buf_t *buf = _MAC_BufGetOldestToTx();
+  if (buf == 0) {
+	  return;
+  }
+  int len = MAC_BufLen(buf);
+  // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
+  if (buf->isRangingFrame) {
+    const uint8_t flags = DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
+    dwt_forcetrxoff();
+    ret = MAC_SendRanging(buf, flags);
+  } else {
+    ret = TRANSCEIVER_Send(buf->buf, len);
+  }
+  buf->last_update_time = mac_port_buff_time();
+  // check result
+  if (ret == 0) {
+    buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
+    // wait for tx callback
+  } else {
+    ++buf->retransmit_fail_cnt;
+    if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
+      buf->state = FREE;
+    }
+    // try send next frame after tx fail
+    MAC_TransmitFrame();
+    LOG_WRN("Tx err");
+  }
+}
+
 // call this function when ACK arrive
 void MAC_AckFrameIsr(uint8_t seq_num) {
   for (int i = 0; i < MAC_BUF_CNT; ++i) {

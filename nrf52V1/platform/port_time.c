@@ -72,7 +72,9 @@ void PORT_TimeStartTimers() {
 		PORT_BleSetAdvData(settings.mac.addr, 0, 0);
 		PORT_BleAdvStart();
 	}
+#if USE_SLOT_TIMER
 	nrf_drv_timer_enable(&TIMER_SLOT);
+#endif
 }
 
 void PORT_SleepMs(unsigned int time_ms) {

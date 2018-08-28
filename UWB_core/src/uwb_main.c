@@ -78,6 +78,9 @@ void UwbMain() {
   	++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
+#if !USE_SLOT_TIMER
+    MAC_TransmitFrame();
+#endif
     BatteryControl();
     PORT_ImuMotionControl();
     RANGING_Control();

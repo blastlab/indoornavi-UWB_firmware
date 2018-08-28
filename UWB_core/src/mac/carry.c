@@ -244,11 +244,11 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
       CARRY_Send(tx_buf, ackReq);
     }
   } else if (toSink) {
-    // change header - source and destination address
+    // change header - source and destination address     // TODO repair this - sending messages toSink to sink
     // and send frame
-    tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
-    CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
-    CARRY_Send(tx_buf, ackReq);
+//    tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
+//    CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
+//    CARRY_Send(tx_buf, ackReq);
   } else if(hops_num > 0) {
     dev_addr_t nextDid = pcarry->hops[hops_num-1];
     int lenPre = (int)((uint8_t*)&pcarry->hops[hops_num-1] - (uint8_t*)data);
