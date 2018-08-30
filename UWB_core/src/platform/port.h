@@ -29,8 +29,8 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 			1
-#define USE_BLE			0
+#define DBG 			0
+#define USE_BLE			1
 #define USE_SLOT_TIMER 	0
 
 #if USE_BLE

@@ -134,7 +134,6 @@ int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
 #pragma GCC optimize("O3")
 int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
                uint32_t bodyLength, const uint8_t *bodyBuffer) {
-
 	  decaIrqStatus_t en = decamutexon();
 	  nrf_gpio_pin_clear(DW_SPI_SS_PIN);
 	  dw_spiTx(headerLength, headerBuffer);

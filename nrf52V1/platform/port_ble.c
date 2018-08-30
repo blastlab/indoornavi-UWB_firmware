@@ -10,6 +10,7 @@
 #include "nrf_sdm.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
+#include "nrf_nvic.h"
 #include "ble_advdata.h"
 #include "toa.h"
 
@@ -154,13 +155,25 @@ void PORT_BleSetPower(int8_t power) {
 	}
 }
 
+volatile bool m_ble_radio_active;
+void SWI1_IRQHandler(void)			// radio notifications
+{
+	m_ble_radio_active = !m_ble_radio_active;
+}
+
 static void ble_stack_init(void) {
 	uint32_t ram_start = 0;
+	m_ble_radio_active = false;
+	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	APP_ERROR_CHECK(nrf_sdh_enable_request());
     APP_ERROR_CHECK(nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start));
     APP_ERROR_CHECK(nrf_sdh_ble_enable(&ram_start));
+    APP_ERROR_CHECK(sd_nvic_SetPriority(SWI1_EGU1_IRQn, 3)); 								// radio notifications
+    APP_ERROR_CHECK(sd_nvic_SetPriority(SWI2_EGU2_IRQn, GPIOTE_CONFIG_IRQ_PRIORITY - 1));	// soc observer
+    APP_ERROR_CHECK(sd_radio_notification_cfg_set(NRF_RADIO_NOTIFICATION_TYPE_INT_ON_BOTH, NRF_RADIO_NOTIFICATION_DISTANCE_800US));
     NRF_SDH_SOC_OBSERVER(m_soc_observer, NRF_SDH_SOC_STACK_OBSERVER_PRIO, soc_evt_handler, NULL);
-    NVIC_SetPriority(SWI2_EGU2_IRQn, GPIOTE_CONFIG_IRQ_PRIORITY - 1);
+    APP_ERROR_CHECK(sd_nvic_EnableIRQ(SWI2_EGU2_IRQn));
+    APP_ERROR_CHECK(sd_nvic_EnableIRQ(SWI1_EGU1_IRQn));
 }
 
 void PORT_BleBeaconInit(void) {
@@ -173,5 +186,4 @@ void PORT_BleBeaconInit(void) {
 	    advertising_init();
 	    PORT_BleSetPower(settings.ble.tx_power);
 	}
-    sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase()));
 }

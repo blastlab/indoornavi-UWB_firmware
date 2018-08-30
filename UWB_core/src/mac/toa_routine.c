@@ -269,6 +269,7 @@ int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
     int ret = TOA_SendFinal();
     if (ret != 0) {
       TOA_TRACE("TOA RESP->FIN tx timeout (%d)", MAC_UsFromRx());
+      TRANSCEIVER_DefaultRx();
     } else {
       int dly = settings.mac.toa_dly.fin_dly_us;
       int lag = MAC_UsFromRx();
