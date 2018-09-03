@@ -93,10 +93,9 @@ void PORT_LedOff(int LED_x) {
 void PORT_ResetTransceiver() {
 	nrf_gpio_cfg_output(DW_RST_PIN);
 	nrf_gpio_pin_clear(DW_RST_PIN);
-	PORT_SleepMs(2);
+	PORT_SleepMs(3);
 	nrf_gpio_cfg_default(DW_RST_PIN);
 	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
-	PORT_SleepMs(2);
 }
 
 void PORT_EnterStopMode() {

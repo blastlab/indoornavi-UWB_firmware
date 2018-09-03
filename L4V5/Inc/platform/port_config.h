@@ -8,6 +8,16 @@
 #include "stm32l4xx_hal.h"
 #include "usbd_cdc_if.h"
 
+#define USE_BLE			0
+
+#if USE_BLE
+#define BLE_CODE(_CODE_) \
+  { _CODE_ }
+#else
+#define BLE_CODE(_CODE_)
+#endif
+
+
 #define __H_MAJOR__ 0
 #define __H_MINOR__ 1
 #define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))

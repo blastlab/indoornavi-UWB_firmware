@@ -30,15 +30,7 @@
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
 #define DBG 			0
-#define USE_BLE			1
 #define USE_SLOT_TIMER 	0
-
-#if USE_BLE
-#define BLE_CODE(_CODE_) \
-  { _CODE_ }
-#else
-#define BLE_CODE(_CODE_)
-#endif
 
 /**
  * \brief Initialization for port modules

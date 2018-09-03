@@ -66,8 +66,9 @@ static void ImuReset(void) {
 
 void PORT_ImuInit(void) {
 #if !USE_DECA_DEVKIT
-	if(settings.mac.role != RTLS_TAG)
+	if(settings.mac.role != RTLS_TAG) {
 		return;
+	}
 	nrf_gpio_cfg_output(IMU_SPI_SS_PIN);
 	nrf_gpio_pin_set(IMU_SPI_SS_PIN);
 	motion_tick = 0;
