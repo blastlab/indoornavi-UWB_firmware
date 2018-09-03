@@ -55,7 +55,7 @@ void PORT_BatteryMeasure() {
 	}
 	nrf_gpio_cfg_input(BATT_ADC_TRIG_PIN, NRF_GPIO_PIN_PULLUP);
 	sum = sum/4.0/1024.0*VREF*1000;		// voltage on pin (mV)
-	sum = sum*15.0/10.0;				// voltage on battery (before voltage divider)
+	sum = sum*15.1/10.0;				// voltage on battery (before voltage divider)
 
 	// filter result
 	if (_battery_mv < 1000) { // first measurement

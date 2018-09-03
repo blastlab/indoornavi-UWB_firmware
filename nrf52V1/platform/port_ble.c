@@ -156,9 +156,9 @@ void PORT_BleSetPower(int8_t power) {
 }
 
 volatile bool m_ble_radio_active;
-void SWI1_IRQHandler(void)			// radio notifications
+void SWI1_IRQHandler(void)						// radio notifications
 {
-	m_ble_radio_active = !m_ble_radio_active;
+	m_ble_radio_active = !m_ble_radio_active;	// implementation copied from nordic's library
 }
 
 static void ble_stack_init(void) {
