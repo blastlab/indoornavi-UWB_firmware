@@ -12,7 +12,7 @@
 #include "mac.h"
 
 #define IMU_ACCEL_WOM_THRESHOLD 0b00001000
-#define	IMU_NO_MOTION_PERIOD	30000			// When the time (in milis) run out and no motion is detected, device will go to sleep
+#define	IMU_NO_MOTION_PERIOD	10000			// When the time (in milis) run out and no motion is detected, device will go to sleep
 
 // 		LSM6DSM registers
 typedef enum {
