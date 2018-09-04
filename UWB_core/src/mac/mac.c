@@ -112,6 +112,7 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
   if (buf != 0) {
     TRANSCEIVER_Read(buf->buf, data->datalength);
     buf->rx_len = data->datalength - 2; // ommit CRC
+    buf->dPtr = &buf->frame.data[0];
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
     info.direct_src = buf->frame.src;
@@ -124,9 +125,9 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
       int type = buf->frame.control[0] & FR_CR_TYPE_MASK;
       if (type == FR_CR_MAC) {
         // int ret = SYNC_UpdateNeighbour()
-        int ret = SYNC_RxCb(buf->frame.data, &info);
+        int ret = SYNC_RxCb(buf->dPtr, &info);
         if(ret == 0){
-          ret = TOA_RxCb(buf->frame.data, &info);
+          ret = TOA_RxCb(buf->dPtr, &info);
         }
         if(ret == 0) {
           LOG_WRN("Unsupported MAC frame %X", buf->frame.data[0]);

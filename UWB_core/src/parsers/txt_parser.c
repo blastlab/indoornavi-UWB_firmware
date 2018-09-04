@@ -12,10 +12,10 @@ cchar *TXT_PointParamNumber(const txt_buf_t *buf, cchar *cmd, int num) {
   cchar *ptr = cmd;
   while (num > 0) {
     while (*ptr != ' ' && *ptr != 0) {
-      ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+      INCREMENT_CYCLE(ptr, buf->start, buf->end);
     }
     while (*ptr == ' ') {
-      ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+      INCREMENT_CYCLE(ptr, buf->start, buf->end);
     }
     if (*ptr == 0) {
       return 0;
@@ -39,7 +39,7 @@ int TXT_AtoI(const txt_buf_t *buf, cchar *ptr, int base) {
 	  {
 		  has_value = true;
 		  result *= base;
-		  result += *ptr <= '9' ? *ptr - '0' : tolower(*ptr) - 'a';
+		  result += *ptr <= '9' ? *ptr - '0' : tolower(*ptr) - 'a' + 10;
 	  } else if(*ptr == ' ' && has_value == false)
 	  {
 		  // only increment ptr
@@ -60,14 +60,23 @@ int TXT_GetParam(const txt_buf_t *buf, cchar *cmd, int base) {
 
   while (*ptr != 0) {
     for (i = 0; *ptr == cmd[i]; ++i) {
-      ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+      INCREMENT_CYCLE(ptr, buf->start, buf->end);
     }
     if (cmd[i] == 0) {
       return TXT_AtoI(buf, ptr, base);
     }
-    ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+    INCREMENT_CYCLE(ptr, buf->start, buf->end);
   }
   return -1;
+}
+
+int TXT_GetParamNum(const txt_buf_t *buf, int num, int base) {
+  cchar *ptr = TXT_PointParamNumber(buf, buf->cmd, num);
+  if(ptr != 0) {
+    return TXT_AtoI(buf, ptr, base);
+  } else {
+    return -1;
+  }
 }
 
 bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd) {
@@ -76,7 +85,7 @@ bool TXT_StartsWith(const txt_buf_t* buf, cchar* cmd) {
 		if (*cmd != *ptr) {
 			return false;
 		}
-		ptr = ptr + 1 < buf->end ? ptr + 1 : buf->start;
+    INCREMENT_CYCLE(ptr, buf->start, buf->end);
 		++cmd;
 	}
 	return true;
