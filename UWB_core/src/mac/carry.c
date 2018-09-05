@@ -190,9 +190,6 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
   uint8_t dataSize;
   bool toSink, toMe, toServer, ackReq;
 
-  // copy old info 
-  memcpy(&new_info, info, sizeof(new_info));
-
   // broadcast without carry header
   // or standard data message with carry header
   FC_CARRY_s *pcarry = (FC_CARRY_s *)data;
@@ -213,8 +210,9 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
   toServer = target == CARRY_FLAG_TARGET_SERVER;
   ackReq = pcarry->flags & CARRY_FLAG_ACK_REQ;
   // fill new info fields
+  memcpy(&new_info, info, sizeof(new_info));
   new_info.carry = (struct FC_CARRY_s*)pcarry;
-  new_info.direct_src = pcarry->src_addr;
+  new_info.original_src = pcarry->src_addr;
   dataSize = len - sizeof(FC_CARRY_s) - hops_num * sizeof(pcarry->hops[0]);
 
   if(version != CARRY_VERSION)

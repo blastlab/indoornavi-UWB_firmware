@@ -115,7 +115,7 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
     buf->dPtr = &buf->frame.data[0];
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
-    info.direct_src = buf->frame.src;
+    info.original_src = info.last_src = buf->frame.src;
 
     if(unicast) {
     	MAC_BeaconTimerReset();

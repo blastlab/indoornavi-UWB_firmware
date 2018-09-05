@@ -12,7 +12,7 @@ void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
   header[0] = (uint8_t)FC;
   header[1] = len;
   FC_CARRY_s* carry;
-  mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src, &carry);
+  mac_buf_t *buf = CARRY_PrepareBufTo(info->original_src, &carry);
   if(buf != 0) {
 	  CARRY_Write(carry, buf, data, len);
 	  CARRY_Send(buf, false);
@@ -23,49 +23,49 @@ void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
 
 void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_TURN_ON);
-  PRINT_TurnOn(data, info->direct_src);
+  PRINT_TurnOn(data, info->original_src);
 
 }
 
 void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_TURN_OFF);
-  PRINT_TurnOff(data, info->direct_src);
+  PRINT_TurnOff(data, info->original_src);
 }
 
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
-    FC_CARRY_s* carry;
-    mac_buf_t* buf;
+  FC_CARRY_s* carry;
+  mac_buf_t* buf;
   BIN_ASSERT(*(uint8_t *)data == FC_BEACON);
-  PRINT_Beacon(data, info->direct_src);
-  if(info->direct_src & ADDR_ANCHOR_FLAG) {
+  PRINT_Beacon(data, info->original_src);
+  if(info->original_src & ADDR_ANCHOR_FLAG) {
     uint8_t default_tree_level = 255;
-    SYNC_FindOrCreateNeighbour(info->direct_src, default_tree_level);
+    SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
   }
   FC_BEACON_s packet;
   memcpy(&packet, data, sizeof(packet));
   packet.len += sizeof(dev_addr_t);
   packet.hop_cnt += 1;
-  if(CARRY_ParentAddres() != 0) {
-	  buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
-	  if(buf != 0) {
-		  CARRY_Write(carry, buf, &packet, sizeof(packet));
-		  CARRY_Write(carry, buf, (uint8_t*)data + sizeof(FC_BEACON_s), sizeof(dev_addr_t) * (packet.hop_cnt-1));
-		  CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
-		  CARRY_Send(buf, false);
-	  } else {
-		  LOG_WRN("BEACON parser not enough buffers");
-	  }
-  }
   if(settings.mac.role == RTLS_SINK) {
-	  dev_addr_t parent = packet.hops[packet.hop_cnt-1];
-	  CARRY_ParentSet(info->direct_src, parent);
-	  FC_DEV_ACCEPTED_s acc;
-	  acc.FC = FC_DEV_ACCEPTED;
-	  acc.len = sizeof(acc);
-	  acc.newParent = info->direct_src;
-	  buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
-	  CARRY_Write(carry, buf, &acc, acc.len);
-	  CARRY_Send(buf, true);
+    dev_addr_t parent = packet.hops[packet.hop_cnt-1];
+    CARRY_ParentSet(info->original_src, parent);
+    FC_DEV_ACCEPTED_s acc;
+    acc.FC = FC_DEV_ACCEPTED;
+    acc.len = sizeof(acc);
+    acc.newParent = info->original_src;
+    buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+    CARRY_Write(carry, buf, &acc, acc.len);
+    CARRY_Send(buf, true);
+  }
+  else if(CARRY_ParentAddres() != 0) {
+    buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+    if(buf != 0) {
+      CARRY_Write(carry, buf, &packet, sizeof(packet));
+      CARRY_Write(carry, buf, (uint8_t*)data + sizeof(FC_BEACON_s), sizeof(dev_addr_t) * (packet.hop_cnt-1));
+      CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
+      CARRY_Send(buf, false);
+    } else {
+      LOG_WRN("BEACON parser not enough buffers");
+    }
   }
 }
 
@@ -82,7 +82,7 @@ void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info) {
   packet.to_cnt = evnt.SFDTO + evnt.PTO + evnt.RTO;
   packet.err_cnt = evnt.PHE + evnt.RSL + evnt.CRCB + evnt.OVER;
   packet.battery_mV = PORT_BatteryVoltage();
-  if(info->direct_src == ADDR_BROADCAST) {
+  if(info->original_src == ADDR_BROADCAST) {
     PRINT_Stat(&packet, settings.mac.addr);
   } else {
     BIN_SEND_RESP(FC_STAT_RESP, &packet, packet.len, info);
@@ -94,7 +94,7 @@ void FC_STAT_RESP_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_STAT_RESP);
   FC_STAT_s packet;
   memcpy(&packet, data, sizeof(packet));
-  PRINT_Stat(&packet, info->direct_src);
+  PRINT_Stat(&packet, info->original_src);
 }
 
 void FC_VERSION_ASK_cb(const void *data, const prot_packet_info_t *info) {
@@ -102,13 +102,13 @@ void FC_VERSION_ASK_cb(const void *data, const prot_packet_info_t *info) {
   FC_VERSION_s packet;
   packet.FC = FC_VERSION_RESP;
   packet.len = sizeof(packet);
-  packet.hMajor = __H_MAJOR__;
-  packet.hMinor = __H_MINOR__;
-  packet.fMajor = __F_MAJOR__;
-  packet.fMinor = __F_MINOR__;
-  packet.hash = __F_HASH__;
+  packet.hMajor = settings_otp->h_major;
+  packet.hMinor = settings_otp->h_minor;
+  packet.fMajor = settings.version.f_major;
+  packet.fMinor = settings.version.f_minor;
+  packet.hash = settings.version.f_hash;
   packet.role = settings.mac.role;
-  if(info->direct_src == ADDR_BROADCAST) {
+  if(info->original_src == ADDR_BROADCAST) {
     PRINT_Version(&packet, settings.mac.addr);
   } else {
     BIN_SEND_RESP(FC_VERSION_RESP, &packet, packet.len, info);
@@ -120,7 +120,7 @@ void FC_VERSION_RESP_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_VERSION_RESP);
   FC_VERSION_s packet;
   memcpy(&packet, data, sizeof(packet));
-  PRINT_Version(&packet, info->direct_src);
+  PRINT_Version(&packet, info->original_src);
 }
 
 void FC_DEV_ACCEPTED_cb(const void *data, const prot_packet_info_t *info) {
@@ -129,7 +129,7 @@ void FC_DEV_ACCEPTED_cb(const void *data, const prot_packet_info_t *info) {
   FC_DEV_ACCEPTED_s packet;
   memcpy(&packet, data, sizeof(packet));
   CARRY_SetYourParent(packet.newParent);
-  PRINT_DeviceAccepted(&packet, info->direct_src);
+  PRINT_DeviceAccepted(&packet, info->original_src);
 }
 
 void FC_SETTINGS_SAVE_cb(const void* data, const prot_packet_info_t* info) {
@@ -139,7 +139,7 @@ void FC_SETTINGS_SAVE_cb(const void* data, const prot_packet_info_t* info) {
   packet.FC = FC_SETTINGS_SAVE_RESULT;
   packet.len = sizeof(packet);
   packet.result = ret;
-  if (info->direct_src == ADDR_BROADCAST) {
+  if (info->original_src == ADDR_BROADCAST) {
     PRINT_SettingsSaveResult(&packet, settings.mac.addr);
   } else {
     BIN_SEND_RESP(FC_SETTINGS_SAVE_RESULT, &packet, packet.len, info);
@@ -151,7 +151,7 @@ void FC_SETTINGS_SAVE_RESULT_cb(const void* data,
   BIN_ASSERT(*(uint8_t*)data == FC_SETTINGS_SAVE_RESULT);
   FC_SETTINGS_SAVE_RESULT_s packet;
   memcpy(&packet, data, sizeof(packet));
-  PRINT_SettingsSaveResult(&packet, info->direct_src);
+  PRINT_SettingsSaveResult(&packet, info->original_src);
 }
 
 void FC_RESET_cb(const void *data, const prot_packet_info_t *info) {
@@ -173,7 +173,7 @@ void FC_RFSET_ASK_cb(const void *data, const prot_packet_info_t *info) {
   packet.plen = settings.transceiver.dwt_config.txPreambLength;
   packet.sfd_to = settings.transceiver.dwt_config.sfdTO;
   packet.power = settings.transceiver.dwt_txconfig.power;
-  if(info->direct_src == ADDR_BROADCAST) {
+  if(info->original_src == ADDR_BROADCAST) {
     PRINT_RFSet(&packet, settings.mac.addr);
   } else {
     BIN_SEND_RESP(FC_RFSET_RESP, &packet, packet.len, info);
@@ -185,7 +185,7 @@ void FC_RFSET_RESP_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_RFSET_RESP);
   FC_RF_SET_s packet;
   memcpy(&packet, data, sizeof(packet));
-  PRINT_RFSet(data, info->direct_src);
+  PRINT_RFSet(data, info->original_src);
 }
 
 void FC_RFSET_SET_cb(const void *data, const prot_packet_info_t *info) {

@@ -319,7 +319,7 @@ int FC_SYNC_POLL_cb(const void *data, const prot_packet_info_t *info) {
 
   sync.toa_ts_poll_rx_raw = rx_ts;
   sync.toa.TsPollRx = rx_ts;
-  sync.toa.initiator = info->direct_src;
+  sync.toa.initiator = info->original_src;
   sync.toa.anc_in_poll_cnt = packet->num_poll_anchor;
   sync.toa.resp_ind = 0;
   const int addr_len = sizeof(dev_addr_t) * packet->num_poll_anchor;
@@ -386,7 +386,7 @@ int FC_SYNC_FIN_cb(const void *data, const prot_packet_info_t *info) {
   SYNC_ASSERT(sizeof(packet->TsFinTxBuf) == 5);
 
   sync_neighbour_t *neig =
-      SYNC_FindOrCreateNeighbour(info->direct_src, packet->tree_level);
+      SYNC_FindOrCreateNeighbour(info->original_src, packet->tree_level);
   if (neig == 0) {
     return 0;
   }

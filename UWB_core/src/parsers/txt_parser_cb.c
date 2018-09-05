@@ -10,16 +10,16 @@
 static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
 {
   prot_packet_info_t new_info;
-  if (info->direct_src == ADDR_BROADCAST)
+  if (info->original_src == ADDR_BROADCAST)
   {
     memset(&new_info, 0, sizeof(new_info));
-    new_info.direct_src = settings.mac.addr;
+    new_info.original_src = settings.mac.addr;
     BIN_ParseSingle(buf, info);
   }
   else
   {
     FC_CARRY_s* carry;
-    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->direct_src, &carry);
+    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->original_src, &carry);
     if(mbuf != 0) {
       uint8_t *ibuf = (uint8_t*)buf;
       // length is always second byte of frame
