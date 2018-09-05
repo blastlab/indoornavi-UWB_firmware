@@ -49,27 +49,32 @@ carry_target_t* CARRY_NewTarget(dev_addr_t target)
   }
 }
 
-bool CARRY_ParentSet(dev_addr_t target, dev_addr_t parent)
+int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent)
 {
+  int ret = 0;
   carry_target_t *ptarget;
+	carry_target_t *pparent = CARRY_GetTarget(parent); // null for sink
   bool isParentKnown = parent == ADDR_BROADCAST || parent == settings.mac.addr;
-  if(!isParentKnown) {
-    isParentKnown = CARRY_GetTarget(parent) != 0;
-  }
-  if(!isParentKnown) {
-    return false;
+  isParentKnown |= pparent != 0;
+
+	if (!isParentKnown) {
+    return 0;
   }
   ptarget = CARRY_GetTarget(target);
-  if(ptarget == 0){
+	if (ptarget == 0) {
 	  ptarget = CARRY_NewTarget(target);
+		ret = 3;
+	} else {
+		ret = ptarget->parents[0] == parent ? 1 : 2;
   }
   if(target != 0) {
     ptarget->parents[0] = parent;
     ptarget->parentsScore[0] = 0;
     ptarget->lastUpdateTime = PORT_TickMs();
-    return true;
+		ptarget->level = pparent == 0 ? 1 : pparent->level + 1;
+    return ret;
   }
-  return false;
+  return 0;
 }
 
 dev_addr_t CARRY_ParentGet(dev_addr_t target)
@@ -80,6 +85,15 @@ dev_addr_t CARRY_ParentGet(dev_addr_t target)
   } else {
     return ADDR_BROADCAST;
   }
+}
+
+int CARRY_GetTargetLevel(dev_addr_t target) {
+	carry_target_t* ptarget = CARRY_GetTarget(target);
+	if (ptarget == 0) {
+		return -1;
+	} else {
+		return ptarget->level;
+	}
 }
 
 void CARRY_ParentDeleteAll()
@@ -244,9 +258,9 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
   } else if (toSink) {
     // change header - source and destination address     // TODO repair this - sending messages toSink to sink
     // and send frame
-//    tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
-//    CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
-//    CARRY_Send(tx_buf, ackReq);
+		tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
+		CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
+		CARRY_Send(tx_buf, ackReq);
   } else if(hops_num > 0) {
     dev_addr_t nextDid = pcarry->hops[hops_num-1];
     int lenPre = (int)((uint8_t*)&pcarry->hops[hops_num-1] - (uint8_t*)data);

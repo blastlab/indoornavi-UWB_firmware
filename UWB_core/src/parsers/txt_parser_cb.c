@@ -441,7 +441,7 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
       if (child == settings.mac.addr) {
         LOG_ERR("parent can't be set for sink");
       } else {
-        if (!CARRY_ParentSet(child, parent)) {
+        if (CARRY_ParentSet(child, parent) == 0) {
           ++fail_cnt;
         }
       }
@@ -496,6 +496,16 @@ BLE_CODE(
 	LOG_ERR("BLE is disabled");
 }
 
+static void TXT_Route(const txt_buf_t *buf, const prot_packet_info_t *info) {
+	int en = TXT_GetParam(buf, "auto:", 10);
+
+	if (0 <= en && en <= 1) {
+		settings.carry.autoRoute = en;
+	}
+
+	LOG_INF("route auto:%d", settings.carry.autoRoute);
+}
+
 const txt_cb_t txt_cb_tab[] = {
     {"stat", TXT_StatCb},
     {"version", TXT_VersionCb},
@@ -515,6 +525,7 @@ const txt_cb_t txt_cb_tab[] = {
     {"_autosetup", TXT_AutoSetupCb},
     {"parent", TXT_ParentCb},
     {"ble", TXT_BleCb},
+		{ "route", TXT_Route },
 };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

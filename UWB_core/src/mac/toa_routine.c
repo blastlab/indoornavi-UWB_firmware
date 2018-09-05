@@ -217,6 +217,8 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	  return;
   }
 
+	CARRY_SetYourParent(info->last_src);
+
   if(packet->poll_addr[0] == settings.mac.addr) {
     // Tag is the target and you should send Init
     int ancCnt = packet->num_poll_anchor-1;

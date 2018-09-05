@@ -35,30 +35,19 @@ void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
   FC_CARRY_s* carry;
   mac_buf_t* buf;
+  FC_BEACON_s packet;
   BIN_ASSERT(*(uint8_t *)data == FC_BEACON);
-  PRINT_Beacon(data, info->original_src);
-  if(info->original_src & ADDR_ANCHOR_FLAG) {
+  memcpy(&packet, data, sizeof(packet));
+  if(info->last_src & ADDR_ANCHOR_FLAG) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
   }
-  FC_BEACON_s packet;
-  memcpy(&packet, data, sizeof(packet));
-  packet.len += sizeof(dev_addr_t);
-  packet.hop_cnt += 1;
-  if(settings.mac.role == RTLS_SINK) {
-    dev_addr_t parent = packet.hops[packet.hop_cnt-1];
-    CARRY_ParentSet(info->original_src, parent);
-    FC_DEV_ACCEPTED_s acc;
-    acc.FC = FC_DEV_ACCEPTED;
-    acc.len = sizeof(acc);
-    acc.newParent = info->original_src;
-    buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
-    CARRY_Write(carry, buf, &acc, acc.len);
-    CARRY_Send(buf, true);
-  }
-  else if(CARRY_ParentAddres() != 0) {
+  // add your trace and send message to sink
+  if(settings.mac.role != RTLS_SINK && CARRY_ParentAddres() != 0) {
     buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
     if(buf != 0) {
+			packet.len += sizeof(dev_addr_t);
+			packet.hop_cnt += 1;
       CARRY_Write(carry, buf, &packet, sizeof(packet));
       CARRY_Write(carry, buf, (uint8_t*)data + sizeof(FC_BEACON_s), sizeof(dev_addr_t) * (packet.hop_cnt-1));
       CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
@@ -67,6 +56,27 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
       LOG_WRN("BEACON parser not enough buffers");
     }
   }
+  // accept new device and make autoRoute
+  else if(settings.mac.role == RTLS_SINK) {
+		dev_addr_t hooped_parent = packet.hops[packet.hop_cnt - 1];
+		dev_addr_t parent = packet.hop_cnt > 0 ? hooped_parent : settings.mac.addr;
+		if (settings.carry.autoRoute && (packet.src_did & ADDR_ANCHOR_FLAG) != 0) {
+			// when parent changed, then log this event
+			if (CARRY_ParentSet(packet.src_did, parent) >= 2) {
+				int level = CARRY_GetTargetLevel(packet.src_did);
+				PRINT_Parent(parent, packet.src_did, level);
+			}
+		}
+		// send accept message
+    FC_DEV_ACCEPTED_s acc;
+    acc.FC = FC_DEV_ACCEPTED;
+    acc.len = sizeof(acc);
+    acc.newParent = parent;
+		buf = CARRY_PrepareBufTo(packet.src_did, &carry);
+    CARRY_Write(carry, buf, &acc, acc.len);
+    CARRY_Send(buf, true);
+  }
+	PRINT_Beacon(data, packet.src_did);
 }
 
 
