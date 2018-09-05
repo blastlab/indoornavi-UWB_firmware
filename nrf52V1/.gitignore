@@ -1,0 +1,13 @@
+
+*.cproject
+*.project
+.settings/*
+
+# Build
+
+build/_build/*
+
+# Vendor & test
+
+middlewares/UWB_core/test/*
+middlewares/UWB_core/vendor/*

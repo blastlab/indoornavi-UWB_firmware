@@ -71,6 +71,7 @@ void TOA_InitDly();
  */
 int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt);
 
+int TOA_SendRes(const measure_t* measure);
 /**
  * @brief Send Poll message to start SYNC process with a given anchor
  *
@@ -91,6 +92,7 @@ int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt);
  */
 void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info);
 
+void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief sync rx callback

@@ -14,6 +14,7 @@
 #include "mac/mac_settings.h"
 #include "mac/carry_settings.h"
 #include "transceiver_settings.h"
+#include "platform/ble_settings.h"
 #include "ranging_settings.h"
 
 /**
@@ -99,6 +100,7 @@ typedef struct {
   transceiver_settings_t transceiver;  ///< transceiver settings
   mac_settings_t mac;          ///<  medium access control module settings
   carry_settings_t carry;      ///< carry protocol settings
+  ble_settings_t ble;         ///< bluetooth low energy protocol settings
   ranging_settings_t ranging;  ///< ranging traces
 } settings_t;
 
@@ -124,7 +126,7 @@ typedef struct {
   {                                                                           \
     .version = VERSION_SETTINGS_DEF, .transceiver = TRANSCEIVER_SETTINGS_DEF, \
     .mac = MAC_SETTINGS_DEF, .carry = CARRY_SETTINGS_DEF,                     \
-    .ranging = RANGING_SETTINGS_DEF,                                          \
+    .ble = BLE_SETTINGS_DEF, .ranging = RANGING_SETTINGS_DEF,                                          \
   }
 
 /**

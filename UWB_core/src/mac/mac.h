@@ -276,4 +276,6 @@ void MAC_Read(mac_buf_t *frame, void *destination, unsigned int len);
  */
 void MAC_Write(mac_buf_t *frame, const void *src, unsigned int len);
 
+void MAC_TransmitFrame();
+
 #endif // _MAC_H

@@ -203,20 +203,12 @@ int MAC_ToSlotsTimeUs(int64_t glob_time) {
 }
 
 // update MAC slot timer to be in time with global time
-void MAC_UpdateSlotTimer(int32_t loc_slot_time_us, int64_t local_time) {
+void MAC_UpdateSlotTimer(int32_t host_slot_time_us, int64_t uwb_local_time) {
 	extern sync_instance_t sync;
-	int64_t glob_time = SYNC_GlobTime(local_time);
-	int slot_time_us = MAC_ToSlotsTimeUs(glob_time);
-	int time_to_your_slot_us = settings.mac.slot_time_us * mac.slot_number - slot_time_us;
-
-	mac.slot_time_offset = glob_time;
-
-	if (time_to_your_slot_us <= 0) {
-	  time_to_your_slot_us += settings.mac.slots_sum_time_us;
-	}
-
-	PORT_SlotTimerSetUsOffset(time_to_your_slot_us - loc_slot_time_us);
-	MAC_TRACE("SYNC %7d %7d %4d", (int)time_to_your_slot_us, PORT_SlotTimerTickUs(), (int)sync.neighbour[0].drift[0]);
+	int64_t glob_time = SYNC_GlobTime(uwb_local_time);
+	int uwb_slot_time_us = MAC_ToSlotsTimeUs(glob_time);
+	PORT_SlotTimerSetUsOffset(host_slot_time_us - uwb_slot_time_us);		// host slot time - UWB slot time;
+	MAC_TRACE("SYNC %7d %7d %4d", uwb_slot_time_us, host_slot_time_us, (int)sync.neighbour[0].drift[0]);
 }
 
 // Function called from slot timer interrupt.
@@ -225,10 +217,8 @@ void MAC_YourSlotIsr() {
     int64_t local_time = TRANSCEIVER_GetTime();
     uint32_t slot_time = PORT_SlotTimerTickUs();
     MAC_UpdateSlotTimer(slot_time, local_time);
-  )
-  decaIrqStatus_t en = decamutexon();
-  MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
-  decamutexoff(en);
+    )
+    MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
 }
 
 // private function, called when buf should be send now as a frame in slot
@@ -262,7 +252,7 @@ static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 // calc slot time and send try send packet if it is yours time
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
-  int64_t slot_time = MAC_ToSlotsTimeUs(glob_time);
+  int slot_time = MAC_ToSlotsTimeUs(glob_time);
   if (settings.mac.slots_sum_time_us < slot_time || slot_time < 0) {
     return 0;
   }
@@ -275,23 +265,62 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   }
   int len = MAC_BufLen(buf);
   uint32_t tx_est_time = TRANSCEIVER_EstimateTxTimeUs(len);
+  uint32_t start_us = settings.mac.slot_time_us * mac.slot_number;
   uint32_t end_us = settings.mac.slot_time_us * (mac.slot_number + 1);
+  end_us += settings.mac.slot_tolerance_time_us; 
   end_us -= settings.mac.slot_guard_time_us;
   if(tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
-    LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
+    LOG_WRN("Frame with size %d can't be send within %dus slot", 
+    len, settings.mac.slot_time_us);
     MAC_Free(buf);
   }
-  // when it is too late to send this packet
-  if (end_us < slot_time + tx_est_time) {
+  // when it is too late or too early to send this packet
+  int real_start_us, real_end_us;
+  real_start_us = (slot_time + settings.mac.slot_tolerance_time_us);
+  real_start_us %= settings.mac.slots_sum_time_us;
+  real_end_us = (slot_time + tx_est_time + settings.mac.slot_tolerance_time_us);
+  real_end_us %= settings.mac.slots_sum_time_us;
+  if (real_start_us < start_us || end_us < real_start_us ||
+      end_us < real_end_us) {
     return 0;
   }
-
   if (SYNC_GlobTime(glob_time) == mac.slot_time_offset) {
     dwt_rxreset();
   }
   // when you have enouth time to send next message, then do it
   _MAC_TransmitFrameInSlot(buf, len);
   return 1;
+}
+
+void MAC_TransmitFrame() {
+  int ret;
+  mac_buf_t *buf = _MAC_BufGetOldestToTx();
+  if (buf == 0) {
+	  return;
+  }
+  int len = MAC_BufLen(buf);
+  // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
+  if (buf->isRangingFrame) {
+    const uint8_t flags = DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
+    dwt_forcetrxoff();
+    ret = MAC_SendRanging(buf, flags);
+  } else {
+    ret = TRANSCEIVER_Send(buf->buf, len);
+  }
+  buf->last_update_time = mac_port_buff_time();
+  // check result
+  if (ret == 0) {
+    buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
+    // wait for tx callback
+  } else {
+    ++buf->retransmit_fail_cnt;
+    if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
+      buf->state = FREE;
+    }
+    // try send next frame after tx fail
+    MAC_TransmitFrame();
+    LOG_WRN("Tx err");
+  }
 }
 
 // call this function when ACK arrive

@@ -29,8 +29,8 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 1
-
+#define DBG 			0
+#define USE_SLOT_TIMER 	0
 
 /**
  * \brief Initialization for port modules
@@ -42,6 +42,14 @@
  */
 void PORT_Init();
 
+// BLE beacon - this method must be called before LFCLK initialization due to softdevice's init method
+void PORT_BleBeaconInit(void);
+void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr);
+void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val, int8_t rssi_at_m);
+void PORT_BleAdvStart(void);
+void PORT_BleAdvStop(void);
+bool PORT_BleIsEnabled(void);
+void PORT_BleSetPower(int8_t power);
 
 /**
  * \brief assert routine function.
@@ -168,6 +176,7 @@ void PORT_BatteryMeasure();
  */
 int PORT_BatteryVoltage();
 
+uint8_t PORT_GetHwType();
 
 // ========  TIME  ==========
 
@@ -386,6 +395,11 @@ int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
                uint32_t bodylength, const uint8_t *bodyBuffer);
 
 
+void PORT_SpiTx(uint32_t length, const uint8_t *buf);
+
+void PORT_SpiRx(uint32_t length, uint8_t *buf);
+
+
 // ========  FLASH  ==========
 
 
@@ -443,5 +457,30 @@ int PORT_FlashErase(void *flash_addr, uint32_t length);
  * \return 0 if success, error code otherwise
  */
 int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
+
+
+// ========  IMU  ==========
+
+
+/**
+ * \brief Configure Wake-on-Motion feature
+ *
+ * It configures imu registers for low power cycled accelerometer mode
+ * which compares samples to each other and throws interrupts
+ *
+ *  \note imu WoM feature is set only on TAG devices to save energy
+ *
+ */
+void PORT_ImuInit();
+
+
+/**
+ * \brief Check if the device should go to sleep
+ *
+ * It checks if the given time with no motion detected is up,
+ * if so, it sets the device to sleep
+ *
+ */
+void PORT_ImuMotionControl();
 
 #endif

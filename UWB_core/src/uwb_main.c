@@ -5,6 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
+#include <stdio.h>
 #include "uwb_main.h"
 #include "mac/mac.h"
 #include "parsers/bin_struct.h"
@@ -22,8 +23,8 @@ void TurnOff();
 void BatteryControl();
 void diagnostic();
 
+static unsigned int last_batt_measure_time = 0;
 void BatteryControl() {
-  static unsigned int last_batt_measure_time = 0;
   if (PORT_TickMs() - last_batt_measure_time > 5000) {
     last_batt_measure_time = PORT_TickMs();
 
@@ -48,17 +49,7 @@ void RangingReader() {
   const measure_t* meas = TOA_MeasurePeek();
   if (meas != 0) {
     if(settings.mac.role != RTLS_SINK) {
-    	FC_CARRY_s* carry;
-      mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
-      if(buf != 0) {
-        FC_TOA_RES_s packet = {
-          .FC = FC_TOA_RES,
-          .len = sizeof(FC_TOA_RES_s),
-          .meas = *meas,
-        };
-        CARRY_Write(carry, buf, &packet, packet.len);
-        CARRY_Send(buf, false);
-      }
+      TOA_SendRes(meas);
     }
     PRINT_Measure(meas);
     TOA_MeasurePop();
@@ -71,13 +62,13 @@ void UwbMain() {
   Desynchronize(); // base on device address
 
   if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_SINK;
+	  settings.mac.role = RTLS_SINK;
   }
 
   PORT_Init();
   MAC_Init(BIN_Parse);
   CARRY_Init(settings.mac.role == RTLS_SINK);
-  FU_Init(settings.mac.role == RTLS_SINK);
+//  FU_Init(settings.mac.role == RTLS_SINK);
 
   PORT_TimeStartTimers();
   SendTurnOnMessage();
@@ -87,17 +78,20 @@ void UwbMain() {
   	++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
-    //BatteryControl(); //todo: HardFault
+#if !USE_SLOT_TIMER
+    MAC_TransmitFrame();
+#endif
+    BatteryControl();
+    PORT_ImuMotionControl();
     RANGING_Control();
     RangingReader();
     BeaconSender();
     TXT_Control();
     PORT_WatchdogRefresh();
-    //PORT_SleepMs(10);
+//    PORT_SleepMs(1);
     //diagnostic();
   }
 }
-
 
 
 void SendTurnOnMessage()
@@ -164,6 +158,7 @@ void TurnOff() {
 
   // disable IRQ
   __disable_irq();
+
 
   // wait forever
   // przeprowadz reset aby wylaczyc WWDG, a nastepnie

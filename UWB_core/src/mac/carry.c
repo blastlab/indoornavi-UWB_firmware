@@ -152,7 +152,13 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry)
     prot.flags = target_flags;
     prot.verHopsNum = 0; // zero hops number and verion
     CARRY_SetVersion(&prot);
-    int hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), target, &buf->frame.dst);
+    int hops_cnt;
+    if(target == CARRY_ADDR_SINK) {
+      hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), carry.toSinkId == 0 ? ADDR_BROADCAST : carry.toSinkId, &buf->frame.dst);
+    }
+    else {
+      hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), target, &buf->frame.dst);
+    }
     CARRY_ASSERT(hops_cnt < CARRY_MAX_HOPS);
     prot.verHopsNum += hops_cnt;
     prot.len += hops_cnt * sizeof(dev_addr_t); // hops data
@@ -236,11 +242,11 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
       CARRY_Send(tx_buf, ackReq);
     }
   } else if (toSink) {
-    // change header - source and destination address
+    // change header - source and destination address     // TODO repair this - sending messages toSink to sink
     // and send frame
-    tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
-    CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
-    CARRY_Send(tx_buf, ackReq);
+//    tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
+//    CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
+//    CARRY_Send(tx_buf, ackReq);
   } else if(hops_num > 0) {
     dev_addr_t nextDid = pcarry->hops[hops_num-1];
     int lenPre = (int)((uint8_t*)&pcarry->hops[hops_num-1] - (uint8_t*)data);

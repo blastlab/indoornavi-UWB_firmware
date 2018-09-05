@@ -39,6 +39,10 @@ typedef enum {
 	FC_RFSET_ASK = 0x27, ///< device is asked about transceiver settings
 	FC_RFSET_RESP = (FC_RFSET_ASK + 1), ///< device is asked about transceiver settings
 	FC_RFSET_SET = (FC_RFSET_ASK + 2), ///< device should change transceiver settings to new one
+	// empty
+	FC_BLE_ASK = 0x2B,
+	FC_BLE_RESP = (FC_BLE_ASK + 1),
+	FC_BLE_SET = (FC_BLE_ASK + 2),
 } FC_t;
 
 #endif

@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "string.h"
 
 settings_otp_t _settings_otp = {
     .h_major = __H_MAJOR__,
@@ -31,6 +32,8 @@ bool settings_is_otp_erased()
 void SETTINGS_Init() {
 	// variable settings
   memcpy(&settings, &_startup_settings, sizeof(settings));
+  settings_otp = &_settings_otp;	// TODO remove this line
+  return;							// TODO: implement OTP handling
 
   // otp settings - from flash or otp
   if(settings_is_otp_erased())
@@ -50,16 +53,16 @@ void SETTINGS_Init() {
 int SETTINGS_Save()
 {
 	int ret = 0;
-  PORT_WatchdogRefresh();
-  CRITICAL(
-    ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
-  	  ret = ret == 0 ? 0 : 1;
+	PORT_WatchdogRefresh();
+	if(!memcmp((void*)&_startup_settings, &settings, sizeof(settings)))
+		return 3;
+	ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
+	ret = ret == 0 ? 0 : 1;
+	PORT_WatchdogRefresh();
+	if(ret == 0) {
+		ret = PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
+	}
+	ret = ret == 0 ? 0 : 2;
     PORT_WatchdogRefresh();
-    if(ret == 0){
-    	ret = PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
-    }
-    ret = ret == 0 ? 0 : 2;
-  )
-  PORT_WatchdogRefresh();
-  return ret;
+    return ret;
 }

@@ -243,6 +243,59 @@ void FC_RFSET_SET_cb(const void *data, const prot_packet_info_t *info) {
   MAC_Reinit(); // to load new settings into transceiver
 }
 
+void FC_BLE_ASK_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
+  BIN_ASSERT(*(uint8_t *)data == FC_BLE_ASK);
+  FC_BLE_SET_s packet;
+  packet.FC = FC_BLE_RESP;
+  packet.len = sizeof(packet);
+  packet.is_enabled = settings.ble.is_enabled;
+  packet.tx_power = settings.ble.tx_power;
+  if(info->direct_src == ADDR_BROADCAST) {
+	PRINT_BleSet(&packet, settings.mac.addr);
+  } else {
+	BIN_SEND_RESP(FC_BLE_RESP, &packet, packet.len, info);
+  }
+)
+}
+
+void FC_BLE_RESP_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t *)data == FC_BLE_RESP);
+  FC_BLE_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_BleSet(data, info->direct_src);
+)
+}
+
+void FC_BLE_SET_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t *)data == FC_BLE_SET);
+  FC_BLE_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  if(packet.tx_power != -1) {
+	  PORT_BleSetPower(packet.tx_power);
+  }
+  uint8_t ble_enabled_buf = settings.ble.is_enabled;
+  if((int8_t)packet.is_enabled != -1) {
+	  settings.ble.is_enabled = packet.is_enabled;
+  }
+  SETTINGS_Save();
+  uint8_t ask_data[2];
+  ask_data[0] = FC_BLE_ASK;
+  ask_data[1] = 2;
+  FC_BLE_ASK_cb(&ask_data, info);
+  PORT_WatchdogRefresh();
+  PORT_SleepMs(50);  // to send response
+  PORT_WatchdogRefresh();
+  if(ble_enabled_buf != settings.ble.is_enabled) {
+	  PORT_Reboot();
+  }
+)
+}
+
 const prot_cb_t prot_cb_tab[] = {
     {FC_BEACON, FC_BEACON_cb},
     {FC_TURN_ON, FC_TURN_ON_cb},
@@ -261,5 +314,9 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_RFSET_RESP, FC_RFSET_RESP_cb},
     {FC_RFSET_SET, FC_RFSET_SET_cb},
     {FC_TOA_INIT, FC_TOA_INIT_cb},
+	{FC_TOA_RES, FC_TOA_RES_cb},
+	{FC_BLE_ASK, FC_BLE_ASK_cb},
+	{FC_BLE_RESP, FC_BLE_RESP_cb},
+	{FC_BLE_SET, FC_BLE_SET_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

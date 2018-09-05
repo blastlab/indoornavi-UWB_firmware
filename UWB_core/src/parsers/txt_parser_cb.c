@@ -359,8 +359,8 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf,
   period = cnt > 0 ? cnt * delay : period;
   period = period > 0 ? period : settings.ranging.rangingPeriodMs;
 
-  settings.ranging.rangingDelayMs = period;
-  settings.ranging.rangingPeriodMs = delay;
+  settings.ranging.rangingDelayMs = delay;
+  settings.ranging.rangingPeriodMs = period;
   PRINT_RangingTime();
 }
 
@@ -453,6 +453,49 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   }
 }
 
+static void TXT_BleCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
+BLE_CODE(
+	int power = TXT_GetParam(buf, "txpower:", 10);
+	int enable = TXT_GetParam(buf, "enable:", 10);
+
+	FC_BLE_SET_s packet;
+	uint8_t changes = 0;
+	switch(power)
+	{
+		case -40:
+		case -20:
+		case -16:
+		case -12:
+		case -8:
+		case -4:
+		case 0:
+		case 3:
+		case 4:
+			packet.tx_power = power;
+			changes++;
+			break;
+		default:
+			packet.tx_power = -1;
+	}
+	switch(enable)
+	{
+		case 0:
+		case 1:
+			packet.is_enabled = enable;
+			changes++;
+			break;
+		default:
+			packet.is_enabled = -1;
+	}
+	packet.FC = changes ? FC_BLE_SET : FC_BLE_ASK;
+	packet.len = changes ? sizeof(packet) : 2;
+
+	_TXT_Finalize(&packet, info);
+	return;
+)
+	LOG_ERR("BLE is disabled");
+}
+
 const txt_cb_t txt_cb_tab[] = {
     {"stat", TXT_StatCb},
     {"version", TXT_VersionCb},
@@ -471,6 +514,7 @@ const txt_cb_t txt_cb_tab[] = {
     {"toatime", TXT_ToaTimeCb},
     {"_autosetup", TXT_AutoSetupCb},
     {"parent", TXT_ParentCb},
+    {"ble", TXT_BleCb},
 };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

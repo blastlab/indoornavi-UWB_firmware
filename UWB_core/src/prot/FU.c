@@ -271,7 +271,7 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
 
   // check result
   if (PORT_FlashErase(FU_GetAddressToWrite(), FU.fileSize) !=
-      HAL_OK) {
+      PORT_Success) {
     FU_SendError(info, FU_ERR_FLASH_ERASING);
     return;
   }
@@ -352,7 +352,7 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
     FU.newHash = 0;
     LOG_INF("FU successfully firmware uploaded");
     PORT_WatchdogRefresh();
-    HAL_Delay(5); // to send messages
+    PORT_SleepMs(5); // to send messages
     PORT_WatchdogRefresh();
     PORT_Reboot();
   }

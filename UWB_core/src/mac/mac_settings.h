@@ -34,6 +34,7 @@ typedef struct
   pan_dev_addr_t pan;  ///< personal area network
   int slot_time_us;  ///< one slot time in us (including guard time)
   int slot_guard_time_us;  ///< guard time between slots
+  int slot_tolerance_time_us; ///< tolerance time for sending packets before your slot time
   int slots_sum_time_us;  ///< slots sum time in us
   int max_frame_fail_cnt;  ///< frame retransmit/delete threshold
   mac_buff_time_t max_buf_inactive_time;  ///< maximal buf inactive time
@@ -44,7 +45,7 @@ typedef struct
 } mac_settings_t;
 
 // default one slot period (icluding guard time) converted from ms to us
-#define _DEF_SLOT_TIME 10 * 1000
+#define _DEF_SLOT_TIME 4 * 1000
 
 // default number of slots
 #define _DEF_SLOT_CNT 10
@@ -54,7 +55,7 @@ typedef struct
 #define MAC_SETTINGS_DEF                                                                                           \
   {                                                                                                                \
     .addr = ADDR_BROADCAST, .pan = 0xDECA, .slot_time_us = _DEF_SLOT_TIME,                                         \
-    .slot_guard_time_us = 200, .slots_sum_time_us = _DEF_SLOT_SUM_TIME, .max_frame_fail_cnt = 3,                   \
+    .slot_guard_time_us = 50, .slot_tolerance_time_us = 25, .slots_sum_time_us = _DEF_SLOT_SUM_TIME, .max_frame_fail_cnt = 3,                   \
     .max_buf_inactive_time = 2 * _DEF_SLOT_SUM_TIME, .role = RTLS_DEFAULT, .raport_anchor_anchor_distance = false, \
   }
 

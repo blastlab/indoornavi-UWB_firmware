@@ -57,6 +57,11 @@ void TRANSCEIVER_EnterDeepSleep();
 
 
 /**
+ * @brief move transmitter back to normal mode
+ *
+ */
+void TRANSCEIVER_WakeUp(uint8_t *buf, int len);
+/**
  * @brief immediately send data via transceiver
  * 
  * @param[in] buf pointer to data buffer
