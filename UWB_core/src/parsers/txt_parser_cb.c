@@ -302,13 +302,14 @@ static void TXT_MeasureCb(const txt_buf_t* buf,
   int tagDid = TXT_GetParamNum(buf, 1, 16);
   int ancDid = TXT_GetParamNum(buf, i, 16);
 
-  if (tagDid < 0 || tagDid >= ADDR_BROADCAST) { // no parameters
+	if (tagDid < 0 || tagDid > ADDR_BROADCAST) { // no parameters
     LOG_INF("measure cnt:%d", RANGING_MeasureCounter());
     return;
   } else if(tagDid == ADDR_BROADCAST) { // one parameter - ADDR_BROADCAST
 	  readIt = readIt >= settings.ranging.measureCnt ? 0 : readIt;
-	  LOG_INF("measure %X with [%X]", tagDid, settings.ranging.measure[readIt]);
+		PRINT_MeasureInitInfo(&settings.ranging.measure[readIt]);
 	  INCREMENT_MOD(readIt, settings.ranging.measureCnt);
+		return;
   }
   RANGING_TempAnchorsReset();
   while (ancDid > 0) {

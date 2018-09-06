@@ -127,6 +127,20 @@ void PRINT_Measure(const measure_t *data)
           data->rssi_cdbm, data->fpp_cdbm, data->snr_cdbm);
 }
 
+void PRINT_MeasureInitInfo(const measure_init_info_t *data) {
+	char buf[(1 + sizeof(dev_addr_t)) * TOA_MAX_DEV_IN_POLL + 1];
+	buf[0] = 0;
+	for (int i = 0; i < data->numberOfAnchors; ++i) {
+		int len = strlen(buf);
+		snprintf(buf + len, sizeof(buf) - len, "%X,", data->ancDid[i]);
+	}
+	// delete last ','
+	if (buf[0] != 0) {
+		buf[strlen(buf) - 1] = 0;
+	}
+	LOG_INF("measure %X with [%s]", data->tagDid, buf);
+}
+
 void PRINT_RangingTime()
 {
     int period = settings.ranging.rangingPeriodMs;
