@@ -1,4 +1,5 @@
 #include "printer.h"
+#include "mac/carry.h"
 
 void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did)
 {
@@ -48,7 +49,7 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did)
 
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did)
 {
-    LOG_INF("Device accepted from %X", did);
+	LOG_INF("Device accepted, sink:%X parent:%X", did, CARRY_ParentAddres());
 }
 
 void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t did)

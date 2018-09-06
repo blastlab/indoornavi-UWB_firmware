@@ -175,7 +175,7 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
 static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
-  LOG_WRN("Rx error status:%X", data->status);
+	LOG_DBG("Rx error status:%X", data->status);
   TRANSCEIVER_DefaultRx();
 }
 
@@ -218,11 +218,13 @@ void MAC_YourSlotIsr() {
     uint32_t slot_time = PORT_SlotTimerTickUs();
     MAC_UpdateSlotTimer(slot_time, local_time);
     )
+    decaIrqStatus_t en = decamutexon();
     MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
+    decamutexoff(en);
 }
 
 // private function, called when buf should be send now as a frame in slot
-static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
+static int _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   int ret;
   // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
   if (buf->isRangingFrame) {
@@ -235,18 +237,16 @@ static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   buf->last_update_time = mac_port_buff_time();
   // check result
   if (ret == 0) {
-    buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
-    // wait for tx callback
+		//todo: usun tego mocka na wiadomosci typu ACK
+		//buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
+		buf->state = FREE;
   } else {
     ++buf->retransmit_fail_cnt;
     if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
       buf->state = FREE;
     }
-    // try send next frame after tx fail
-    int64_t glob_time = SYNC_GlobTime(TRANSCEIVER_GetTime());
-    MAC_TryTransmitFrameInSlot(glob_time);
-    LOG_WRN("Tx err");
   }
+	return ret;
 }
 
 // calc slot time and send try send packet if it is yours time
@@ -288,7 +288,13 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
     dwt_rxreset();
   }
   // when you have enouth time to send next message, then do it
-  _MAC_TransmitFrameInSlot(buf, len);
+	int ret = _MAC_TransmitFrameInSlot(buf, len);
+	if (ret != 0) {
+		// try send next frame after tx fail
+		int64_t glob_time = SYNC_GlobTime(TRANSCEIVER_GetTime());
+		MAC_TryTransmitFrameInSlot(glob_time);
+		LOG_WRN("Tx err");
+	}
   return 1;
 }
 
@@ -299,24 +305,8 @@ void MAC_TransmitFrame() {
 	  return;
   }
   int len = MAC_BufLen(buf);
-  // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
-  if (buf->isRangingFrame) {
-    const uint8_t flags = DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
-    dwt_forcetrxoff();
-    ret = MAC_SendRanging(buf, flags);
-  } else {
-    ret = TRANSCEIVER_Send(buf->buf, len);
-  }
-  buf->last_update_time = mac_port_buff_time();
-  // check result
-  if (ret == 0) {
-    buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
-    // wait for tx callback
-  } else {
-    ++buf->retransmit_fail_cnt;
-    if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
-      buf->state = FREE;
-    }
+  ret = _MAC_TransmitFrameInSlot(buf, len);
+  if(ret != 0) {
     // try send next frame after tx fail
     MAC_TransmitFrame();
     LOG_WRN("Tx err");

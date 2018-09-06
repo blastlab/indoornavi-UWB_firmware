@@ -73,8 +73,12 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
     acc.len = sizeof(acc);
     acc.newParent = parent;
 		buf = CARRY_PrepareBufTo(packet.src_did, &carry);
-    CARRY_Write(carry, buf, &acc, acc.len);
-    CARRY_Send(buf, true);
+		if (buf != 0) {
+			CARRY_Write(carry, buf, &acc, acc.len);
+			CARRY_Send(buf, true);
+		} else {
+			LOG_WRN("Not enough buf for DEV_ACC");
+		}
   }
 	PRINT_Beacon(data, packet.src_did);
 }

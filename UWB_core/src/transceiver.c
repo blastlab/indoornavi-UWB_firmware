@@ -39,6 +39,7 @@ void TRANSCEIVER_Init() {
   // the DW does not go into sleep
   if (ret != DWT_DEVICE_ID) {
     PORT_WakeupTransceiver(); // device is asleep
+    dwt_softreset();
   }
 
   // reset device
