@@ -1,4 +1,5 @@
 #include "ranging.h"
+#include "printer.h"
 
 ranging_instance_t ranging;
 
@@ -14,8 +15,6 @@ measure_init_info_t* RANGING_MeasureNext() {
 }
 
 bool RANGING_MeasureAdd(dev_addr_t tagDid, dev_addr_t ancDid[], int ancCnt) {
-  int rangDly = settings.ranging.rangingDelayMs;
-  int rangTim = rangDly * settings.ranging.measureCnt;
   if (settings.ranging.measureCnt >= MEASURE_TRACE_MEMORY_DEPTH) {
     return false;
   }
@@ -24,9 +23,6 @@ bool RANGING_MeasureAdd(dev_addr_t tagDid, dev_addr_t ancDid[], int ancCnt) {
   }
   if (ancDid[0] == ADDR_BROADCAST) {
     return false;
-  }
-  if (settings.ranging.rangingPeriodMs < rangDly + rangTim) {
-    LOG_WRN("Not enough time for measures in one period");
   }
 
   int cnt = settings.ranging.measureCnt;
@@ -105,6 +101,12 @@ bool RANGING_AddTagWithTempAnchors(dev_addr_t did, int maxAncInMeasure) {
 		  }
 		}
     }
+  }
+  int meas_count = RANGING_MeasureCounter();
+  if(meas_count > settings.ranging.rangingPeriodMs / settings.ranging.rangingDelayMs) {
+	  LOG_ERR("Too small period! Setting correct value..");
+	  settings.ranging.rangingPeriodMs = meas_count*settings.ranging.rangingDelayMs;
+	  PRINT_RangingTime();
   }
   return true;
 }

@@ -356,9 +356,17 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf,
     return;
   }
 
+  int meas_count = RANGING_MeasureCounter();
   delay = delay > 0 ? delay : settings.ranging.rangingDelayMs;
   period = cnt > 0 ? cnt * delay : period;
   period = period > 0 ? period : settings.ranging.rangingPeriodMs;
+  cnt = cnt > 0 ? cnt : period/delay;
+
+  if(meas_count > cnt) {
+	  LOG_ERR("Too small period! Setting correct value..");
+	  cnt = meas_count;
+	  period = cnt*delay;
+  }
 
   settings.ranging.rangingDelayMs = delay;
   settings.ranging.rangingPeriodMs = period;
