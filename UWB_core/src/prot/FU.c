@@ -204,7 +204,7 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   fup->frameLen += 2; // correct value for CRC calculation
   FU_FillCRC(fup);
   FC_CARRY_s* carry;
-  mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src, &carry);
+  mac_buf_t *buf = CARRY_PrepareBufTo(info->original_src, &carry);
   if(buf != 0) {
 	  CARRY_Write(carry, buf, fup, fup->frameLen);
 	  CARRY_Send(buf, true);

@@ -45,7 +45,7 @@ struct FC_CARRY_s;
  * 
  */
 typedef struct {
-  dev_addr_t direct_src;
+  dev_addr_t original_src, last_src;
   struct FC_CARRY_s *carry;
 } prot_packet_info_t;
 

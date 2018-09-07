@@ -217,6 +217,8 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	  return;
   }
 
+	CARRY_SetYourParent(info->last_src);
+
   if(packet->poll_addr[0] == settings.mac.addr) {
     // Tag is the target and you should send Init
     int ancCnt = packet->num_poll_anchor-1;
@@ -238,7 +240,7 @@ int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
   int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
   toa.core.TsPollRx = rx_ts;
-  toa.core.initiator = info->direct_src;
+  toa.core.initiator = info->original_src;
   toa.core.anc_in_poll_cnt = packet->num_poll_anchor;
   toa.core.resp_ind = 0;
   const int addr_len = sizeof(dev_addr_t) * packet->num_poll_anchor;
@@ -320,7 +322,7 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
     // when it was to you
     int tof_dw = TOA_CalcTofDwTu(&toa.core, toa.core.resp_ind);
     int dist_cm = TOA_TofToCm(tof_dw * DWT_TIME_UNITS);
-    TOA_MeasurePushLocal(info->direct_src, dist_cm);
+    TOA_MeasurePushLocal(info->original_src, dist_cm);
   } else {
     TOA_TRACE("Dist err");
   }

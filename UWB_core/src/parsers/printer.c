@@ -1,4 +1,5 @@
 #include "printer.h"
+#include "mac/carry.h"
 
 void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did)
 {
@@ -48,7 +49,7 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did)
 
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did)
 {
-    LOG_INF("Device accepted from %X", did);
+	LOG_INF("Device accepted, sink:%X parent:%X", did, CARRY_ParentAddres());
 }
 
 void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t did)
@@ -125,6 +126,20 @@ void PRINT_Measure(const measure_t *data)
 {
   LOG_INF("a %X>%X %d %d %d %d", data->did1, data->did2, data->dist_cm,
           data->rssi_cdbm, data->fpp_cdbm, data->snr_cdbm);
+}
+
+void PRINT_MeasureInitInfo(const measure_init_info_t *data) {
+	char buf[(1 + sizeof(dev_addr_t)) * TOA_MAX_DEV_IN_POLL + 1];
+	buf[0] = 0;
+	for (int i = 0; i < data->numberOfAnchors; ++i) {
+		int len = strlen(buf);
+		snprintf(buf + len, sizeof(buf) - len, "%X,", data->ancDid[i]);
+	}
+	// delete last ','
+	if (buf[0] != 0) {
+		buf[strlen(buf) - 1] = 0;
+	}
+	LOG_INF("measure %X with [%s]", data->tagDid, buf);
 }
 
 void PRINT_RangingTime()

@@ -118,7 +118,7 @@ int main(void)
 	UNUSED(MX_RTC_Init);
 
 	__HAL_DBGMCU_FREEZE_WWDG();
-
+  
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/

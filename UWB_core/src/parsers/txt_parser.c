@@ -101,7 +101,7 @@ void TXT_Parse(const txt_buf_t *buf) {
   prot_packet_info_t info;
   memset(&info, 0, sizeof(info));
   int did = TXT_GetParam(buf, "did:", 16);
-  info.direct_src = did > 0 ? did : CARRY_ADDR_SERVER;
+  info.original_src = did > 0 ? did : CARRY_ADDR_SERVER;
 
   for (int i = 0; i < txt_cb_len; ++i) {
     if (TXT_StartsWith(buf, txt_cb_tab[i].cmd)) {
