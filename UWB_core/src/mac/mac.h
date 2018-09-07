@@ -74,7 +74,6 @@ typedef struct {
   int slot_number;
   mac_buf_t buf[MAC_BUF_CNT];
   uint8_t seq_num;
-  mac_buf_t rx_buf;
   short buf_get_ind;
   int64_t slot_time_offset;
   bool frame_under_tx_is_ranging;
