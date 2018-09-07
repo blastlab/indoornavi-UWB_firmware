@@ -265,7 +265,7 @@ BLE_CODE(
   packet.len = sizeof(packet);
   packet.is_enabled = settings.ble.is_enabled;
   packet.tx_power = settings.ble.tx_power;
-  if(info->direct_src == ADDR_BROADCAST) {
+  if(info->original_src == ADDR_BROADCAST) {
 	PRINT_BleSet(&packet, settings.mac.addr);
   } else {
 	BIN_SEND_RESP(FC_BLE_RESP, &packet, packet.len, info);
@@ -279,7 +279,7 @@ BLE_CODE(
   BIN_ASSERT(*(uint8_t *)data == FC_BLE_RESP);
   FC_BLE_SET_s packet;
   memcpy(&packet, data, sizeof(packet));
-  PRINT_BleSet(data, info->direct_src);
+  PRINT_BleSet(data, info->original_src);
 )
 }
 

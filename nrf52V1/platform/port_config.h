@@ -40,7 +40,7 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
-#define USE_BLE			1
+#define USE_BLE				0
 
 #if USE_BLE
 #define BLE_CODE(_CODE_) \
@@ -49,7 +49,7 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 #define BLE_CODE(_CODE_)
 #endif
 
-#define USE_DECA_DEVKIT		1
+#define USE_DECA_DEVKIT		0
 
 #if USE_DECA_DEVKIT
 #define DW_RST_PIN			24

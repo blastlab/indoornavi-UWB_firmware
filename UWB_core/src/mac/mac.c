@@ -302,14 +302,19 @@ void MAC_TransmitFrame() {
   int ret;
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
   if (buf == 0) {
-	  return;
+      return;
+  }
+  decaIrqStatus_t en = decamutexon();
+  if (buf->state != WAIT_FOR_TX && buf->state != WAIT_FOR_TX_ACK) {
+	return;
   }
   int len = MAC_BufLen(buf);
   ret = _MAC_TransmitFrameInSlot(buf, len);
+  decamutexoff(en);
   if(ret != 0) {
     // try send next frame after tx fail
-    MAC_TransmitFrame();
     LOG_WRN("Tx err");
+    MAC_TransmitFrame();
   }
 }
 
