@@ -94,8 +94,9 @@ void CARRY_SetYourParent(dev_addr_t did);
  * @param parent new target address
  * @return 0 when fail
  * @return 1 when current parent is identical
- * @return 2 when parent changed
- * #return 3 when target created with a given parent
+	 * @return 2 when new parent has been rejected because of tree level
+	 * @return 3 when parent changed
+	 * @return 4 when target created with a given parent
  */
 int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent);
 

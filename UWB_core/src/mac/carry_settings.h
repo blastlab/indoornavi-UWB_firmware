@@ -46,13 +46,14 @@ typedef struct
   int traceMaxFailCnt;  ///< trace retransmit/delete threshold
   int targetCounter;
   bool autoRoute;
+	int minParentLiveTimeMs;
   carry_target_t target[CARRY_MAX_TARGETS];
 } carry_settings_t;
 
 #define CARRY_SETTINGS_DEF                           \
   {                                                  \
     .traceMaxInactiveTime = 1000, .traceMaxFailCnt = 5, \
-	.targetCounter = 0, .autoRoute = false, \
+	.targetCounter = 0, .autoRoute = false, .minParentLiveTimeMs = 1000\
 }
 
 #endif
