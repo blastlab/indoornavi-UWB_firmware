@@ -49,7 +49,7 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 #define BLE_CODE(_CODE_)
 #endif
 
-#define USE_DECA_DEVKIT		0
+#define USE_DECA_DEVKIT		1
 
 #if USE_DECA_DEVKIT
 #define DW_RST_PIN			24

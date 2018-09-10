@@ -255,6 +255,8 @@ static void TXT_BinCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 	  // decode oryginal content and parse
 	  int size = BASE64_Decode(data->buf, data->buf, MAC_BUF_LEN);
 	  BIN_Parse(data->dPtr, info, size);
+		data->isServerFrame = false;
+		MAC_Free(data);
   }
 }
 

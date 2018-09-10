@@ -130,6 +130,10 @@ void RANGING_MeasureNewLoop() {
 
 void RANGING_Control() {
   unsigned int currTime = PORT_TickMs();
+	// this function is only for sink
+	if (settings.mac.role != RTLS_SINK) {
+		return;
+	}
   // where it's a time to send new measure init
   if (currTime - ranging.lastInitSendTime > settings.ranging.rangingDelayMs) {
     ranging.lastInitSendTime = currTime;

@@ -22,6 +22,7 @@
  */
 typedef struct __packed {
   uint8_t FC, len;
+  uint16_t fMinor;  ///< firmware minor version
 } FC_TURN_ON_s;
 
 /**
@@ -56,7 +57,8 @@ typedef struct __packed {
   uint16_t err_cnt;  ///< radio transmission and reception error counter
   uint16_t to_cnt;  ///< radio transmission timeout counter
   uint16_t rx_cnt;  ///< radio reception counter
-  uint16_t tx_cnt;  ///< radio successful transmission counter 
+  uint16_t tx_cnt;  ///< radio successful transmission counter
+  uint32_t uptime_ms; /// device working time in ms
 } FC_STAT_s;
 
 /**

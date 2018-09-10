@@ -14,7 +14,9 @@ dev_addr_t CARRY_ParentAddres()
 
 void CARRY_SetYourParent(dev_addr_t did)
 {
-	carry.toSinkId = did;
+	if (settings.mac.role != RTLS_SINK) {
+		carry.toSinkId = did;
+	}
 }
 
 // return pointer to target or zero
@@ -58,16 +60,22 @@ int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent)
   isParentKnown |= pparent != 0;
 
 	if (!isParentKnown) {
-    return 0;
+		return 0; // error
   }
   ptarget = CARRY_GetTarget(target);
 	if (ptarget == 0) {
 	  ptarget = CARRY_NewTarget(target);
-		ret = 3;
+		ret = 4; // created new
 	} else {
-		ret = ptarget->parents[0] == parent ? 1 : 2;
+		ret = ptarget->parents[0] == parent ? 1 : 3; // identical or changed
   }
   if(target != 0) {
+		unsigned int dt = PORT_TickMs() - ptarget->lastUpdateTime;
+		int acceptNew = pparent->level < ptarget->level;
+		acceptNew |= dt > settings.carry.minParentLiveTimeMs;
+		if (!acceptNew) {
+			return 2; // rejected
+		}
     ptarget->parents[0] = parent;
     ptarget->parentsScore[0] = 0;
     ptarget->lastUpdateTime = PORT_TickMs();
@@ -139,15 +147,24 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry)
 
   if(target == CARRY_ADDR_SINK) {
     target_flags = CARRY_FLAG_TARGET_SINK;
-    if(carry.toSinkId == 0) {
-      buf = MAC_BufferPrepare(ADDR_BROADCAST, true);
+		if (settings.mac.role == RTLS_SINK) {
+			buf = MAC_BufferPrepare(settings.mac.addr, true);
+		} else if (carry.toSinkId == 0) {
+			//buf = MAC_BufferPrepare(ADDR_BROADCAST, true);
+			return 0;
     } else {
       buf = MAC_BufferPrepare(carry.toSinkId, true);
     }
   } else if(target == CARRY_ADDR_SERVER) {
     target_flags = CARRY_FLAG_TARGET_SERVER;
-    buf = MAC_Buffer();
-    buf->isServerFrame = carry.isConnectedToServer;
+		if (carry.isConnectedToServer) {
+			buf = MAC_Buffer();
+			buf->isServerFrame = true;
+		} else if (carry.toSinkId != 0) {
+			buf = MAC_BufferPrepare(carry.toSinkId, true);
+		} else {
+			return 0;
+		}
   } else {
     target_flags = CARRY_FLAG_TARGET_DEV;
     buf = MAC_BufferPrepare(target, true);
@@ -166,11 +183,8 @@ mac_buf_t *CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry)
     prot.flags = target_flags;
     prot.verHopsNum = 0; // zero hops number and verion
     CARRY_SetVersion(&prot);
-    int hops_cnt;
-    if(target == CARRY_ADDR_SINK) {
-      hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), carry.toSinkId == 0 ? ADDR_BROADCAST : carry.toSinkId, &buf->frame.dst);
-    }
-    else {
+    int hops_cnt = 0;
+		if (target_flags == CARRY_FLAG_TARGET_DEV) {
       hops_cnt = CARRY_WriteTrace(buf->dPtr + sizeof(FC_CARRY_s), target, &buf->frame.dst);
     }
     CARRY_ASSERT(hops_cnt < CARRY_MAX_HOPS);
@@ -190,7 +204,10 @@ void CARRY_Send(mac_buf_t* buf, bool ack_req)
     LOG_Bin(buf->buf, MAC_BufLen(buf));
     MAC_Free(buf);
   } else if(buf->frame.dst == settings.mac.addr) {
-    LOG_Bin(buf->frame.data, MAC_BufLen(buf)-MAC_HEAD_LENGTH);
+		prot_packet_info_t info;
+		memset(&info, 0, sizeof(info));
+		info.last_src = info.original_src = settings.mac.addr;
+		BIN_Parse(buf->frame.data, &info, MAC_BufLen(buf) - MAC_HEAD_LENGTH);
     MAC_Free(buf);
   } else {
     MAC_Send(buf, ack_req);
@@ -209,6 +226,7 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
   uint8_t *dataPointer;
   uint8_t dataSize;
   bool toSink, toMe, toServer, ackReq;
+	const char noBufMsg[] = "No tx buf for carry";
 
   // broadcast without carry header
   // or standard data message with carry header
@@ -252,26 +270,38 @@ void CARRY_ParseMessage(const void *data, const prot_packet_info_t *info)
       // change header - source and destination address
       // and send frame
       tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SERVER, &tx_carry);
-      CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
-      CARRY_Send(tx_buf, ackReq);
+			if (tx_buf != 0) {
+				CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
+				CARRY_Send(tx_buf, ackReq);
+			} else {
+				LOG_WRN(noBufMsg);
+			}
     }
   } else if (toSink) {
-    // change header - source and destination address     // TODO repair this - sending messages toSink to sink
+    // change header - source and destination address
     // and send frame
 		tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
-		CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
-		CARRY_Send(tx_buf, ackReq);
+		if (tx_buf != 0) {
+			CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
+			CARRY_Send(tx_buf, ackReq);
+		} else {
+			LOG_WRN(noBufMsg);
+		}
   } else if(hops_num > 0) {
     dev_addr_t nextDid = pcarry->hops[hops_num-1];
     int lenPre = (int)((uint8_t*)&pcarry->hops[hops_num-1] - (uint8_t*)data);
     int lenPost = len - lenPre - sizeof(dev_addr_t);
     mac_buf_t* tx_buf = MAC_BufferPrepare(nextDid, true);
-    tx_carry = (FC_CARRY_s*)tx_buf->dPtr;
-    MAC_Write(tx_buf, data, lenPre);
-    MAC_Write(tx_buf, data + lenPre + sizeof(dev_addr_t), lenPost);
-    tx_carry->len -= sizeof(dev_addr_t);
-    tx_carry->verHopsNum -= 1;
-    MAC_Send(tx_buf, (pcarry->flags & CARRY_FLAG_ACK_REQ) != 0);
+		if (tx_buf != 0) {
+			tx_carry = (FC_CARRY_s*) tx_buf->dPtr;
+			MAC_Write(tx_buf, data, lenPre);
+			MAC_Write(tx_buf, data + lenPre + sizeof(dev_addr_t), lenPost);
+			tx_carry->len -= sizeof(dev_addr_t);
+			tx_carry->verHopsNum -= 1;
+			MAC_Send(tx_buf, (pcarry->flags & CARRY_FLAG_ACK_REQ) != 0);
+		} else {
+			LOG_WRN(noBufMsg);
+		}
   } else {
     LOG_WRN("Rx carry to nobody");
   }

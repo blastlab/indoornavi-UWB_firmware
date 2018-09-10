@@ -29,12 +29,17 @@ void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did)
 
 void PRINT_Stat(const FC_STAT_s *data, dev_addr_t did)
 {
-    LOG_INF("stat %x mV:%d Rx:%d Tx:%d Er:%d To:%d", did, data->battery_mV, data->rx_cnt, data->tx_cnt, data->err_cnt, data->to_cnt);
+	int days = data->uptime_ms / (1000 * 60 * 60 * 24);
+	int sec = data->uptime_ms / 1000 - days * 60 * 60 * 24;
+	LOG_INF("stat %x mV:%d Rx:%d Tx:%d Er:%d To:%d days:%d sec:%d", did,
+			data->battery_mV, data->rx_cnt, data->tx_cnt, data->err_cnt,
+			data->to_cnt,
+			days, sec);
 }
 
 void PRINT_TurnOn(const FC_TURN_ON_s *data, dev_addr_t did)
 {
-    LOG_INF("Device turn on %X", did);
+	LOG_INF("Device turn on %X v%d", did, data->fMinor);
 }
 
 void PRINT_TurnOff(const FC_TURN_OFF_s *data, dev_addr_t did)

@@ -86,7 +86,11 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
 
   // try send next data frame
   if (ret == 0) {
+#if USE_SLOT_TIMER
     ret = MAC_TryTransmitFrameInSlot(SYNC_GlobTime(tx_ts));
+#else
+		ret = MAC_TryTransmitFrame();
+#endif
   }
 
   // or turn on default rx mode
@@ -104,7 +108,7 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
 static void MAC_RxCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_STAT);
   mac.last_rx_ts = PORT_TickHr();
-  mac_buf_t *buf = MAC_Buffer();
+	mac_buf_t *buf = MAC_Buffer();
   prot_packet_info_t info;
   memset(&info, 0, sizeof(info));
   bool broadcast, unicast;
@@ -151,7 +155,6 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
     }
     MAC_Free(buf);
   } else {
-    LOG_ERR("No buff for rx_cb");
     TRANSCEIVER_DefaultRx();
   }
 }
@@ -249,7 +252,9 @@ static int _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
 	return ret;
 }
 
-// calc slot time and send try send packet if it is yours time
+/// @brief calc slot time and send try send packet if it is yours time
+/// @return 0 when there is no time or frame to send
+/// @return 1 when frame has been send or some tx error occurred
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
   int slot_time = MAC_ToSlotsTimeUs(glob_time);
@@ -298,24 +303,29 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   return 1;
 }
 
-void MAC_TransmitFrame() {
+/// @return 0 when there is no time or frame to send
+/// @return 1 when frame has been send or some tx error occurred
+int MAC_TryTransmitFrame() {
   int ret;
+	decaIrqStatus_t en = decamutexon();
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
-  if (buf == 0) {
-      return;
-  }
-  decaIrqStatus_t en = decamutexon();
-  if (buf->state != WAIT_FOR_TX && buf->state != WAIT_FOR_TX_ACK) {
-	return;
-  }
-  int len = MAC_BufLen(buf);
-  ret = _MAC_TransmitFrameInSlot(buf, len);
-  decamutexoff(en);
-  if(ret != 0) {
-    // try send next frame after tx fail
-    LOG_WRN("Tx err");
-    MAC_TransmitFrame();
-  }
+	int len;
+
+	if (buf == 0) {
+		decamutexoff(en);
+		return 0;
+	}
+
+	dwt_forcetrxoff();
+	len = MAC_BufLen(buf);
+	ret = _MAC_TransmitFrameInSlot(buf, len);
+	decamutexoff(en);
+	if (ret != 0) {
+		// try send next frame after tx fail
+		LOG_WRN("Tx err");
+		MAC_TryTransmitFrame();
+	}
+	return 1;
 }
 
 // call this function when ACK arrive
@@ -390,6 +400,7 @@ mac_buf_t *MAC_Buffer() {
     }
   }
   // else return null
+	LOG_WRN("No more buffers");
   return 0;
 }
 
