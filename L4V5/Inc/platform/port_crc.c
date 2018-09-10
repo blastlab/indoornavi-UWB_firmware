@@ -9,7 +9,7 @@
 void PORT_CrcInit()
 {
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_CRC);
-  LL_CRC_SetPolynomialCoef(CRC, 0x1DB7);
+	LL_CRC_SetPolynomialCoef(CRC, 0x1021);
   LL_CRC_SetPolynomialSize(CRC, LL_CRC_POLYLENGTH_16B);
 }
 

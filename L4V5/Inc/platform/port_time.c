@@ -22,10 +22,12 @@ void PORT_TimeInit() {
   // f = 40 MHz / 40 = 1MHz
   // T = 1 us
   // Tmax = more than 1h but only half of that is usable
+#if USE_SLOT_TIMER
   LL_TIM_SetPrescaler(PTIM_SLOT, 40);
   LL_TIM_SetAutoReload(PTIM_SLOT, UINT32_MAX);
   LL_TIM_SetCounterMode(PTIM_SLOT, LL_TIM_COUNTERMODE_DOWN);
   LL_TIM_EnableIT_UPDATE(PTIM_SLOT);
+#endif
 
   // HR timer
   // enable Debug Timer for rtls processing time measurement

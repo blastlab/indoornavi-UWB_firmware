@@ -208,8 +208,6 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   if(buf != 0) {
 	  CARRY_Write(carry, buf, fup, fup->frameLen);
 	  CARRY_Send(buf, true);
-  } else {
-	  LOG_WRN("Not enough buffers for FU");
   }
 }
 

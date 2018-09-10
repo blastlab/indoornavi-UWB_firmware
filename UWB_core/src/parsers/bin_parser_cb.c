@@ -32,9 +32,40 @@ void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
   PRINT_TurnOff(data, info->original_src);
 }
 
+static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
+	mac_buf_t* buf;
+	FC_CARRY_s* carry;
+	FC_DEV_ACCEPTED_s acc;
+	acc.FC = FC_DEV_ACCEPTED;
+	acc.len = sizeof(acc);
+	acc.newParent = parent;
+	buf = CARRY_PrepareBufTo(target, &carry);
+	if (buf != 0) {
+		CARRY_Write(carry, buf, &acc, acc.len);
+		CARRY_Send(buf, true);
+	} else {
+		LOG_WRN("Not enough buf for DEV_ACC");
+	}
+}
+
+static void TransferBeacon(FC_BEACON_s* packet) {
+	mac_buf_t* buf;
+	FC_CARRY_s* carry;
+	buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+	if (buf != 0) {
+		packet->len += sizeof(dev_addr_t);
+		packet->hop_cnt += 1;
+		CARRY_Write(carry, buf, &packet, sizeof(packet));
+		CARRY_Write(carry, buf, (uint8_t*) packet + sizeof(FC_BEACON_s),
+				sizeof(dev_addr_t) * (packet->hop_cnt - 1));
+		CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
+		CARRY_Send(buf, false);
+	} else {
+		LOG_WRN("BEACON parser not enough buffers");
+	}
+}
+
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
-  FC_CARRY_s* carry;
-  mac_buf_t* buf;
   FC_BEACON_s packet;
   BIN_ASSERT(*(uint8_t *)data == FC_BEACON);
   memcpy(&packet, data, sizeof(packet));
@@ -43,18 +74,12 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
     SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
   }
   // add your trace and send message to sink
-  if(settings.mac.role != RTLS_SINK && CARRY_ParentAddres() != 0) {
-    buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
-    if(buf != 0) {
-			packet.len += sizeof(dev_addr_t);
-			packet.hop_cnt += 1;
-      CARRY_Write(carry, buf, &packet, sizeof(packet));
-      CARRY_Write(carry, buf, (uint8_t*)data + sizeof(FC_BEACON_s), sizeof(dev_addr_t) * (packet.hop_cnt-1));
-      CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
-      CARRY_Send(buf, false);
-    } else {
-      LOG_WRN("BEACON parser not enough buffers");
-    }
+	// you can't sent info about beacon to your parent
+	// because he doesn't know path to sink yet
+	dev_addr_t yourParent = CARRY_ParentAddres();
+	bool good_parent = yourParent != 0 && yourParent != info->last_src;
+	if (settings.mac.role == RTLS_ANCHOR && good_parent) {
+		TransferBeacon(&packet);
   }
   // accept new device and make autoRoute
   else if(settings.mac.role == RTLS_SINK) {
@@ -62,23 +87,13 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 		dev_addr_t parent = packet.hop_cnt > 0 ? hooped_parent : settings.mac.addr;
 		if (settings.carry.autoRoute && (packet.src_did & ADDR_ANCHOR_FLAG) != 0) {
 			// when parent changed, then log this event
-			if (CARRY_ParentSet(packet.src_did, parent) >= 2) {
+			if (CARRY_ParentSet(packet.src_did, parent) >= 3) {
 				int level = CARRY_GetTargetLevel(packet.src_did);
 				PRINT_Parent(parent, packet.src_did, level);
 			}
 		}
 		// send accept message
-    FC_DEV_ACCEPTED_s acc;
-    acc.FC = FC_DEV_ACCEPTED;
-    acc.len = sizeof(acc);
-    acc.newParent = parent;
-		buf = CARRY_PrepareBufTo(packet.src_did, &carry);
-		if (buf != 0) {
-			CARRY_Write(carry, buf, &acc, acc.len);
-			CARRY_Send(buf, true);
-		} else {
-			LOG_WRN("Not enough buf for DEV_ACC");
-		}
+		SendDevAccepted(packet.src_did, parent);
   }
 	PRINT_Beacon(data, packet.src_did);
 }
