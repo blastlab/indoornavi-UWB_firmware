@@ -5,33 +5,6 @@
 #include "../mac/toa_routine.h"
 #include "../prot/FU.h"
 
-
-void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
-                   const prot_packet_info_t *info) {
-  uint8_t *header = (uint8_t *)data;
-  header[0] = (uint8_t)FC;
-  header[1] = len;
-  FC_CARRY_s* carry;
-  mac_buf_t *buf = CARRY_PrepareBufTo(info->original_src, &carry);
-  if(buf != 0) {
-	  CARRY_Write(carry, buf, data, len);
-	  CARRY_Send(buf, false);
-  } else {
-	  LOG_WRN("Not enough buffer to send bin resp");
-  }
-}
-
-void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
-  BIN_ASSERT(*(uint8_t *)data == FC_TURN_ON);
-  PRINT_TurnOn(data, info->original_src);
-
-}
-
-void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
-  BIN_ASSERT(*(uint8_t *)data == FC_TURN_OFF);
-  PRINT_TurnOff(data, info->original_src);
-}
-
 static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
 	mac_buf_t* buf;
 	FC_CARRY_s* carry;
@@ -63,6 +36,44 @@ static void TransferBeacon(FC_BEACON_s* packet) {
 	} else {
 		LOG_WRN("BEACON parser not enough buffers");
 	}
+}
+
+void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
+                   const prot_packet_info_t *info) {
+  uint8_t *header = (uint8_t *)data;
+  header[0] = (uint8_t)FC;
+  header[1] = len;
+  FC_CARRY_s* carry;
+  mac_buf_t *buf = CARRY_PrepareBufTo(info->original_src, &carry);
+  if(buf != 0) {
+	  CARRY_Write(carry, buf, data, len);
+	  CARRY_Send(buf, false);
+  } else {
+	  LOG_WRN("Not enough buffer to send bin resp");
+  }
+}
+
+void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
+  BIN_ASSERT(*(uint8_t *)data == FC_TURN_ON);
+  FC_TURN_ON_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_TurnOn(data, info->original_src);
+  if(settings.mac.role == RTLS_SINK) {
+	  SendDevAccepted(packet.src_did, info->original_src);
+  } else if(settings.mac.role == RTLS_ANCHOR) {
+	mac_buf_t* buf;
+	FC_CARRY_s* carry;
+	buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
+	if (buf != 0) {
+		CARRY_Write(carry, buf, &packet, sizeof(packet));
+		CARRY_Send(buf, true);
+	}
+  }
+}
+
+void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
+  BIN_ASSERT(*(uint8_t *)data == FC_TURN_OFF);
+  PRINT_TurnOff(data, info->original_src);
 }
 
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
@@ -111,6 +122,7 @@ void FC_STAT_ASK_cb(const void *data, const prot_packet_info_t *info) {
   packet.to_cnt = evnt.SFDTO + evnt.PTO + evnt.RTO;
   packet.err_cnt = evnt.PHE + evnt.RSL + evnt.CRCB + evnt.OVER;
   packet.battery_mV = PORT_BatteryVoltage();
+  packet.uptime_ms = PORT_TickMs();
   if(info->original_src == ADDR_BROADCAST) {
     PRINT_Stat(&packet, settings.mac.addr);
   } else {

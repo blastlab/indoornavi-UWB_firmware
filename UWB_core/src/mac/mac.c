@@ -1,6 +1,7 @@
 #include "mac.h"
 #include "../settings.h"
 #include "sync.h"
+#include "FU.h"
 #include "toa_routine.h"
 
 // global mac instance
@@ -123,6 +124,7 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
 
     if(unicast) {
     	MAC_BeaconTimerReset();
+    	FU_AcceptFirmware();
     }
 
     if (broadcast || unicast) {

@@ -38,11 +38,13 @@ void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value)
 	flash_operation_ready = false;
 	sd_flash_page_erase((uint32_t)BOOTLOADER_MAGIC_REG_ADDR/FLASH_PAGE_SIZE);
 	while(!flash_operation_ready && nrf_sdh_is_enabled());
+	PORT_WatchdogRefresh();
 	uint32_t *dst = (uint32_t *)BOOTLOADER_MAGIC_REG_ADDR;
 	uint32_t *src = (uint32_t *)&value;
 	flash_operation_ready = false;
 	sd_flash_write(dst, src, 1);
 	while(!flash_operation_ready && nrf_sdh_is_enabled());
+	PORT_WatchdogRefresh();
 }
 
 // read value from reset-safe backup register

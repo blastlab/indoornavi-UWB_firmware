@@ -298,6 +298,7 @@ typedef struct {
  */
 void FU_Init(bool forceNoFirmwareCheck);
 
+void FU_Control();
 
 /**
  * @brief Mark current version as fully functional
