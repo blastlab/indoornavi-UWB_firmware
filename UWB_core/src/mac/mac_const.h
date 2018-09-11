@@ -27,6 +27,15 @@ typedef enum {
   WAIT_FOR_ACK,  ///< wait for receive ack after transmission
 } mac_buf_state;
 
+typedef enum {
+	RTLS_TAG = 'T',
+	RTLS_ANCHOR = 'A',
+	RTLS_SINK = 'S',
+	RTLS_LISTENER = 'L',
+	RTLS_DEFAULT = 'D'
+} rtls_role;
+
+
 typedef unsigned short dev_addr_t;
 typedef unsigned short pan_dev_addr_t;
 #define ADDR_BROADCAST 0xffff

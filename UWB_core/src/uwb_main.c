@@ -23,7 +23,7 @@ void diagnostic();
 
 void BatteryControl() {
   static unsigned int last_batt_measure_time = 0;
-  if (PORT_TickMs() - last_batt_measure_time > 5000) {
+	if (PORT_TickMs() - last_batt_measure_time > 5000) {
     last_batt_measure_time = PORT_TickMs();
 
     PORT_BatteryMeasure();
@@ -74,13 +74,13 @@ void RangingReader() {
 void UwbMain() {
   //CheckSleepMode();
   SETTINGS_Init();
+	PORT_Init();
   Desynchronize(); // base on device address
 
   if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_SINK;
+		settings.mac.role = PORT_GetHwRole();
   }
 
-  PORT_Init();
   MAC_Init(BIN_Parse);
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);
@@ -93,7 +93,7 @@ void UwbMain() {
   	++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
-    //BatteryControl(); //todo: HardFault
+		BatteryControl();
     RangingControl();
     RangingReader();
     BeaconSender();
