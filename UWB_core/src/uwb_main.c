@@ -74,13 +74,13 @@ void RangingReader() {
 void UwbMain() {
   //CheckSleepMode();
   SETTINGS_Init();
+	PORT_Init();
   Desynchronize(); // base on device address
 
   if(settings.mac.role == RTLS_DEFAULT) {
-  	settings.mac.role = RTLS_SINK;
+		settings.mac.role = PORT_GetHwRole();
   }
 
-  PORT_Init();
   MAC_Init(BIN_Parse);
   CARRY_Init(settings.mac.role == RTLS_SINK);
   FU_Init(settings.mac.role == RTLS_SINK);

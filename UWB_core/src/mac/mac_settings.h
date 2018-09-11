@@ -11,15 +11,6 @@
 #define TOA_MAX_DEV_IN_POLL 4
 #define SYNC_MAC_NEIGHBOURS 5
 
-typedef enum
-{
-  RTLS_TAG = 'T',
-  RTLS_ANCHOR = 'A',
-  RTLS_SINK = 'S',
-  RTLS_LISTENER = 'L',
-  RTLS_DEFAULT = 'D'
-} rtls_role;
-
 typedef struct
 {
   int fin_dly_us; // tx dly after last resp

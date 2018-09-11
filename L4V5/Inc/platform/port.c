@@ -1,14 +1,14 @@
 #include "platform/port.h"
 #include "stm32l4xx_ll_crc.h"
 
-void PORT_BatteryInit();
+void PORT_AdcInit();
 void PORT_SpiInit();
 void PORT_CrcInit();
 void PORT_TimeInit();
 
 void PORT_Init() {
   PORT_SpiInit();
-  PORT_BatteryInit();
+  PORT_AdcInit();
   PORT_CrcInit();
   PORT_TimeInit();
 #if !DBG

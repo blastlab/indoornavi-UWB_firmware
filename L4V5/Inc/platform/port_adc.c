@@ -13,6 +13,7 @@ extern ADC_HandleTypeDef hadc1; // in main.c
 #define BAT_PMOS_ACTIVE_HIGH 0
 #define ADC_HADC_VBAT hadc1
 #define ADC_CH_VBAT ADC_CHANNEL_8
+#define ADC_CH_HW	ADC_CHANNEL_6
 
 // Internal voltage reference, address of parameter VREFINT_CAL:
 // VrefInt ADC raw data acquired at temperature 30 DegC (tolerance: +-5 DegC),
@@ -25,7 +26,7 @@ const float batterFilterCoeff = 0.5f;
 
 static unsigned int _battery_mv = 0;
 
-void PORT_BatteryInit()
+void PORT_AdcInit()
 {
 	HAL_ADCEx_Calibration_Start(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
 	HAL_ADCEx_Calibration_GetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
@@ -35,17 +36,16 @@ int PORT_AdcMeasure(uint32_t channel) {
 	int adcInt;
 	ADC_ChannelConfTypeDef ch;
 	ch.Channel = channel;
-	ch.Rank = 1;
-	ch.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
+	ch.Rank = ADC_REGULAR_RANK_1;
+	ch.SamplingTime = ADC_SAMPLETIME_6CYCLES_5;
 	ch.OffsetNumber = ADC_OFFSET_NONE;
-	HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch); //todo: HardFault
-	HAL_ADC_Start(&ADC_HADC_VBAT);
-	if (HAL_ADC_PollForConversion(&ADC_HADC_VBAT, 10) == HAL_OK) {
-		adcInt = HAL_ADC_GetValue(&ADC_HADC_VBAT);
-	} else {
-		adcInt = 0;
-	}
-	HAL_ADC_Stop(&ADC_HADC_VBAT);
+	ch.SingleDiff = ADC_SINGLE_ENDED;
+	ch.Offset = 0;
+	PORT_ASSERT(HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch) == HAL_OK);
+	PORT_ASSERT(HAL_ADC_Start(&ADC_HADC_VBAT) == HAL_OK);
+	PORT_ASSERT(HAL_ADC_PollForConversion(&ADC_HADC_VBAT, 10) == HAL_OK);
+	adcInt = HAL_ADC_GetValue(&ADC_HADC_VBAT);
+	PORT_ASSERT(HAL_ADC_Stop(&ADC_HADC_VBAT) == HAL_OK);
 	return adcInt;
 }
 
@@ -88,3 +88,29 @@ void PORT_BatteryMeasure() {
 
 // return last battery voltage in [mV]
 int PORT_BatteryVoltage() { return _battery_mv; }
+
+rtls_role PORT_GetHwRole() {
+	const int MeasIterations = 4;
+	uint32_t adcMeasure = 0;
+
+	HAL_GPIO_WritePin(HW_PULL_GPIO_Port, HW_PULL_Pin, GPIO_PIN_SET);
+	PORT_SleepMs(2);
+	for (int i = 0; i < MeasIterations; ++i) {
+		adcMeasure += PORT_AdcMeasure(ADC_CH_HW);
+	}
+	HAL_GPIO_WritePin(HW_PULL_GPIO_Port, HW_PULL_Pin, GPIO_PIN_RESET);
+
+	adcMeasure /= MeasIterations;
+
+	// 12-bit value (4096)
+	// max voltage - tag
+	// half voltage - anchor
+	// min voltage - sink
+	if (adcMeasure < 1000) {
+		return RTLS_SINK;
+	} else if (adcMeasure < 3000) {
+		return RTLS_ANCHOR;
+	} else {
+		return RTLS_TAG;
+	}
+}

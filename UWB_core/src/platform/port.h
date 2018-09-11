@@ -18,6 +18,7 @@
 #define _PORT_H
 
 #include "platform/port_config.h"
+#include "mac/mac_const.h" // rtls_role
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
@@ -167,6 +168,13 @@ void PORT_BatteryMeasure();
  * \return last battery voltage in [mV]
  */
 int PORT_BatteryVoltage();
+
+/**
+ * \brief Return device role, base on HW select resistor or DipSwitch settings
+ *
+ * \return current device role
+ */
+rtls_role PORT_GetHwRole();
 
 
 // ========  TIME  ==========
