@@ -12,6 +12,7 @@ extern ADC_HandleTypeDef hadc1; // in main.c
 
 #define BAT_PMOS_ACTIVE_HIGH 0
 #define ADC_HADC_VBAT hadc1
+#define ADC_CH_VBAT ADC_CHANNEL_8
 
 // Internal voltage reference, address of parameter VREFINT_CAL:
 // VrefInt ADC raw data acquired at temperature 30 DegC (tolerance: +-5 DegC),
@@ -30,39 +31,36 @@ void PORT_BatteryInit()
 	HAL_ADCEx_Calibration_GetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
 }
 
+int PORT_AdcMeasure(uint32_t channel) {
+	int adcInt;
+	ADC_ChannelConfTypeDef ch;
+	ch.Channel = channel;
+	ch.Rank = 1;
+	ch.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
+	ch.OffsetNumber = ADC_OFFSET_NONE;
+	HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch); //todo: HardFault
+	HAL_ADC_Start(&ADC_HADC_VBAT);
+	if (HAL_ADC_PollForConversion(&ADC_HADC_VBAT, 10) == HAL_OK) {
+		adcInt = HAL_ADC_GetValue(&ADC_HADC_VBAT);
+	} else {
+		adcInt = 0;
+	}
+	HAL_ADC_Stop(&ADC_HADC_VBAT);
+	return adcInt;
+}
+
 // measure current battery voltage
 void PORT_BatteryMeasure() {
   int adcInt, adcBat, nap;
   float VDDA;
-  ADC_ChannelConfTypeDef ch;
-  ch.Channel = ADC_CHANNEL_VREFINT;
-  ch.Rank = 1;
-  ch.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
 // configure
 #if BAT_PMOS_ACTIVE_HIGH
   HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_SET);
 #else
   HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_RESET);
 #endif
-  HAL_ADC_Stop(&ADC_HADC_VBAT); // raczej niepotrzebne, testy do HardFault
-  HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch); //todo: HardFault
-  HAL_ADC_Start(&ADC_HADC_VBAT);
-  // it is also delay
-  if (HAL_ADC_PollForConversion(&ADC_HADC_VBAT, 10) == HAL_OK) {
-    adcInt = HAL_ADC_GetValue(&ADC_HADC_VBAT);
-  } else {
-    adcInt = 0;
-  }
-  HAL_ADC_Stop(&ADC_HADC_VBAT);
-  ch.Channel = ADC_CHANNEL_VBAT;
-  HAL_ADC_ConfigChannel(&ADC_HADC_VBAT, &ch);
-  HAL_ADC_Start(&ADC_HADC_VBAT);
-  if (HAL_ADC_PollForConversion(&ADC_HADC_VBAT, 10) == HAL_OK) {
-    adcBat = HAL_ADC_GetValue(&ADC_HADC_VBAT);
-  } else {
-    adcBat = 0;
-  }
-  HAL_ADC_Stop(&ADC_HADC_VBAT);
+	adcInt = PORT_AdcMeasure(ADC_CHANNEL_VREFINT);
+	adcBat = PORT_AdcMeasure(ADC_CH_VBAT);
 #if BAT_PMOS_ACTIVE_HIGH
   HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_RESET);
 #else
