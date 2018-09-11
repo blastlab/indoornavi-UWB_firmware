@@ -30,6 +30,10 @@ void TOA_InitDly() {
 
   toa_settings_t* tset = &settings.mac.toa_dly;
 
+  if(tset->guard_time_us != 0) {
+	  return;
+  }
+
   tset->guard_time_us = 50;  // us
   tset->rx_after_tx_offset_us = tset->guard_time_us;
   tset->rx_after_tx_offset_us += TRANSCEIVER_EstimateTxTimeUs(0);
@@ -58,22 +62,39 @@ void TOA_InitDly() {
   tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
 }
 
-int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
+int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt) {
+  // Init should be sent to dst device when it is anchor
+  // otherwise to first anchor from array and tag address should be added
+  // as a last anchor
   TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
+  dev_addr_t tempTarget;
+  if ((dst & ADDR_ANCHOR_FLAG) || anchors[0] == settings.mac.addr) {
+    tempTarget = dst;
+  } else {
+    tempTarget = anchors[0];
+  }
   FC_CARRY_s* carry;
-  mac_buf_t* buf = CARRY_PrepareBufTo(dst, &carry);
+  mac_buf_t* buf = CARRY_PrepareBufTo(tempTarget, &carry);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
   if (buf == 0) {
     return -1;
   }
 
+  if (tempTarget != dst) {
+    anc_cnt++;
+  }
   FC_TOA_INIT_s packet = {
       .FC = FC_TOA_INIT,
       .len = sizeof(FC_TOA_INIT_s) + anc_cnt * sizeof(dev_addr_t),
       .num_poll_anchor = anc_cnt,
   };
   CARRY_Write(carry, buf, &packet, sizeof(FC_TOA_INIT_s));
-  CARRY_Write(carry, buf, anchors, sizeof(dev_addr_t) * anc_cnt);
+  if (tempTarget != dst) {
+    CARRY_Write(carry, buf, anchors, sizeof(dev_addr_t) * (anc_cnt - 1));
+    CARRY_Write(carry, buf, &dst, sizeof(dev_addr_t));
+  } else {
+    CARRY_Write(carry, buf, anchors, sizeof(dev_addr_t) * anc_cnt);
+  }
 
   toa.core.resp_ind = 0;
   toa.core.anc_in_poll_cnt = anc_cnt;
@@ -84,7 +105,7 @@ int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt) {
   return 0;
 }
 
-int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt) {
+int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt) {
   TOA_ASSERT(0 < anc_cnt && anc_cnt < TOA_MAX_DEV_IN_POLL);
   mac_buf_t* buf = MAC_BufferPrepare(anc_cnt == 1 ? anchors[0] : ADDR_BROADCAST, false);
   int anc_addr_len = anc_cnt * sizeof(dev_addr_t);
@@ -172,7 +193,7 @@ int TOA_SendFinal() {
   return MAC_SendRanging(buf, tx_flags);
 }
 
-int TOA_SendRes(measure_t* measure) {
+int TOA_SendRes(const measure_t* measure) {
   FC_TOA_RES_s packet = {
     .FC = FC_TOA_RES,
     .len = sizeof(FC_TOA_RES_s),
@@ -196,10 +217,17 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	  return;
   }
 
-  // Poll will be sent as MAC frame in your slot
-  // so next frame in slot won't be sent until rx timeout,
-  // error occurrence or success ranging result
-  TOA_SendPoll(packet->poll_addr, packet->num_poll_anchor);
+  if(packet->poll_addr[0] == settings.mac.addr) {
+    // Tag is the target and you should send Init
+    int ancCnt = packet->num_poll_anchor-1;
+    TOA_SendInit(packet->poll_addr[ancCnt], packet->poll_addr, ancCnt);
+  } else {
+    // You are the target and you should send Poll
+    // Poll will be sent as MAC frame in your slot
+    // so next frame in slot won't be sent until rx timeout,
+    // error occurrence or success ranging result
+    TOA_SendPoll(packet->poll_addr, packet->num_poll_anchor);
+  }
 }
 
 int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
@@ -251,6 +279,7 @@ int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
     int ret = TOA_SendFinal();
     if (ret != 0) {
       TOA_TRACE("TOA RESP->FIN tx timeout (%d)", MAC_UsFromRx());
+      TRANSCEIVER_DefaultRx();
     } else {
       int dly = settings.mac.toa_dly.fin_dly_us;
       int lag = MAC_UsFromRx();
@@ -302,13 +331,14 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
   return 0;
 }
 
-int FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
   FC_TOA_RES_s* packet = (FC_TOA_RES_s*)data;
   TOA_ASSERT(packet->FC == FC_TOA_RES);
-  PROT_CHECK_LEN(FC_TOA_FIN, packet->len, sizeof(*packet));
-
+  if (packet->len < sizeof(*packet)) {
+	  LOG_ERR(toa_bad_len_msg, FC_TOA_FIN, packet->len, sizeof(*packet));
+	  return;
+  }
   TOA_MeasurePush(&packet->meas);
-  return 0;
 }
 
 int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
@@ -324,10 +354,6 @@ int TOA_RxCb(const void* data, const prot_packet_info_t* info) {
       break;
     case FC_TOA_FIN:
       FC_TOA_FIN_cb(data, info);
-      ret = 1;
-      break;
-    case FC_TOA_RES:
-      FC_TOA_RES_cb(data, info);
       ret = 1;
       break;
     default:

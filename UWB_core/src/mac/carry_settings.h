@@ -16,14 +16,24 @@
  * @brief maximum number of parents for one anchor
  * 
  */
-#define CARRY_MAX_TRACE 2
+#define CARRY_MAX_PARENTS 2
 
 /**
- * @brief number of anchors traces in sink device
- * @deprecated change structure to anchor->parent
+ * @brief maximum number of remembered anchors
  * 
  */
-#define CARRY_MAX_TARGETS 8
+#define CARRY_MAX_TARGETS 64
+
+/**
+ * @brief target info struct
+ * 
+ */
+typedef struct {
+  dev_addr_t addr;
+  dev_addr_t parents[CARRY_MAX_PARENTS];
+  int16_t parentsScore[CARRY_MAX_PARENTS];
+  mac_buff_time_t lastUpdateTime;
+} carry_target_t;
 
 /**
  * @brief carry settings typedef
@@ -31,14 +41,16 @@
  */
 typedef struct
 {
-  mac_buff_time_t trace_max_inactive_time; ///< max time from last message to be kept
-  int trace_max_fail_cnt;  ///< trace retransmit/delete threshold
+  mac_buff_time_t traceMaxInactiveTime; ///< max time from last message to be kept
+  int traceMaxFailCnt;  ///< trace retransmit/delete threshold
+  int targetCounter;
+  carry_target_t target[CARRY_MAX_TARGETS];
 } carry_settings_t;
 
 #define CARRY_SETTINGS_DEF                           \
   {                                                  \
-    .trace_max_inactive_time = 1000, .trace_max_fail_cnt = 5 \
-  \
+    .traceMaxInactiveTime = 1000, .traceMaxFailCnt = 5, \
+	.targetCounter = 0, \
 }
 
 #endif

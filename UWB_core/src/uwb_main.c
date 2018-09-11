@@ -5,12 +5,14 @@
  *      Author: KarolTrzcinski
  */
 
+#include <stdio.h>
 #include "uwb_main.h"
 #include "mac/mac.h"
 #include "parsers/bin_struct.h"
 #include "parsers/txt_parser.h"
 #include "mac/toa_routine.h"
 #include "parsers/printer.h"
+#include "ranging.h"
 
 void SendTurnOnMessage();
 void SendTurnOffMessage(uint8_t reason);
@@ -21,6 +23,7 @@ void TurnOff();
 void BatteryControl();
 void diagnostic();
 
+static unsigned int last_batt_measure_time = 0;
 void BatteryControl() {
   static unsigned int last_batt_measure_time = 0;
 	if (PORT_TickMs() - last_batt_measure_time > 5000) {
@@ -43,28 +46,11 @@ void BeaconSender() {
   }
 }
 
-void RangingControl() {
-  static unsigned int last_time = INT32_MAX;
-  if (PORT_TickMs() - last_time > 150) {
-    last_time = PORT_TickMs();
-  }
-}
-
 void RangingReader() {
   const measure_t* meas = TOA_MeasurePeek();
   if (meas != 0) {
     if(settings.mac.role != RTLS_SINK) {
-    	FC_CARRY_s* carry;
-      mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
-      if(buf != 0) {
-        FC_TOA_RES_s packet = {
-          .FC = FC_TOA_RES,
-          .len = sizeof(FC_TOA_RES_s),
-          .meas = *meas,
-        };
-        CARRY_Write(carry, buf, &packet, packet.len);
-        CARRY_Send(buf, false);
-      }
+      TOA_SendRes(meas);
     }
     PRINT_Measure(meas);
     TOA_MeasurePop();
@@ -83,7 +69,7 @@ void UwbMain() {
 
   MAC_Init(BIN_Parse);
   CARRY_Init(settings.mac.role == RTLS_SINK);
-  FU_Init(settings.mac.role == RTLS_SINK);
+	FU_Init(settings.mac.role == RTLS_SINK);
 
   PORT_TimeStartTimers();
   SendTurnOnMessage();
@@ -93,15 +79,17 @@ void UwbMain() {
     ++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
-		BatteryControl();
-    RangingControl();
+#if !USE_SLOT_TIMER
+    MAC_TransmitFrame();
+#endif
+    BatteryControl();
+    PORT_ImuMotionControl();
+    RANGING_Control();
     RangingReader();
     BeaconSender();
     TXT_Control();
     PORT_ImuMotionControl();
     PORT_WatchdogRefresh();
-    // PORT_SleepMs(10);
-    // diagnostic();
   }
 }
 
@@ -167,6 +155,7 @@ void TurnOff() {
 
   // disable IRQ
   __disable_irq();
+
 
   // wait forever
   // przeprowadz reset aby wylaczyc WWDG, a nastepnie

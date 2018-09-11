@@ -64,6 +64,14 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did);
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did);
 
 /**
+ * @brief print device accepted info
+ *
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t did);
+
+/**
  * @brief print rf settings
  * 
  * @param data pointer to structure with data to print
@@ -71,11 +79,43 @@ void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did);
  */
 void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did);
 
+/** 
+ * @brief print ble settings
+ * 
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did);
+
 /**
  * @brief print measure info
  * 
  * @param data pointer to structure with data to print
  */
 void PRINT_Measure(const measure_t *data);
+
+
+/**
+ * @brief print sink ranging time
+ */
+void PRINT_RangingTime();
+
+/**
+ * @brief print toa settings info
+ *
+ * @param prefix string printed before data
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_t did);
+
+/**
+ * @brief print parent for device
+ * 
+ * @param parent did
+ * @param child did
+ * @param level number of hops between sink and device
+ */
+void PRINT_Parent(dev_addr_t parent, dev_addr_t child, int level);
 
 #endif

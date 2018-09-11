@@ -262,7 +262,7 @@ void DMA1_Channel5_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
-  PORT_ImuIrqHandler();
+	//PORT_ImuIrqHandler(); //todo: zakomentowane ImuIrqHandler
   /* USER CODE END EXTI9_5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */

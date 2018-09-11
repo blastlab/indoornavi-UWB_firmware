@@ -5,6 +5,8 @@
  * @author Karol Trzcinski
  * @date 2018-07-20
  */
+#ifndef _TOA_ROUTINES_H
+#define _TOA_ROUTINES_H
 
 #include "../iassert.h"
 #include "../settings.h"
@@ -67,8 +69,9 @@ void TOA_InitDly();
  * @param[in] anc_cnt counter of anchors to measure
  * @return int 0 if succeed error code otherwise
  */
-int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
+int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt);
 
+int TOA_SendRes(const measure_t* measure);
 /**
  * @brief Send Poll message to start SYNC process with a given anchor
  *
@@ -76,7 +79,7 @@ int TOA_SendInit(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
  * @param[in] anc_cnt counter of anchors to measure
  * @return int 0 if succeed error code otherwise
  */
-int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt);
+int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt);
 
 
 /**
@@ -89,6 +92,7 @@ int TOA_SendPoll(dev_addr_t anchors[], int anc_cnt);
  */
 void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info);
 
+void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief sync rx callback
@@ -113,3 +117,5 @@ int TOA_RxToCb();
  * @return int 1 if packed was parsed 0 otherwise
  */
 int TOA_TxCb(int64_t TsDwTx);
+
+#endif

@@ -24,6 +24,7 @@ void BIN_SEND_RESP(FC_t FC, const void *data, uint8_t len,
 void FC_TURN_ON_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_TURN_ON);
   PRINT_TurnOn(data, info->direct_src);
+
 }
 
 void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
@@ -32,18 +33,20 @@ void FC_TURN_OFF_cb(const void *data, const prot_packet_info_t *info) {
 }
 
 void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
+    FC_CARRY_s* carry;
+    mac_buf_t* buf;
   BIN_ASSERT(*(uint8_t *)data == FC_BEACON);
   PRINT_Beacon(data, info->direct_src);
   if(info->direct_src & ADDR_ANCHOR_FLAG) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->direct_src, default_tree_level);
   }
-  FC_BEACON_s packet = *(FC_BEACON_s*)data;
+  FC_BEACON_s packet;
+  memcpy(&packet, data, sizeof(packet));
   packet.len += sizeof(dev_addr_t);
   packet.hop_cnt += 1;
   if(CARRY_ParentAddres() != 0) {
-    FC_CARRY_s* carry;
-	  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+	  buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
 	  if(buf != 0) {
 		  CARRY_Write(carry, buf, &packet, sizeof(packet));
 		  CARRY_Write(carry, buf, (uint8_t*)data + sizeof(FC_BEACON_s), sizeof(dev_addr_t) * (packet.hop_cnt-1));
@@ -52,6 +55,17 @@ void FC_BEACON_cb(const void *data, const prot_packet_info_t *info) {
 	  } else {
 		  LOG_WRN("BEACON parser not enough buffers");
 	  }
+  }
+  if(false && settings.mac.role == RTLS_SINK) {						// TODO repair this - auto setting parents
+	  dev_addr_t parent = packet.hops[packet.hop_cnt-1];
+	  CARRY_ParentSet(info->direct_src, parent);
+	  FC_DEV_ACCEPTED_s acc;
+	  acc.FC = FC_DEV_ACCEPTED;
+	  acc.len = sizeof(acc);
+	  acc.newParent = info->direct_src;
+	  buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
+	  CARRY_Write(carry, buf, &acc, acc.len);
+	  CARRY_Send(buf, true);
   }
 }
 
@@ -114,7 +128,35 @@ void FC_DEV_ACCEPTED_cb(const void *data, const prot_packet_info_t *info) {
   BIN_ASSERT(*(uint8_t *)data == FC_DEV_ACCEPTED);
   FC_DEV_ACCEPTED_s packet;
   memcpy(&packet, data, sizeof(packet));
+  CARRY_SetYourParent(packet.newParent);
   PRINT_DeviceAccepted(&packet, info->direct_src);
+}
+
+void FC_SETTINGS_SAVE_cb(const void* data, const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_SETTINGS_SAVE);
+  int ret = SETTINGS_Save();
+  FC_SETTINGS_SAVE_RESULT_s packet;
+  packet.FC = FC_SETTINGS_SAVE_RESULT;
+  packet.len = sizeof(packet);
+  packet.result = ret;
+  if (info->direct_src == ADDR_BROADCAST) {
+    PRINT_SettingsSaveResult(&packet, settings.mac.addr);
+  } else {
+    BIN_SEND_RESP(FC_SETTINGS_SAVE_RESULT, &packet, packet.len, info);
+  }
+}
+
+void FC_SETTINGS_SAVE_RESULT_cb(const void* data,
+                                const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_SETTINGS_SAVE_RESULT);
+  FC_SETTINGS_SAVE_RESULT_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_SettingsSaveResult(&packet, info->direct_src);
+}
+
+void FC_RESET_cb(const void *data, const prot_packet_info_t *info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_RESET);
+  PORT_Reboot();
 }
 
 void FC_RFSET_ASK_cb(const void *data, const prot_packet_info_t *info) {
@@ -201,13 +243,69 @@ void FC_RFSET_SET_cb(const void *data, const prot_packet_info_t *info) {
   MAC_Reinit(); // to load new settings into transceiver
 }
 
+void FC_BLE_ASK_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
+  BIN_ASSERT(*(uint8_t *)data == FC_BLE_ASK);
+  FC_BLE_SET_s packet;
+  packet.FC = FC_BLE_RESP;
+  packet.len = sizeof(packet);
+  packet.is_enabled = settings.ble.is_enabled;
+  packet.tx_power = settings.ble.tx_power;
+  if(info->direct_src == ADDR_BROADCAST) {
+	PRINT_BleSet(&packet, settings.mac.addr);
+  } else {
+	BIN_SEND_RESP(FC_BLE_RESP, &packet, packet.len, info);
+  }
+)
+}
+
+void FC_BLE_RESP_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t *)data == FC_BLE_RESP);
+  FC_BLE_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_BleSet(data, info->direct_src);
+)
+}
+
+void FC_BLE_SET_cb(const void *data, const prot_packet_info_t *info) {
+BLE_CODE(
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t *)data == FC_BLE_SET);
+  FC_BLE_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  if(packet.tx_power != -1) {
+	  PORT_BleSetPower(packet.tx_power);
+  }
+  uint8_t ble_enabled_buf = settings.ble.is_enabled;
+  if((int8_t)packet.is_enabled != -1) {
+	  settings.ble.is_enabled = packet.is_enabled;
+  }
+  SETTINGS_Save();
+  uint8_t ask_data[2];
+  ask_data[0] = FC_BLE_ASK;
+  ask_data[1] = 2;
+  FC_BLE_ASK_cb(&ask_data, info);
+  PORT_WatchdogRefresh();
+  PORT_SleepMs(50);  // to send response
+  PORT_WatchdogRefresh();
+  if(ble_enabled_buf != settings.ble.is_enabled) {
+	  PORT_Reboot();
+  }
+)
+}
+
 const prot_cb_t prot_cb_tab[] = {
     {FC_BEACON, FC_BEACON_cb},
     {FC_TURN_ON, FC_TURN_ON_cb},
     {FC_TURN_OFF, FC_TURN_OFF_cb},
     {FC_DEV_ACCEPTED, FC_DEV_ACCEPTED_cb},
-    {FC_CARRY, CARRY_ParseMessage}, //this code has different argumetns
+    {FC_CARRY, CARRY_ParseMessage},
     {FC_FU, FU_HandleAsDevice},
+    {FC_SETTINGS_SAVE, FC_SETTINGS_SAVE_cb},
+    {FC_SETTINGS_SAVE_RESULT, FC_SETTINGS_SAVE_RESULT_cb},
+    {FC_RESET, FC_RESET_cb},
     {FC_VERSION_ASK, FC_VERSION_ASK_cb},
     {FC_VERSION_RESP, FC_VERSION_RESP_cb},
     {FC_STAT_ASK, FC_STAT_ASK_cb},
@@ -216,5 +314,9 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_RFSET_RESP, FC_RFSET_RESP_cb},
     {FC_RFSET_SET, FC_RFSET_SET_cb},
     {FC_TOA_INIT, FC_TOA_INIT_cb},
+	{FC_TOA_RES, FC_TOA_RES_cb},
+	{FC_BLE_ASK, FC_BLE_ASK_cb},
+	{FC_BLE_RESP, FC_BLE_RESP_cb},
+	{FC_BLE_SET, FC_BLE_SET_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

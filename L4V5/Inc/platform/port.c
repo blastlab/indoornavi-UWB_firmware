@@ -11,7 +11,7 @@ void PORT_Init() {
   PORT_AdcInit();
   PORT_CrcInit();
   PORT_TimeInit();
-  PORT_ImuWomConfig();
+	PORT_ImuInit();
 #if !DBG
   PORT_WatchdogInit();
 #endif
