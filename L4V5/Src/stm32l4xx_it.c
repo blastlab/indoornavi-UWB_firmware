@@ -68,7 +68,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-	IASSERT("HardFault" == 0);
+  IASSERT("HardFault" == 0);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -201,11 +201,11 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
-	do
-	{
-		HAL_GPIO_WritePin(DW_CS_GPIO_Port,DW_CS_Pin,GPIO_PIN_SET);
-		dwt_isr();
-	} while(HAL_GPIO_ReadPin(DW_IRQ_GPIO_Port, DW_IRQ_Pin) == GPIO_PIN_SET);
+  do
+  {
+    HAL_GPIO_WritePin(DW_CS_GPIO_Port, DW_CS_Pin, GPIO_PIN_SET);
+    dwt_isr();
+  } while (HAL_GPIO_ReadPin(DW_IRQ_GPIO_Port, DW_IRQ_Pin) == GPIO_PIN_SET);
 
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
@@ -257,6 +257,19 @@ void DMA1_Channel5_IRQHandler(void)
 }
 
 /**
+* @brief This function handles EXTI line[9:5] interrupts.
+*/
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+  PORT_ImuIrqHandler();
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
+}
+/**
 * @brief This function handles TIM2 global interrupt.
 */
 void TIM2_IRQHandler(void)
@@ -290,7 +303,7 @@ void USART1_IRQHandler(void)
 void LPTIM1_IRQHandler(void)
 {
   /* USER CODE BEGIN LPTIM1_IRQn 0 */
-	LL_LPTIM_ClearFLAG_ARRM(LPTIM1);
+  LL_LPTIM_ClearFLAG_ARRM(LPTIM1);
   /* USER CODE END LPTIM1_IRQn 0 */
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
 
