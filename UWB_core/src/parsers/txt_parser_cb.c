@@ -250,6 +250,28 @@ static void TXT_Bin(const txt_buf_t *buf, const prot_packet_info_t *info)
   }
 }
 
+static void TXT_Role(const txt_buf_t *buf, const prot_packet_info_t *info) {
+	const char * role = TXT_PointParamNumber(buf, buf->cmd, 1);
+	switch (tolower(role[0])) {
+		case 's':
+			settings.mac.role = RTLS_SINK;
+			break;
+		case 'a':
+			settings.mac.role = RTLS_ANCHOR;
+			break;
+		case 't':
+			settings.mac.role = RTLS_TAG;
+			break;
+		case 'l':
+			settings.mac.role = RTLS_LISTENER;
+			break;
+		default:
+			break;
+	}
+	// print version
+	_TXT_Ask(info, FC_VERSION_ASK);
+}
+
 const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"version", TXT_VersionCb},
                                {"_hang", TXT_HangCb},
@@ -258,6 +280,7 @@ const txt_cb_t txt_cb_tab[] = {{"stat", TXT_StatCb},
                                {"save", TXT_SaveCb},
                                {"reset", TXT_ResetCb},
                                {"bin", TXT_Bin},
+															 { "_role", TXT_Role },
                                };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);
