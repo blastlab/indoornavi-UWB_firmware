@@ -1,14 +1,13 @@
 /**
  * @brief file for small code snippets
- * 
+ *
  * @file tools.h
  * @author Karol Trzcinski
  * @date 2018-07-02
- * 
+ *
  */
 #ifndef _TOOLS_H
 #define _TOOLS_H
-
 
 #define UNUSED_1(a)                  (void)(a)
 #define UNUSED_2(a,b)                (void)(a),UNUSED_1(b)
@@ -25,38 +24,33 @@
 #define ALL_UNUSED_IMPL_(nargs) UNUSED_ ## nargs
 #define ALL_UNUSED_IMPL(nargs) ALL_UNUSED_IMPL_(nargs)
 
-
 /**
  * @brief useful to prevent compilator 'unused variable' warning
- * 
+ *
  */
 #define ALL_UNUSED(...) ALL_UNUSED_IMPL( VA_NUM_ARGS(__VA_ARGS__))(__VA_ARGS__ )
 
-
 /**
  * @brief increment value and trim to <start,stop) range
- * 
+ *
  */
 #define INCREMENT_CYCLE(VAR,START,STOP) (VAR=((VAR+1)==STOP?START:(VAR+1)))
 
-
 /**
  * @brief decrement value and trim to <start,stop) range
- * 
+ *
  */
 #define DECREMENT_CYCLE(VAR,START,STOP) (VAR=(VAR==(START?STOP:VAR)-1))
 
-
 /**
  * @brief increment value and trim to <0,max) range
- * 
+ *
  */
 #define INCREMENT_MOD(VAR,MAX) INCREMENT_CYCLE(VAR,0,MAX)
 
-
 /**
  * @brief decrement value and trim to <0,max) range
- * 
+ *
  */
 #define DECREMENT_MOD(VAR,MAX) DECREMENT_CYCLE(VAR,0,MAX)
 

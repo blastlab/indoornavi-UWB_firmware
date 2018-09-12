@@ -30,26 +30,25 @@ typedef const char cchar;
  *
  */
 typedef struct {
-  cchar* cmd;          ///< pointer to start of current message to parse
-  cchar* const start;  ///< pointer to start of buffer
-  cchar* const end;    ///< pointer to start of buffer + buffer length
-  int cnt;             ///< numer of messages ready to parse
+	cchar* cmd;          ///< pointer to start of current message to parse
+	cchar* const start;  ///< pointer to start of buffer
+	cchar* const end;    ///< pointer to start of buffer + buffer length
+	int cnt;             ///< numer of messages ready to parse
 } txt_buf_t;
 
 /**
  * @brief text parser engine callback definition
  *
  */
-typedef void (*txt_parser_cb)(const txt_buf_t* buf,
-                              const prot_packet_info_t* info);
+typedef void (*txt_parser_cb)(const txt_buf_t* buf, const prot_packet_info_t* info);
 
 /**
  * @brief text parser engine callback struct
  *
  */
 typedef struct {
-  const char* cmd;         ///< command string
-  const txt_parser_cb cb;  ///< calback function routine
+	const char* cmd;         ///< command string
+	const txt_parser_cb cb;  ///< calback function routine
 } txt_cb_t;
 
 /**

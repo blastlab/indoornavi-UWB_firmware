@@ -7,8 +7,11 @@
 
 #include "platform/port.h"
 
-void PORT_ImuInit() {}
+void PORT_ImuInit() {
+}
 
-void PORT_ImuMotionControl() {}
+void PORT_ImuMotionControl() {
+}
 
-void PORT_ImuIrqHandler() {}
+void PORT_ImuIrqHandler() {
+}

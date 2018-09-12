@@ -51,50 +51,50 @@
 #define SYNC_TRACE_TOA(...) ALL_UNUSED(__VA_ARGS__)
 #endif
 
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
-  dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
-} FC_SYNC_POLL_s;
-
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint32_t TsPollRx;  ///< poll receive timestamp in dw time units
-  uint32_t TsRespTx;  ///< response transmit timestamp in dw time units
-} FC_SYNC_RESP_s;
-
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint8_t tree_level;     ///< device level in tree
-  uint8_t slot_num;       ///< device slot number
-  uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
-  uint8_t TsFinTxBuf[5];  ///< 40b fin transmit timestamp in dw time units
-  uint8_t TsOffset[5];    ///< 40b device local to global time offset
-  uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
-} FC_SYNC_FIN_s;
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
+	dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
+}__packed FC_SYNC_POLL_s;
 
 typedef struct {
-  dev_addr_t addr;           ///< neigtbour address
-  uint8_t tree_level;        ///< number of hops from sink (sink is level 0)
-  uint8_t sync_ready;        ///< sync ready (true or false)
-  int64_t time_offset;       ///< local to global time offset in dtu
-  int64_t update_ts;         ///< last update timestamp in dtu
-  int64_t drift[3];          ///< list of last clock drifts
-  float time_coeffP[3];      ///< list of last time drifts over delta dtu after
-  float time_coeffP_raw[3];  ///< raw list of last time drifts over delta dtu
-  float time_drift_sum;      ///< sum of clock drifts
-  float tof_dw;  ///< time of flight between neighbour and local device in dtu
+	uint8_t FC;
+	uint8_t len;
+	uint32_t TsPollRx;  ///< poll receive timestamp in dw time units
+	uint32_t TsRespTx;  ///< response transmit timestamp in dw time units
+}__packed FC_SYNC_RESP_s;
+
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	uint8_t tree_level;     ///< device level in tree
+	uint8_t slot_num;       ///< device slot number
+	uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
+	uint8_t TsFinTxBuf[5];  ///< 40b fin transmit timestamp in dw time units
+	uint8_t TsOffset[5];    ///< 40b device local to global time offset
+	uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
+}__packed FC_SYNC_FIN_s;
+
+typedef struct {
+	dev_addr_t addr;           ///< neigtbour address
+	uint8_t tree_level;        ///< number of hops from sink (sink is level 0)
+	uint8_t sync_ready;        ///< sync ready (true or false)
+	int64_t time_offset;       ///< local to global time offset in dtu
+	int64_t update_ts;         ///< last update timestamp in dtu
+	int64_t drift[3];          ///< list of last clock drifts
+	float time_coeffP[3];      ///< list of last time drifts over delta dtu after
+	float time_coeffP_raw[3];  ///< raw list of last time drifts over delta dtu
+	float time_drift_sum;      ///< sum of clock drifts
+	float tof_dw;  ///< time of flight between neighbour and local device in dtu
 } sync_neighbour_t;
 
 typedef struct {
-  toa_core_t toa;              ///< SYNC toa data
-  int64_t toa_ts_poll_rx_raw;  ///< used to SYNC #TOA_EnableRxBeforeFin
-  uint8_t tree_level;          ///< local device tree level
-  sync_neighbour_t local_obj;  ///< local clock from dwt data
-  sync_neighbour_t neighbour[SYNC_MAC_NEIGHBOURS];  ///< list of neighbours
+	toa_core_t toa;              ///< SYNC toa data
+	int64_t toa_ts_poll_rx_raw;  ///< used to SYNC #TOA_EnableRxBeforeFin
+	uint8_t tree_level;          ///< local device tree level
+	sync_neighbour_t local_obj;  ///< local clock from dwt data
+	sync_neighbour_t neighbour[SYNC_MAC_NEIGHBOURS];  ///< list of neighbours
 } sync_instance_t;
 
 /**

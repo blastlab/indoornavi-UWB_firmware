@@ -50,7 +50,7 @@ bool RANGING_MeasureDeleteTag(dev_addr_t tagDid) {
 			if (i != settings.ranging.measureCnt) {
 				// replace measure to delete with the previously deleted one
 				memcpy(&settings.ranging.measure[i], &settings.ranging.measure[settings.ranging.measureCnt],
-				    sizeof(*settings.ranging.measure));
+				       sizeof(*settings.ranging.measure));
 			}
 			result = true;
 		}
@@ -80,8 +80,7 @@ bool RANGING_TempAnchorsAdd(dev_addr_t did) {
 	if (ranging.tempAncListCnt < RANGING_TEMP_ANC_LIST_DEPTH) {
 		ranging.tempAncList[ranging.tempAncListCnt++] = did;
 		return true;
-	}
-	else {
+	} else {
 		return false;
 	}
 }
@@ -119,8 +118,7 @@ bool RANGING_SendNextInit() {
 	}
 	if (meas->tagDid == settings.mac.addr) {
 		TOA_SendPoll(meas->ancDid, meas->numberOfAnchors);
-	}
-	else {
+	} else {
 		TOA_SendInit(meas->tagDid, meas->ancDid, meas->numberOfAnchors);
 	}
 	return 1;
