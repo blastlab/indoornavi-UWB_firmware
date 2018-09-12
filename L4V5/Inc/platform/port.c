@@ -15,6 +15,7 @@ void PORT_Init() {
 #if !DBG
   PORT_WatchdogInit();
 #endif
+	HAL_NVIC_EnableIRQ(DW_EXTI_IRQn);
 }
 
 void PORT_WatchdogInit() {

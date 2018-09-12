@@ -10,16 +10,16 @@
 static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
 {
   prot_packet_info_t new_info;
-  if (info->direct_src == ADDR_BROADCAST)
+  if (info->original_src == ADDR_BROADCAST)
   {
     memset(&new_info, 0, sizeof(new_info));
-    new_info.direct_src = settings.mac.addr;
+    new_info.original_src = settings.mac.addr;
     BIN_ParseSingle(buf, info);
   }
   else
   {
     FC_CARRY_s* carry;
-    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->direct_src, &carry);
+    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->original_src, &carry);
     if(mbuf != 0) {
       uint8_t *ibuf = (uint8_t*)buf;
       // length is always second byte of frame
@@ -255,6 +255,8 @@ static void TXT_BinCb(const txt_buf_t *buf, const prot_packet_info_t *info)
 	  // decode oryginal content and parse
 	  int size = BASE64_Decode(data->buf, data->buf, MAC_BUF_LEN);
 	  BIN_Parse(data->dPtr, info, size);
+		data->isServerFrame = false;
+		MAC_Free(data);
   }
 }
 
@@ -302,13 +304,14 @@ static void TXT_MeasureCb(const txt_buf_t* buf,
   int tagDid = TXT_GetParamNum(buf, 1, 16);
   int ancDid = TXT_GetParamNum(buf, i, 16);
 
-  if (tagDid < 0 || tagDid >= ADDR_BROADCAST) { // no parameters
+	if (tagDid < 0 || tagDid > ADDR_BROADCAST) { // no parameters
     LOG_INF("measure cnt:%d", RANGING_MeasureCounter());
     return;
   } else if(tagDid == ADDR_BROADCAST) { // one parameter - ADDR_BROADCAST
 	  readIt = readIt >= settings.ranging.measureCnt ? 0 : readIt;
-	  LOG_INF("measure %X with [%X]", tagDid, settings.ranging.measure[readIt]);
+		PRINT_MeasureInitInfo(&settings.ranging.measure[readIt]);
 	  INCREMENT_MOD(readIt, settings.ranging.measureCnt);
+		return;
   }
   RANGING_TempAnchorsReset();
   while (ancDid > 0) {
@@ -355,9 +358,17 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf,
     return;
   }
 
+  int meas_count = RANGING_MeasureCounter();
   delay = delay > 0 ? delay : settings.ranging.rangingDelayMs;
   period = cnt > 0 ? cnt * delay : period;
   period = period > 0 ? period : settings.ranging.rangingPeriodMs;
+  cnt = cnt > 0 ? cnt : period/delay;
+
+  if(meas_count > cnt) {
+	  LOG_ERR("Too small period! Setting correct value..");
+	  cnt = meas_count;
+	  period = cnt*delay;
+  }
 
   settings.ranging.rangingDelayMs = delay;
   settings.ranging.rangingPeriodMs = period;
@@ -441,7 +452,7 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
       if (child == settings.mac.addr) {
         LOG_ERR("parent can't be set for sink");
       } else {
-        if (!CARRY_ParentSet(child, parent)) {
+        if (CARRY_ParentSet(child, parent) == 0) {
           ++fail_cnt;
         }
       }
@@ -518,6 +529,16 @@ static void TXT_Role(const txt_buf_t *buf, const prot_packet_info_t *info) {
 	_TXT_Ask(info, FC_VERSION_ASK);
 }
 
+static void TXT_Route(const txt_buf_t *buf, const prot_packet_info_t *info) {
+	int en = TXT_GetParam(buf, "auto:", 10);
+
+	if (0 <= en && en <= 1) {
+		settings.carry.autoRoute = en;
+	}
+
+	LOG_INF("route auto:%d", settings.carry.autoRoute);
+}
+
 const txt_cb_t txt_cb_tab[] = {
     {"stat", TXT_StatCb},
     {"version", TXT_VersionCb},
@@ -538,6 +559,7 @@ const txt_cb_t txt_cb_tab[] = {
     {"parent", TXT_ParentCb},
     {"ble", TXT_BleCb},
     { "_role", TXT_Role },
+		{ "route", TXT_Route },
 };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

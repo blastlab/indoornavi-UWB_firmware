@@ -92,8 +92,13 @@ void CARRY_SetYourParent(dev_addr_t did);
  * 
  * @param target device address
  * @param parent new target address
+ * @return 0 when fail
+ * @return 1 when current parent is identical
+	 * @return 2 when new parent has been rejected because of tree level
+	 * @return 3 when parent changed
+	 * @return 4 when target created with a given parent
  */
-bool CARRY_ParentSet(dev_addr_t target, dev_addr_t parent);
+int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent);
 
 /**
  * @brief get current device parent
@@ -102,6 +107,14 @@ bool CARRY_ParentSet(dev_addr_t target, dev_addr_t parent);
  * @return dev_addr_t parent of this device
  */
 dev_addr_t CARRY_ParentGet(dev_addr_t target);
+
+	/**
+	 * @brief get number of hops to target (from sink)
+	 *
+	 * @param target device address
+	 * @return int number o hops from sink
+	 */
+	int CARRY_GetTargetLevel(dev_addr_t target);
 
 /**
  * @brief delete each saved parent

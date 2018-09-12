@@ -15,7 +15,6 @@
 #include "nrf_drv_clock.h"
 #include "nrf_gpio.h"
 
-//#define LPTIM_SLEEP LPTIM1 TODO: implement LPTIM_SLEEP handler
 const nrf_drv_timer_t TIMER_SLOT = NRF_DRV_TIMER_INSTANCE(1);
 const nrf_drv_rtc_t RTC = NRF_DRV_RTC_INSTANCE(1);
 

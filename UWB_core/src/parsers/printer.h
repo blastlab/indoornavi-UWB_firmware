@@ -94,6 +94,13 @@ void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did);
  */
 void PRINT_Measure(const measure_t *data);
 
+/**
+ * @brief print measure initialization informations
+ *
+ * @param data pointer to structure with data to print
+ */
+void PRINT_MeasureInitInfo(const measure_init_info_t *data);
+
 
 /**
  * @brief print sink ranging time

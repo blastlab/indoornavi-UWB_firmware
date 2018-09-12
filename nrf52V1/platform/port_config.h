@@ -7,19 +7,8 @@
 #include "nrf_error.h"
 #include "nordic_common.h"
 
-#define USE_BLE			0
-
-#if USE_BLE
-#define BLE_CODE(_CODE_) \
-  { _CODE_ }
-#else
-#define BLE_CODE(_CODE_)
-#endif
-
 #define __H_MAJOR__ 0
 #define __H_MINOR__ 1
-#define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))
-#define HARDWARE_OTP_ADDR 0x1FFF7000					// TODO: set OTP address
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
@@ -51,7 +40,16 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
-#define USE_DECA_DEVKIT		0
+#define USE_BLE				0
+
+#if USE_BLE
+#define BLE_CODE(_CODE_) \
+  { _CODE_ }
+#else
+#define BLE_CODE(_CODE_)
+#endif
+
+#define USE_DECA_DEVKIT		1
 
 #if USE_DECA_DEVKIT
 #define DW_RST_PIN			24

@@ -1,6 +1,7 @@
 #include "mac.h"
 #include "../settings.h"
 #include "sync.h"
+#include "../prot/FU.h"
 #include "toa_routine.h"
 
 // global mac instance
@@ -86,7 +87,11 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
 
   // try send next data frame
   if (ret == 0) {
+#if USE_SLOT_TIMER
     ret = MAC_TryTransmitFrameInSlot(SYNC_GlobTime(tx_ts));
+#else
+		ret = MAC_TryTransmitFrame();
+#endif
   }
 
   // or turn on default rx mode
@@ -104,7 +109,7 @@ static void MAC_TxCb(const dwt_cb_data_t *data) {
 static void MAC_RxCb(const dwt_cb_data_t *data) {
   PORT_LedOn(LED_STAT);
   mac.last_rx_ts = PORT_TickHr();
-  mac_buf_t *buf = MAC_Buffer();
+	mac_buf_t *buf = MAC_Buffer();
   prot_packet_info_t info;
   memset(&info, 0, sizeof(info));
   bool broadcast, unicast;
@@ -115,10 +120,11 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
     buf->dPtr = &buf->frame.data[0];
     broadcast = buf->frame.dst == ADDR_BROADCAST;
     unicast = buf->frame.dst == settings.mac.addr;
-    info.direct_src = buf->frame.src;
+    info.original_src = info.last_src = buf->frame.src;
 
     if(unicast) {
     	MAC_BeaconTimerReset();
+    	FU_AcceptFirmware();
     }
 
     if (broadcast || unicast) {
@@ -151,7 +157,6 @@ static void MAC_RxCb(const dwt_cb_data_t *data) {
     }
     MAC_Free(buf);
   } else {
-    LOG_ERR("No buff for rx_cb");
     TRANSCEIVER_DefaultRx();
   }
 }
@@ -175,7 +180,7 @@ static void MAC_RxToCb(const dwt_cb_data_t *data) {
 static void MAC_RxErrCb(const dwt_cb_data_t *data) {
   // mayby some log?
   PORT_LedOn(LED_ERR);
-  LOG_WRN("Rx error status:%X", data->status);
+	LOG_DBG("Rx error status:%X", data->status);
   TRANSCEIVER_DefaultRx();
 }
 
@@ -218,11 +223,13 @@ void MAC_YourSlotIsr() {
     uint32_t slot_time = PORT_SlotTimerTickUs();
     MAC_UpdateSlotTimer(slot_time, local_time);
     )
+    decaIrqStatus_t en = decamutexon();
     MAC_TryTransmitFrameInSlot(mac.slot_time_offset);
+    decamutexoff(en);
 }
 
 // private function, called when buf should be send now as a frame in slot
-static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
+static int _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   int ret;
   // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
   if (buf->isRangingFrame) {
@@ -235,21 +242,21 @@ static void _MAC_TransmitFrameInSlot(mac_buf_t *buf, int len) {
   buf->last_update_time = mac_port_buff_time();
   // check result
   if (ret == 0) {
-    buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
-    // wait for tx callback
+		//todo: usun tego mocka na wiadomosci typu ACK
+		//buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
+		buf->state = FREE;
   } else {
     ++buf->retransmit_fail_cnt;
     if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
       buf->state = FREE;
     }
-    // try send next frame after tx fail
-    int64_t glob_time = SYNC_GlobTime(TRANSCEIVER_GetTime());
-    MAC_TryTransmitFrameInSlot(glob_time);
-    LOG_WRN("Tx err");
   }
+	return ret;
 }
 
-// calc slot time and send try send packet if it is yours time
+/// @brief calc slot time and send try send packet if it is yours time
+/// @return 0 when there is no time or frame to send
+/// @return 1 when frame has been send or some tx error occurred
 int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
   // calc time from begining of yours slot
   int slot_time = MAC_ToSlotsTimeUs(glob_time);
@@ -288,39 +295,39 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
     dwt_rxreset();
   }
   // when you have enouth time to send next message, then do it
-  _MAC_TransmitFrameInSlot(buf, len);
+	int ret = _MAC_TransmitFrameInSlot(buf, len);
+	if (ret != 0) {
+		// try send next frame after tx fail
+		int64_t glob_time = SYNC_GlobTime(TRANSCEIVER_GetTime());
+		MAC_TryTransmitFrameInSlot(glob_time);
+		LOG_WRN("Tx err");
+	}
   return 1;
 }
 
-void MAC_TransmitFrame() {
+/// @return 0 when there is no time or frame to send
+/// @return 1 when frame has been send or some tx error occurred
+int MAC_TryTransmitFrame() {
   int ret;
+	decaIrqStatus_t en = decamutexon();
   mac_buf_t *buf = _MAC_BufGetOldestToTx();
-  if (buf == 0) {
-	  return;
-  }
-  int len = MAC_BufLen(buf);
-  // POLL is send through queue and need DWT_RESPONSE_EXPECTED flag
-  if (buf->isRangingFrame) {
-    const uint8_t flags = DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED;
-    dwt_forcetrxoff();
-    ret = MAC_SendRanging(buf, flags);
-  } else {
-    ret = TRANSCEIVER_Send(buf->buf, len);
-  }
-  buf->last_update_time = mac_port_buff_time();
-  // check result
-  if (ret == 0) {
-    buf->state = (buf->state == WAIT_FOR_TX_ACK) ? WAIT_FOR_ACK : FREE;
-    // wait for tx callback
-  } else {
-    ++buf->retransmit_fail_cnt;
-    if (buf->retransmit_fail_cnt > settings.mac.max_frame_fail_cnt) {
-      buf->state = FREE;
-    }
-    // try send next frame after tx fail
-    MAC_TransmitFrame();
-    LOG_WRN("Tx err");
-  }
+	int len;
+
+	if (buf == 0) {
+		decamutexoff(en);
+		return 0;
+	}
+
+	dwt_forcetrxoff();
+	len = MAC_BufLen(buf);
+	ret = _MAC_TransmitFrameInSlot(buf, len);
+	decamutexoff(en);
+	if (ret != 0) {
+		// try send next frame after tx fail
+		LOG_WRN("Tx err");
+		MAC_TryTransmitFrame();
+	}
+	return 1;
 }
 
 // call this function when ACK arrive
@@ -395,6 +402,7 @@ mac_buf_t *MAC_Buffer() {
     }
   }
   // else return null
+	LOG_WRN("No more buffers");
   return 0;
 }
 

@@ -23,7 +23,6 @@ void TurnOff();
 void BatteryControl();
 void diagnostic();
 
-static unsigned int last_batt_measure_time = 0;
 void BatteryControl() {
   static unsigned int last_batt_measure_time = 0;
 	if (PORT_TickMs() - last_batt_measure_time > 5000) {
@@ -51,8 +50,9 @@ void RangingReader() {
   if (meas != 0) {
     if(settings.mac.role != RTLS_SINK) {
       TOA_SendRes(meas);
+		} else {
+			PRINT_Measure(meas);
     }
-    PRINT_Measure(meas);
     TOA_MeasurePop();
   }
 }
@@ -69,26 +69,24 @@ void UwbMain() {
 
   MAC_Init(BIN_Parse);
   CARRY_Init(settings.mac.role == RTLS_SINK);
-	FU_Init(settings.mac.role == RTLS_SINK);
+  FU_Init(settings.mac.role == RTLS_SINK);
 
   PORT_TimeStartTimers();
   SendTurnOnMessage();
 
-  volatile int i = 0;
   while (1) {
-    ++i;
     PORT_LedOff(LED_STAT);
     PORT_LedOff(LED_ERR);
 #if !USE_SLOT_TIMER
-    MAC_TransmitFrame();
+		MAC_TryTransmitFrame();
 #endif
-    BatteryControl();
+		//BatteryControl();
     PORT_ImuMotionControl();
     RANGING_Control();
     RangingReader();
     BeaconSender();
     TXT_Control();
-    PORT_ImuMotionControl();
+    FU_Control();
     PORT_WatchdogRefresh();
   }
 }
@@ -99,10 +97,12 @@ void SendTurnOnMessage() {
     packet.FC = FC_TURN_ON;
     packet.len = sizeof(packet);
     mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-    MAC_Write(buf, &packet, packet.len);
-    MAC_Send(buf, false);
-    LOG_DBG("I send turn on - %X %c", settings.mac.addr,
-            (char)settings.mac.role);
+    if(buf != 0){
+      MAC_Write(buf, &packet, packet.len);
+      MAC_Send(buf, false);
+      LOG_DBG("I send turn on - %X %c", settings.mac.addr,
+              (char)settings.mac.role);
+    }
   }
 }
 
@@ -112,8 +112,10 @@ void SendTurnOffMessage(uint8_t reason) {
   packet.len = sizeof(packet);
   packet.reason = reason;
   mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-  MAC_Write(buf, &packet, packet.len);
-  MAC_Send(buf, false);
+  if(buf != 0) {
+    MAC_Write(buf, &packet, packet.len);
+    MAC_Send(buf, false);
+  }
 }
 
 void SendBeaconMessage() {
@@ -121,10 +123,15 @@ void SendBeaconMessage() {
   packet.FC = FC_BEACON;
   packet.len = sizeof(packet);
   packet.serial = settings_otp->serial;
-  mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-  MAC_Write(buf, &packet, packet.len);
-  MAC_Send(buf, false);
-  LOG_DBG("I send beacon - %X %c", settings.mac.addr, (char)settings.mac.role);
+  packet.hop_cnt = 0;
+  packet.src_did = settings.mac.addr;
+  mac_buf_t *buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+	if (buf != 0) {
+		MAC_Write(buf, &packet, packet.len);
+		MAC_Send(buf, false);
+		LOG_DBG("I send beacon - %X role:%c", settings.mac.addr,
+				(char )settings.mac.role);
+	}
 }
 
 void Desynchronize() {

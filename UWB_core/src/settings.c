@@ -15,6 +15,7 @@ const settings_otp_t *settings_otp;
 
 bool settings_is_otp_erased()
 {
+#ifdef HARDWARE_OTP_ADDR
   int i;
   uint8_t *ptr = (uint8_t*)HARDWARE_OTP_ADDR;
   for(i = 0; i < sizeof(settings_otp_t); ++i)
@@ -27,14 +28,15 @@ bool settings_is_otp_erased()
 
   // return true if otp is erased, false otherwise
   return i >= sizeof(settings_otp_t);
+#endif
+  return false;
 }
 
 void SETTINGS_Init() {
 	// variable settings
   memcpy(&settings, &_startup_settings, sizeof(settings));
-  settings_otp = &_settings_otp;	// TODO remove this line
-  return;							// TODO: implement OTP handling
-
+  settings_otp = &_settings_otp;
+#ifdef HARDWARE_OTP_ADDR
   // otp settings - from flash or otp
   if(settings_is_otp_erased())
   {
@@ -48,6 +50,7 @@ void SETTINGS_Init() {
   {
   	settings_otp = (const settings_otp_t*)HARDWARE_OTP_ADDR;
   }
+#endif
 }
 
 int SETTINGS_Save()
@@ -56,13 +59,15 @@ int SETTINGS_Save()
 	PORT_WatchdogRefresh();
 	if(!memcmp((void*)&_startup_settings, &settings, sizeof(settings)))
 		return 3;
-	ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
-	ret = ret == 0 ? 0 : 1;
-	PORT_WatchdogRefresh();
-	if(ret == 0) {
-		ret = PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
-	}
-	ret = ret == 0 ? 0 : 2;
-    PORT_WatchdogRefresh();
+    CRITICAL(
+        ret = PORT_FlashErase((void*)&_startup_settings, sizeof(settings));
+        ret = ret == 0 ? 0 : 1;
+        PORT_WatchdogRefresh();
+        if(ret == 0) {
+            ret = PORT_FlashSave((void*)&_startup_settings, &settings, sizeof(settings));
+        }
+        ret = ret == 0 ? 0 : 2;
+        PORT_WatchdogRefresh();
+    )
     return ret;
 }

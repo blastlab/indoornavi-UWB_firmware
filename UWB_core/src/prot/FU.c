@@ -20,6 +20,7 @@ typedef struct {
   uint8_t newHash;
   uint16_t blockSize;
   uint32_t fileSize;
+  uint32_t eot_time;
 } FU_instance_t;
 
 // information about new firmware from SOT frame
@@ -204,12 +205,10 @@ static void FU_SendResponse(FU_prot *fup, const prot_packet_info_t *info) {
   fup->frameLen += 2; // correct value for CRC calculation
   FU_FillCRC(fup);
   FC_CARRY_s* carry;
-  mac_buf_t *buf = CARRY_PrepareBufTo(info->direct_src, &carry);
+  mac_buf_t *buf = CARRY_PrepareBufTo(info->original_src, &carry);
   if(buf != 0) {
 	  CARRY_Write(carry, buf, fup, fup->frameLen);
 	  CARRY_Send(buf, true);
-  } else {
-	  LOG_WRN("Not enough buffers for FU");
   }
 }
 
@@ -301,13 +300,13 @@ static void FU_SOT(const FU_prot *fup_d, const prot_packet_info_t *info) {
  * @param info extra informations about message
  */
 static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
-  if (FU.fileSize == 0) {
-    FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
-    return;
-  } else if (fup->hash != (uint8_t)FU.newHash) {
+  if (fup->hash != (uint8_t)FU.newHash) {
     // sprawdz czy zgadza sie wersja z ta z ramki SOT
     FU_SendError(info, FU_ERR_BAD_FRAME_HASH);
     return;
+  } else if (FU.fileSize == 0) {
+	    FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
+	    return;
   } else if (fup->extra * FU.blockSize >= FU.fileSize) {
     FU_SendError(info, FU_ERR_BAD_OFFSET);
     return;
@@ -341,7 +340,14 @@ static void FU_Data(const FU_prot *fup, const prot_packet_info_t *info) {
  * @param info extra informations about message
  */
 static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
-  if (FU_IsFlashCRCError(fup)) {
+  if (fup->hash != (uint8_t)FU.newHash) {
+	// sprawdz czy zgadza sie wersja z ta z ramki SOT
+	FU_SendError(info, FU_ERR_BAD_FRAME_HASH);
+	return;
+  } else if (FU.fileSize == 0) {
+	    FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
+	    return;
+  } else if (FU_IsFlashCRCError(fup)) {
     FU_SendError(info, FU_ERR_BAD_FLASH_CRC);
   } else if (FU_IsNewFirmwareInBadPlace(((uint32_t *)FU_GetAddressToWrite()) +
                                         1)) {
@@ -351,10 +357,7 @@ static void FU_EOT(const FU_prot *fup, const prot_packet_info_t *info) {
     FU.fileSize = 0;
     FU.newHash = 0;
     LOG_INF("FU successfully firmware uploaded");
-    PORT_WatchdogRefresh();
-    PORT_SleepMs(5); // to send messages
-    PORT_WatchdogRefresh();
-    PORT_Reboot();
+    FU.eot_time = PORT_TickMs();
   }
 }
 
@@ -397,9 +400,16 @@ void FU_Init(bool forceNoFirmwareCheck) {
   FU_ASSERT(FU_MAX_PROGRAM_SIZE % FLASH_PAGE_SIZE == 0);
   FU_ASSERT(FU_DESTINATION_2+FU_MAX_PROGRAM_SIZE <= (void*)(FLASH_BASE + FLASH_BANK_SIZE));
   FU.newVer = FU_GetLocalHash();
+  FU.eot_time = 0;
   if(forceNoFirmwareCheck) {
   	FU_AcceptFirmware();
   }
+}
+
+void FU_Control() {
+	if(FU.eot_time != 0 && (PORT_TickMs() - FU.eot_time) > 500) {
+		PORT_Reboot();
+	}
 }
 
 // ===========

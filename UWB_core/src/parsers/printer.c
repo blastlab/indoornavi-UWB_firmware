@@ -1,4 +1,5 @@
 #include "printer.h"
+#include "mac/carry.h"
 
 void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did)
 {
@@ -28,12 +29,23 @@ void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did)
 
 void PRINT_Stat(const FC_STAT_s *data, dev_addr_t did)
 {
-    LOG_INF("stat %x mV:%d Rx:%d Tx:%d Er:%d To:%d", did, data->battery_mV, data->rx_cnt, data->tx_cnt, data->err_cnt, data->to_cnt);
+	int offset = 0;
+	int days = data->uptime_ms / (1000 * 60 * 60 * 24);
+	offset = days*24;
+	int hr = data->uptime_ms / (1000 * 60 * 60) - offset;
+	offset = (offset + hr)*60;
+	int min = data->uptime_ms / (1000 * 60) - offset;
+	offset = (offset + min)*60;
+	int sec = data->uptime_ms / (1000) - offset;
+
+	LOG_INF("stat %x mV:%d Rx:%d Tx:%d Er:%d To:%d Uptime:%dd.%dh.%dm.%ds", did,
+			data->battery_mV, data->rx_cnt, data->tx_cnt, data->err_cnt,
+			data->to_cnt, days, hr, min, sec);
 }
 
 void PRINT_TurnOn(const FC_TURN_ON_s *data, dev_addr_t did)
 {
-    LOG_INF("Device turn on %X", did);
+	LOG_INF("Device turn on %X v%d", did, data->fMinor);
 }
 
 void PRINT_TurnOff(const FC_TURN_OFF_s *data, dev_addr_t did)
@@ -48,7 +60,7 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did)
 
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did)
 {
-    LOG_INF("Device accepted from %X", did);
+	LOG_INF("Device accepted, sink:%X parent:%X", did, CARRY_ParentAddres());
 }
 
 void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t did)
@@ -125,6 +137,20 @@ void PRINT_Measure(const measure_t *data)
 {
   LOG_INF("a %X>%X %d %d %d %d", data->did1, data->did2, data->dist_cm,
           data->rssi_cdbm, data->fpp_cdbm, data->snr_cdbm);
+}
+
+void PRINT_MeasureInitInfo(const measure_init_info_t *data) {
+	char buf[(1 + sizeof(dev_addr_t)) * TOA_MAX_DEV_IN_POLL + 1];
+	buf[0] = 0;
+	for (int i = 0; i < data->numberOfAnchors; ++i) {
+		int len = strlen(buf);
+		snprintf(buf + len, sizeof(buf) - len, "%X,", data->ancDid[i]);
+	}
+	// delete last ','
+	if (buf[0] != 0) {
+		buf[strlen(buf) - 1] = 0;
+	}
+	LOG_INF("measure %X with [%s]", data->tagDid, buf);
 }
 
 void PRINT_RangingTime()

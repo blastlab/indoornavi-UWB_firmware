@@ -22,6 +22,8 @@
  */
 typedef struct __packed {
   uint8_t FC, len;
+  uint16_t fMinor;  ///< firmware minor version
+  dev_addr_t src_did; ///< device id of turn on sender
 } FC_TURN_ON_s;
 
 /**
@@ -39,8 +41,10 @@ typedef struct __packed {
  */
 typedef struct __packed {
   uint8_t FC, len;
-  uint64_t serial;  ///< device serial number from settings.version.serial
   uint8_t hop_cnt;
+  uint8_t padding;
+  uint64_t serial;  ///< device serial number from settings.version.serial
+  dev_addr_t src_did; ///< device id of beacon sender
   dev_addr_t hops[0];
 } FC_BEACON_s;
 
@@ -54,7 +58,8 @@ typedef struct __packed {
   uint16_t err_cnt;  ///< radio transmission and reception error counter
   uint16_t to_cnt;  ///< radio transmission timeout counter
   uint16_t rx_cnt;  ///< radio reception counter
-  uint16_t tx_cnt;  ///< radio successful transmission counter 
+  uint16_t tx_cnt;  ///< radio successful transmission counter
+  uint32_t uptime_ms; /// device working time in ms
 } FC_STAT_s;
 
 /**

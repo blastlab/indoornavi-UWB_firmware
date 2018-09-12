@@ -164,7 +164,6 @@ void SWI1_IRQHandler(void)						// radio notifications
 static void ble_stack_init(void) {
 	uint32_t ram_start = 0;
 	m_ble_radio_active = false;
-	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	APP_ERROR_CHECK(nrf_sdh_enable_request());
     APP_ERROR_CHECK(nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start));
     APP_ERROR_CHECK(nrf_sdh_ble_enable(&ram_start));
@@ -177,6 +176,7 @@ static void ble_stack_init(void) {
 }
 
 void PORT_BleBeaconInit(void) {
+	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	IASSERT(TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == GPIOTE_CONFIG_IRQ_PRIORITY);
 	if(settings.mac.role != RTLS_SINK && settings.mac.role != RTLS_ANCHOR) {
 		settings.ble.is_enabled = 0;
