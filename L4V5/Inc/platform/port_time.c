@@ -33,13 +33,13 @@ void PORT_TimeInit() {
   // enable Debug Timer for rtls processing time measurement
 #if defined(__CORTEX_M) && DBG
   // Disable TRC
-  CoreDebug->DEMCR &= ~CoreDebug_DEMCR_TRCENA_Msk; // ~0x01000000;
+  CoreDebug->DEMCR &= ~CoreDebug_DEMCR_TRCENA_Msk;  // ~0x01000000;
   // Enable TRC */
-  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // 0x01000000;
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;  // 0x01000000;
   // Disable clock cycle counter
-  DWT->CTRL &= ~DWT_CTRL_CYCCNTENA_Msk; //~0x00000001;
+  DWT->CTRL &= ~DWT_CTRL_CYCCNTENA_Msk;  //~0x00000001;
   // Enable  clock cycle counter
-  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk; // 0x00000001;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;  // 0x00000001;
   // Reset the clock cycle counter value */
   DWT->CYCCNT = 0;
   // 3 NO OPERATION instructions
@@ -61,30 +61,34 @@ void PORT_SleepMs(unsigned int time_ms) {
   }
 }
 
-unsigned int PORT_TickMs() { return HAL_GetTick(); }
+unsigned int PORT_TickMs() {
+  return HAL_GetTick();
+}
 
 // get high resosolution clock tick
-unsigned int PORT_TickHr() { return DWT->CYCCNT; }
+unsigned int PORT_TickHr() {
+  return DWT->CYCCNT;
+}
 
 unsigned int PORT_TickHrToUs(unsigned int delta) {
-	return (uint64_t)(delta) * 1e6 / HAL_RCC_GetSysClockFreq();
- }
+  return (uint64_t)(delta)*1e6 / HAL_RCC_GetSysClockFreq();
+}
 
 // return current slot timer tick counter
 uint32_t PORT_SlotTimerTickUs() {
-	return LL_TIM_GetAutoReload(PTIM_SLOT) - LL_TIM_GetCounter(PTIM_SLOT);
+  return LL_TIM_GetAutoReload(PTIM_SLOT) - LL_TIM_GetCounter(PTIM_SLOT);
 }
 
 // extend slot timer period for one iteration by delta_us
 void PORT_SlotTimerSetUsOffset(int32 delta_us) {
   // change value only if you have enough time to do that
   if (LL_TIM_GetCounter(PTIM_SLOT) > 50 - delta_us) {
-	  uint32_t tim_cnt = LL_TIM_GetCounter(PTIM_SLOT);
-	  LL_TIM_SetCounter(PTIM_SLOT, tim_cnt + delta_us);
-	  if(LL_TIM_GetCounter(PTIM_SLOT) > LL_TIM_GetAutoReload(PTIM_SLOT)) {
-		  LL_TIM_SetCounter(PTIM_SLOT, 0);
-		  LL_TIM_GenerateEvent_UPDATE(PTIM_SLOT);
-	  }
+    uint32_t tim_cnt = LL_TIM_GetCounter(PTIM_SLOT);
+    LL_TIM_SetCounter(PTIM_SLOT, tim_cnt + delta_us);
+    if (LL_TIM_GetCounter(PTIM_SLOT) > LL_TIM_GetAutoReload(PTIM_SLOT)) {
+      LL_TIM_SetCounter(PTIM_SLOT, 0);
+      LL_TIM_GenerateEvent_UPDATE(PTIM_SLOT);
+    }
   }
 }
 

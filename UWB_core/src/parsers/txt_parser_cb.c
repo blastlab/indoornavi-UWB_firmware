@@ -3,31 +3,25 @@
 /**
  * @brief handle message locally or send it to other device
  * depending on info->direct_src address.
- * 
+ *
  * @param buf buffer to handle, point at FC field
  * @param info packet extra informations
  */
-static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
-{
+static void _TXT_Finalize(const void* buf, const prot_packet_info_t* info) {
   prot_packet_info_t new_info;
-  if (info->original_src == ADDR_BROADCAST)
-  {
+  if (info->original_src == ADDR_BROADCAST) {
     memset(&new_info, 0, sizeof(new_info));
     new_info.original_src = settings.mac.addr;
     BIN_ParseSingle(buf, info);
-  }
-  else
-  {
+  } else {
     FC_CARRY_s* carry;
-    mac_buf_t *mbuf = CARRY_PrepareBufTo(info->original_src, &carry);
-    if(mbuf != 0) {
-      uint8_t *ibuf = (uint8_t*)buf;
+    mac_buf_t* mbuf = CARRY_PrepareBufTo(info->original_src, &carry);
+    if (mbuf != 0) {
+      uint8_t* ibuf = (uint8_t*)buf;
       // length is always second byte of frame
       CARRY_Write(carry, mbuf, buf, ibuf[1]);
       CARRY_Send(mbuf, true);
-    }
-    else
-    {
+    } else {
       LOG_WRN("Not enough buffers to send frame, FC:%X", *(uint8_t*)buf);
     }
   }
@@ -35,99 +29,87 @@ static void _TXT_Finalize(const void *buf, const prot_packet_info_t *info)
 
 /**
  * @brief fully handle ASK type messages without extra parameters
- * 
+ *
  * @param info extra packet informations
  * @param FC detailed ask function code descriptor
  */
-static void _TXT_Ask(const prot_packet_info_t *info, FC_t FC)
-{
+static void _TXT_Ask(const prot_packet_info_t* info, FC_t FC) {
   uint8_t buf[2] = {FC, 2};
   _TXT_Finalize(buf, info);
 }
 
 // === callbacks ===
 
-static void TXT_StatCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_StatCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   _TXT_Ask(info, FC_STAT_ASK);
 }
 
-static void TXT_VersionCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_VersionCb(const txt_buf_t* buf,
+                          const prot_packet_info_t* info) {
   _TXT_Ask(info, FC_VERSION_ASK);
 }
 
-static void TXT_HangCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_HangCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   LOG_DBG("HANG");
-  while (1)
-  {
+  while (1) {
   }
 }
 
-static bool _RFSet_ValidateAndTranslateA(int *ch, int *br, int *plen, int *prf)
-{
+static bool _RFSet_ValidateAndTranslateA(int* ch,
+                                         int* br,
+                                         int* plen,
+                                         int* prf) {
   bool some_change = false;
 
-  if(*ch >= 0)
-  {
-    if(!(0 < *ch && *ch < 8 && *ch != 6))
-    {
+  if (*ch >= 0) {
+    if (!(0 < *ch && *ch < 8 && *ch != 6)) {
       LOG_ERR("rfset ch 1..7 (without 6)");
       *ch = -1;
     }
     some_change = true;
   }
-  if(*br >= 0)
-  {
-    if(*br == 110)
-    {
+  if (*br >= 0) {
+    if (*br == 110) {
       *br = DWT_BR_110K;
-    } else if(*br == 850)
-    {
+    } else if (*br == 850) {
       *br = DWT_BR_850K;
-    } else if(*br == 6800)
-    {
+    } else if (*br == 6800) {
       *br = DWT_BR_6M8;
-    } else
-    {
+    } else {
       LOG_ERR("rfset br 110/850/6800");
       *br = -1;
     }
     some_change = true;
   }
-  if(*plen >= 0)
-  {
-      if (*plen == 64)
-        *plen = DWT_PLEN_64; // standard
-      else if (*plen == 128)
-        *plen = DWT_PLEN_128;
-      else if (*plen == 256)
-        *plen = DWT_PLEN_256;
-      else if (*plen == 512)
-        *plen = DWT_PLEN_512;
-      else if (*plen == 1024)
-        *plen = DWT_PLEN_1024; // standard
-      else if (*plen == 1536)
-        *plen = DWT_PLEN_1536;
-      else if (*plen == 2048)
-        *plen = DWT_PLEN_2048;
-      else if (*plen == 4096)
-        *plen = DWT_PLEN_4096; // standard
-      else {
-        LOG_ERR("rfset plen 64/128/256/512/1024/1536/2048/4096");
-        *plen = -1;
-      }
+  if (*plen >= 0) {
+    if (*plen == 64)
+      *plen = DWT_PLEN_64;  // standard
+    else if (*plen == 128)
+      *plen = DWT_PLEN_128;
+    else if (*plen == 256)
+      *plen = DWT_PLEN_256;
+    else if (*plen == 512)
+      *plen = DWT_PLEN_512;
+    else if (*plen == 1024)
+      *plen = DWT_PLEN_1024;  // standard
+    else if (*plen == 1536)
+      *plen = DWT_PLEN_1536;
+    else if (*plen == 2048)
+      *plen = DWT_PLEN_2048;
+    else if (*plen == 4096)
+      *plen = DWT_PLEN_4096;  // standard
+    else {
+      LOG_ERR("rfset plen 64/128/256/512/1024/1536/2048/4096");
+      *plen = -1;
+    }
     some_change = true;
   }
-  if(*prf >= 0)
-  {
-    if(*prf == 64)
+  if (*prf >= 0) {
+    if (*prf == 64)
       *prf = DWT_PRF_64M;
-    else if(*prf == 16)
+    else if (*prf == 16)
       *prf = DWT_PRF_16M;
-    else
-    {
+    else {
       LOG_ERR("rfset prf 16/64");
       *prf = -1;
     }
@@ -136,47 +118,43 @@ static bool _RFSet_ValidateAndTranslateA(int *ch, int *br, int *plen, int *prf)
   return some_change;
 }
 
-static bool _RFSet_ValidateAndTranslateB(int *pac, int *code, int *nssfd, int *power)
-{
+static bool _RFSet_ValidateAndTranslateB(int* pac,
+                                         int* code,
+                                         int* nssfd,
+                                         int* power) {
   bool some_change = false;
-  if(*pac >= 0)
-  {
-    if(*pac == 8)
+  if (*pac >= 0) {
+    if (*pac == 8)
       *pac = DWT_PAC8;
-    else if(*pac == 16)
+    else if (*pac == 16)
       *pac = DWT_PAC16;
-    else if(*pac == 32)
+    else if (*pac == 32)
       *pac = DWT_PAC32;
-    else if(*pac == 64)
+    else if (*pac == 64)
       *pac = DWT_PAC64;
-    else
-    {
+    else {
       LOG_ERR("rfset pac 8/16/32/64");
       *pac = -1;
     }
     some_change = true;
   }
-  if(*code >= 0 && !(0 < *code && *code < 25))
-  {
+  if (*code >= 0 && !(0 < *code && *code < 25)) {
     LOG_ERR("rfset code 1..24");
     *code = -1;
     some_change = true;
   }
-  if(*nssfd >= 0 && !(*nssfd == 0 || *nssfd == 1))
-  {
+  if (*nssfd >= 0 && !(*nssfd == 0 || *nssfd == 1)) {
     LOG_ERR("rfset nssfd 0/1");
     some_change = true;
   }
-  if(*power != -1)
-  {
+  if (*power != -1) {
     some_change = true;
   }
   return some_change;
 }
 
 // todo: przeniesc obsluge zadania do parse bin poprzez _TXT_ASK
-static void TXT_RFSetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_RFSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   // read data
   int ch = TXT_GetParam(buf, "ch:", 10);
   int br = TXT_GetParam(buf, "br:", 10);
@@ -212,51 +190,46 @@ static void TXT_RFSetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
   _TXT_Finalize(&packet, info);
 }
 
-static void TXT_TestCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_TestCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   LOG_TEST("PASS");
 }
 
-static void TXT_SaveCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_SaveCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   _TXT_Ask(info, FC_SETTINGS_SAVE);
 }
 
-static void TXT_ClearCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
-	RANGING_MeasureDeleteAll();
-	CARRY_ParentDeleteAll();
-	LOG_INF("cleared");
+static void TXT_ClearCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+  RANGING_MeasureDeleteAll();
+  CARRY_ParentDeleteAll();
+  LOG_INF("cleared");
 }
 
-static void TXT_ResetCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_ResetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   _TXT_Ask(info, FC_RESET);
 }
 
-static void TXT_BinCb(const txt_buf_t *buf, const prot_packet_info_t *info)
-{
+static void TXT_BinCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   mac_buf_t* data = MAC_Buffer();
-  if(data != 0) {
-	  data->isServerFrame = true;
-	  // copy base64 string to continuum memory space
-	  data->dPtr = data->buf;
-	  const char* cmd = TXT_PointParamNumber(buf, buf->cmd, 1);
-	  while(cmd[0] != 0) {
-		  if(data->dPtr > data->buf + MAC_BUF_LEN) {
-			  LOG_ERR("TXT_Bin too long base64 message");
-			  return;
-		  }
-		  data->dPtr[0] = cmd[0];
-		  ++data->dPtr;
-		  INCREMENT_CYCLE(cmd, buf->start, buf->end);
-	  }
-	  data->dPtr = data->buf;
-	  // decode oryginal content and parse
-	  int size = BASE64_Decode(data->buf, data->buf, MAC_BUF_LEN);
-	  BIN_Parse(data->dPtr, info, size);
-		data->isServerFrame = false;
-		MAC_Free(data);
+  if (data != 0) {
+    data->isServerFrame = true;
+    // copy base64 string to continuum memory space
+    data->dPtr = data->buf;
+    const char* cmd = TXT_PointParamNumber(buf, buf->cmd, 1);
+    while (cmd[0] != 0) {
+      if (data->dPtr > data->buf + MAC_BUF_LEN) {
+        LOG_ERR("TXT_Bin too long base64 message");
+        return;
+      }
+      data->dPtr[0] = cmd[0];
+      ++data->dPtr;
+      INCREMENT_CYCLE(cmd, buf->start, buf->end);
+    }
+    data->dPtr = data->buf;
+    // decode oryginal content and parse
+    int size = BASE64_Decode(data->buf, data->buf, MAC_BUF_LEN);
+    BIN_Parse(data->dPtr, info, size);
+    data->isServerFrame = false;
+    MAC_Free(data);
   }
 }
 
@@ -304,14 +277,14 @@ static void TXT_MeasureCb(const txt_buf_t* buf,
   int tagDid = TXT_GetParamNum(buf, 1, 16);
   int ancDid = TXT_GetParamNum(buf, i, 16);
 
-	if (tagDid < 0 || tagDid > ADDR_BROADCAST) { // no parameters
+  if (tagDid < 0 || tagDid > ADDR_BROADCAST) {  // no parameters
     LOG_INF("measure cnt:%d", RANGING_MeasureCounter());
     return;
-  } else if(tagDid == ADDR_BROADCAST) { // one parameter - ADDR_BROADCAST
-	  readIt = readIt >= settings.ranging.measureCnt ? 0 : readIt;
-		PRINT_MeasureInitInfo(&settings.ranging.measure[readIt]);
-	  INCREMENT_MOD(readIt, settings.ranging.measureCnt);
-		return;
+  } else if (tagDid == ADDR_BROADCAST) {  // one parameter - ADDR_BROADCAST
+    readIt = readIt >= settings.ranging.measureCnt ? 0 : readIt;
+    PRINT_MeasureInitInfo(&settings.ranging.measure[readIt]);
+    INCREMENT_MOD(readIt, settings.ranging.measureCnt);
+    return;
   }
   RANGING_TempAnchorsReset();
   while (ancDid > 0) {
@@ -362,12 +335,12 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf,
   delay = delay > 0 ? delay : settings.ranging.rangingDelayMs;
   period = cnt > 0 ? cnt * delay : period;
   period = period > 0 ? period : settings.ranging.rangingPeriodMs;
-  cnt = cnt > 0 ? cnt : period/delay;
+  cnt = cnt > 0 ? cnt : period / delay;
 
-  if(meas_count > cnt) {
-	  LOG_ERR("Too small period! Setting correct value..");
-	  cnt = meas_count;
-	  period = cnt*delay;
+  if (meas_count > cnt) {
+    LOG_ERR("Too small period! Setting correct value..");
+    cnt = meas_count;
+    period = cnt * delay;
   }
 
   settings.ranging.rangingDelayMs = delay;
@@ -433,7 +406,7 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   } else if (child <= 0) {  // one parametr
     child = parent;
     if (child == ADDR_BROADCAST) {
-    	readIt = readIt >= settings.carry.targetCounter ? 0 : readIt;
+      readIt = readIt >= settings.carry.targetCounter ? 0 : readIt;
       child = settings.carry.target[readIt].addr;
       INCREMENT_MOD(readIt, settings.carry.targetCounter);
     }
@@ -464,79 +437,70 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   }
 }
 
-static void TXT_BleCb(const txt_buf_t *buf, const prot_packet_info_t *info) {
-BLE_CODE(
-	int power = TXT_GetParam(buf, "txpower:", 10);
-	int enable = TXT_GetParam(buf, "enable:", 10);
+static void TXT_BleCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+  BLE_CODE(int power = TXT_GetParam(buf, "txpower:", 10);
+           int enable = TXT_GetParam(buf, "enable:", 10);
 
-	FC_BLE_SET_s packet;
-	uint8_t changes = 0;
-	switch(power)
-	{
-		case -40:
-		case -20:
-		case -16:
-		case -12:
-		case -8:
-		case -4:
-		case 0:
-		case 3:
-		case 4:
-			packet.tx_power = power;
-			changes++;
-			break;
-		default:
-			packet.tx_power = -1;
-	}
-	switch(enable)
-	{
-		case 0:
-		case 1:
-			packet.is_enabled = enable;
-			changes++;
-			break;
-		default:
-			packet.is_enabled = -1;
-	}
-	packet.FC = changes ? FC_BLE_SET : FC_BLE_ASK;
-	packet.len = changes ? sizeof(packet) : 2;
+           FC_BLE_SET_s packet; uint8_t changes = 0; switch (power) {
+             case -40:
+             case -20:
+             case -16:
+             case -12:
+             case -8:
+             case -4:
+             case 0:
+             case 3:
+             case 4:
+               packet.tx_power = power;
+               changes++;
+               break;
+             default:
+               packet.tx_power = -1;
+           } switch (enable) {
+             case 0:
+             case 1:
+               packet.is_enabled = enable;
+               changes++;
+               break;
+             default:
+               packet.is_enabled = -1;
+           } packet.FC = changes ? FC_BLE_SET : FC_BLE_ASK;
+           packet.len = changes ? sizeof(packet) : 2;
 
-	_TXT_Finalize(&packet, info);
-	return;
-)
-	LOG_ERR("BLE is disabled");
+           _TXT_Finalize(&packet, info); return;)
+  LOG_ERR("BLE is disabled");
 }
 
-static void TXT_Role(const txt_buf_t *buf, const prot_packet_info_t *info) {
-	const char * role = TXT_PointParamNumber(buf, buf->cmd, 1);
-	switch (tolower(role[0])) {
-		case 's':
-			settings.mac.role = RTLS_SINK;
-			break;
-		case 'a':
-			settings.mac.role = RTLS_ANCHOR;
-			break;
-		case 't':
-			settings.mac.role = RTLS_TAG;
-			break;
-		case 'l':
-			settings.mac.role = RTLS_LISTENER;
-			break;
-		default:
-			break;
-	}
-	// print version
-	_TXT_Ask(info, FC_VERSION_ASK);
+static void TXT_Role(const txt_buf_t* buf, const prot_packet_info_t* info) {
+  const char* role = TXT_PointParamNumber(buf, buf->cmd, 1);
+  switch (tolower(role[0])) {
+    case 's':
+      settings.mac.role = RTLS_SINK;
+      break;
+    case 'a':
+      settings.mac.role = RTLS_ANCHOR;
+      break;
+    case 't':
+      settings.mac.role = RTLS_TAG;
+      break;
+    case 'l':
+      settings.mac.role = RTLS_LISTENER;
+      break;
+    default:
+      break;
+  }
+  // print version
+  _TXT_Ask(info, FC_VERSION_ASK);
 }
 
-static void TXT_Route(const txt_buf_t *buf, const prot_packet_info_t *info) {
-	int en = TXT_GetParam(buf, "auto:", 10);
+static void TXT_Route(const txt_buf_t* buf, const prot_packet_info_t* info) {
+  int en = TXT_GetParam(buf, "auto:", 10);
 
-	if (0 <= en && en <= 1) {
-		settings.carry.autoRoute = en;
-	}
+  if (0 <= en && en <= 1) {
+    settings.carry.autoRoute = en;
+  }
 
-	LOG_INF("route auto:%d", settings.carry.autoRoute);
+  LOG_INF("route auto:%d", settings.carry.autoRoute);
 }
 
 const txt_cb_t txt_cb_tab[] = {
@@ -558,8 +522,8 @@ const txt_cb_t txt_cb_tab[] = {
     {"_autosetup", TXT_AutoSetupCb},
     {"parent", TXT_ParentCb},
     {"ble", TXT_BleCb},
-    { "_role", TXT_Role },
-		{ "route", TXT_Route },
+    {"_role", TXT_Role},
+    {"route", TXT_Route},
 };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);

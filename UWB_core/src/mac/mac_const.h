@@ -20,26 +20,25 @@
 #define FR_CRH_SA_LONG 0xC0
 
 typedef enum {
-  FREE,  ///< packet is fre
-  BUSY,  ///< packet under edition
-  WAIT_FOR_TX,  ///< when packet wait on tx queue
+  FREE,             ///< packet is fre
+  BUSY,             ///< packet under edition
+  WAIT_FOR_TX,      ///< when packet wait on tx queue
   WAIT_FOR_TX_ACK,  ///< when packet wait on tx queue and need ack
-  WAIT_FOR_ACK,  ///< wait for receive ack after transmission
+  WAIT_FOR_ACK,     ///< wait for receive ack after transmission
 } mac_buf_state;
 
 typedef enum {
-	RTLS_TAG = 'T',
-	RTLS_ANCHOR = 'A',
-	RTLS_SINK = 'S',
-	RTLS_LISTENER = 'L',
-	RTLS_DEFAULT = 'D'
+  RTLS_TAG = 'T',
+  RTLS_ANCHOR = 'A',
+  RTLS_SINK = 'S',
+  RTLS_LISTENER = 'L',
+  RTLS_DEFAULT = 'D'
 } rtls_role;
-
 
 typedef unsigned short dev_addr_t;
 typedef unsigned short pan_dev_addr_t;
 #define ADDR_BROADCAST 0xffff
-#define ADDR_ANCHOR_FLAG	0x8000
+#define ADDR_ANCHOR_FLAG 0x8000
 
 #ifndef CORTEX_M
 #ifndef __packed
@@ -51,11 +50,11 @@ struct FC_CARRY_s;
 
 /**
  * @brief packet extra information struct
- * 
+ *
  */
 typedef struct {
   dev_addr_t original_src, last_src;
-  struct FC_CARRY_s *carry;
+  struct FC_CARRY_s* carry;
 } prot_packet_info_t;
 
 #endif

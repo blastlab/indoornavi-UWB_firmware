@@ -13,16 +13,14 @@
  *
  */
 
-
 #ifndef _PORT_H
 #define _PORT_H
 
+#include "mac/mac_const.h"  // rtls_role
 #include "platform/port_config.h"
-#include "mac/mac_const.h" // rtls_role
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
-
 
 /**
  * \brief This is used to set or reset debug mode
@@ -30,8 +28,8 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 			0
-#define USE_SLOT_TIMER 	0
+#define DBG 0
+#define USE_SLOT_TIMER 0
 
 /**
  * \brief Initialization for port modules
@@ -43,9 +41,10 @@
  */
 void PORT_Init();
 
-// BLE beacon - this method must be called before LFCLK initialization due to softdevice's init method
+// BLE beacon - this method must be called before LFCLK initialization due to
+// softdevice's init method
 void PORT_BleBeaconInit(void);
-void PORT_SetUwbMeasuresAdv(uint8_t *meas_addr);
+void PORT_SetUwbMeasuresAdv(uint8_t* meas_addr);
 void PORT_BleSetAdvData(uint16_t maj_val, uint16_t min_val, int8_t rssi_at_m);
 void PORT_BleAdvStart(void);
 void PORT_BleAdvStop(void);
@@ -66,8 +65,7 @@ void PORT_BleSetPower(int8_t power);
  * \param[in] line of assert in code
  * \return void
  */
-void PORT_Iassert_fun(const char *msg, int line);
-
+void PORT_Iassert_fun(const char* msg, int line);
 
 /**
  * \brief Turn led on.
@@ -81,7 +79,6 @@ void PORT_Iassert_fun(const char *msg, int line);
  */
 void PORT_LedOn(int LED_x);
 
-
 /**
  * \brief Turn led off.
  *
@@ -94,7 +91,6 @@ void PORT_LedOn(int LED_x);
  */
 void PORT_LedOff(int LED_x);
 
-
 /**
  * \brief Hard reset DW1000 device by RST pin.
  *
@@ -103,7 +99,6 @@ void PORT_LedOff(int LED_x);
  * \return void
  */
 void PORT_ResetTransceiver();
-
 
 /**
  * \brief Wake up DW1000 device.
@@ -115,7 +110,6 @@ void PORT_ResetTransceiver();
  */
 void PORT_WakeupTransceiver(void);
 
-
 /**
  * \brief Reset host microcontroler.
  *
@@ -126,7 +120,6 @@ void PORT_WakeupTransceiver(void);
  */
 void PORT_Reboot();
 
-
 /**
  * \brief turn on low power or stop mode.
  *
@@ -136,7 +129,6 @@ void PORT_Reboot();
  * \return void
  */
 void PORT_EnterStopMode();
-
 
 /**
  * \brief Start watchdog work
@@ -149,7 +141,6 @@ void PORT_EnterStopMode();
  */
 void PORT_WatchdogInit();
 
-
 /**
  * \brief Refresh watchdog timer
  *
@@ -161,14 +152,12 @@ void PORT_WatchdogInit();
  */
 void PORT_WatchdogRefresh();
 
-
 /**
  * \brief Start battery measurement process
  *
  * \return void
  */
 void PORT_BatteryMeasure();
-
 
 /**
  * \brief Return last battery voltage in [mV]
@@ -184,9 +173,7 @@ int PORT_BatteryVoltage();
  */
 rtls_role PORT_GetHwRole();
 
-
 // ========  TIME  ==========
-
 
 /**
  * \brief run timers when device is fully initialized.
@@ -197,7 +184,6 @@ rtls_role PORT_GetHwRole();
  */
 void PORT_TimeStartTimers();
 
-
 /**
  * \brief Sleep and refresh watchdog.
  *
@@ -207,14 +193,12 @@ void PORT_TimeStartTimers();
  */
 void PORT_SleepMs(unsigned int time_ms);
 
-
 /**
  * \brief Get current milliseconds timer counter value.
  *
  * \return current time in milliseconds
  */
 unsigned int PORT_TickMs();
-
 
 /**
  * \brief Get high resolution clock counter value.
@@ -226,54 +210,51 @@ unsigned int PORT_TickMs();
  */
 unsigned int PORT_TickHr();
 
-
 /**
-* \brief convert high resolution clock time units to us
-*
-* \param[in] delta time difference in high resolution clock units
-*
-* \return time difference in microseconds
-*/
+ * \brief convert high resolution clock time units to us
+ *
+ * \param[in] delta time difference in high resolution clock units
+ *
+ * \return time difference in microseconds
+ */
 unsigned int PORT_TickHrToUs(unsigned int delta);
 
-
 /**
-* \brief return current slot timer tick counter in milliseconds
-*
-* It is used during slot timer calibration to save timestamp.
-* In systems when it is impossible to read slot timer counter value
-* it is possible to return always zero and in function
-* #PORT_SlotTimerSetUsOffset treat input parameters as an absolute value,
-* but in this form there will be degradation of precision especially
-* during heavy load.
-*
-* \return current slot timer tick counter in milliseconds
-*/
+ * \brief return current slot timer tick counter in milliseconds
+ *
+ * It is used during slot timer calibration to save timestamp.
+ * In systems when it is impossible to read slot timer counter value
+ * it is possible to return always zero and in function
+ * #PORT_SlotTimerSetUsOffset treat input parameters as an absolute value,
+ * but in this form there will be degradation of precision especially
+ * during heavy load.
+ *
+ * \return current slot timer tick counter in milliseconds
+ */
 uint32_t PORT_SlotTimerTickUs();
 
-
 /**
-* \brief return current slot timer tick counter in milliseconds
-*
-* It is used during slot timer calibration.
-* In systems when it is impossible to read slot timer counter value
-* it is possible to return always zero in function #PORT_SlotTimerTickUs
-* and in function and treat input parameters as an absolute value,
-* but in this form there will be degradation of precision especially
-* during heavy load.
-*
-* local slot timer value counter should be updated in form:
-* 	local_cnt += delta_us
-* In this function it should be checked if this offset is possible to realize
-* and if it doesn't impact on system reliability. Watch out about timer overflow
-* and underflow.
-*
-* \param[in] delta_us time difference between global and local slot timer value in microseconds
-*
-* \return void
-*/
+ * \brief return current slot timer tick counter in milliseconds
+ *
+ * It is used during slot timer calibration.
+ * In systems when it is impossible to read slot timer counter value
+ * it is possible to return always zero in function #PORT_SlotTimerTickUs
+ * and in function and treat input parameters as an absolute value,
+ * but in this form there will be degradation of precision especially
+ * during heavy load.
+ *
+ * local slot timer value counter should be updated in form:
+ * 	local_cnt += delta_us
+ * In this function it should be checked if this offset is possible to realize
+ * and if it doesn't impact on system reliability. Watch out about timer
+ * overflow and underflow.
+ *
+ * \param[in] delta_us time difference between global and local slot timer value
+ * in microseconds
+ *
+ * \return void
+ */
 void PORT_SlotTimerSetUsOffset(int32 delta_us);
-
 
 /**
  * \brief set new slot timer period time
@@ -284,9 +265,7 @@ void PORT_SlotTimerSetUsOffset(int32 delta_us);
  */
 void PORT_SetSlotTimerPeriodUs(uint32 us);
 
-
 // ========  CRC  ==========
-
 
 /**
  * \brief set inital value to the crc calculator
@@ -297,18 +276,15 @@ void PORT_SetSlotTimerPeriodUs(uint32 us);
  */
 void PORT_CrcReset();
 
-
 /**
  * \brief feed crc calculator with new data and return result
  *
  * \note return value should be automatically set as initial
  *    value during next iteration.
  */
-uint16_t PORT_CrcFeed(const void *data, int size);
-
+uint16_t PORT_CrcFeed(const void* data, int size);
 
 // ========  MUTEX  ==========
-
 
 /**
  * \brief enable deca mutex
@@ -318,7 +294,6 @@ uint16_t PORT_CrcFeed(const void *data, int size);
  * \return 0 if previous status of dwt_isr was disabled, 1 otherwise
  */
 decaIrqStatus_t decamutexon(void);
-
 
 /**
  * \brief disable deca mutex
@@ -331,32 +306,28 @@ decaIrqStatus_t decamutexon(void);
  */
 void decamutexoff(decaIrqStatus_t s);
 
-
 /**
  * \brief disable all maskable interrupts
- * 
+ *
  * \return decaIrqStatus_t previous state of interrupt mask
  */
 decaIrqStatus_t PORT_EnterCritical();
 
-
 /**
  * @brief enable maskbale interrupts according to previous state
- * 
+ *
  * @param s previous state of interrupt mask
  */
 void PORT_ExitCritical(decaIrqStatus_t s);
 
-
-#define CRITICAL(_CODE_) \
-    { \
-        decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
-        _CODE_ \
-        PORT_ExitCritical(_irq_primask); \
-    }
+#define CRITICAL(_CODE_)                                 \
+  {                                                      \
+    decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
+    _CODE_                                               \
+    PORT_ExitCritical(_irq_primask);                     \
+  }
 
 // ========  SPI  ==========
-
 
 /**
  * \brief change decawave SPI master clock speed
@@ -368,12 +339,12 @@ void PORT_ExitCritical(decaIrqStatus_t s);
  */
 void PORT_SpiSpeedSlow(bool slow);
 
-
 /**
  * \brief send header and read response from DW1000 device
  *
  * \note this function is used very frequently and should be optimized for time
- * \note SPI should work in half-duplex mode, so receiving is realized after transmiting header
+ * \note SPI should work in half-duplex mode, so receiving is realized after
+ * transmiting header
  *
  * \param[in] headerLength to transmit in bytes
  * \param[in] headerBuffer pointer to header data
@@ -382,9 +353,10 @@ void PORT_SpiSpeedSlow(bool slow);
  *
  * \return 0 if success error code otherwise
  */
-int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
-                uint32_t readlength, uint8_t *readBuffer);
-
+int readfromspi(uint16_t headerLength,
+                const uint8_t* headerBuffer,
+                uint32_t readlength,
+                uint8_t* readBuffer);
 
 /**
  * \brief send header and write data to DW1000 device
@@ -398,17 +370,16 @@ int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
  *
  * \return 0 if success error code otherwise
  */
-int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
-               uint32_t bodylength, const uint8_t *bodyBuffer);
+int writetospi(uint16_t headerLength,
+               const uint8_t* headerBuffer,
+               uint32_t bodylength,
+               const uint8_t* bodyBuffer);
 
+void PORT_SpiTx(uint32_t length, const uint8_t* buf);
 
-void PORT_SpiTx(uint32_t length, const uint8_t *buf);
-
-void PORT_SpiRx(uint32_t length, uint8_t *buf);
-
+void PORT_SpiRx(uint32_t length, uint8_t* buf);
 
 // ========  FLASH  ==========
-
 
 /**
  * \brief Save value in reset-safe backup register
@@ -420,8 +391,7 @@ void PORT_SpiRx(uint32_t length, uint8_t *buf);
  *
  * \return void
  */
-void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value);
-
+void PORT_BkpRegisterWrite(uint32_t* reg, uint32_t value);
 
 /**
  * \brief Read value in reset-safe backup register
@@ -432,8 +402,7 @@ void PORT_BkpRegisterWrite(uint32_t *reg, uint32_t value);
  *
  * \return current value
  */
-uint32_t PORT_BkpRegisterRead(uint32_t *reg);
-
+uint32_t PORT_BkpRegisterRead(uint32_t* reg);
 
 /**
  * \brief Erase memory in flash
@@ -447,8 +416,7 @@ uint32_t PORT_BkpRegisterRead(uint32_t *reg);
  *
  * \return 0 if success, error code otherwise
  */
-int PORT_FlashErase(void *flash_addr, uint32_t length);
-
+int PORT_FlashErase(void* flash_addr, uint32_t length);
 
 /**
  * \brief Save data in flash
@@ -463,11 +431,9 @@ int PORT_FlashErase(void *flash_addr, uint32_t length);
  *
  * \return 0 if success, error code otherwise
  */
-int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
-
+int PORT_FlashSave(void* destination, const void* p_source, uint32_t length);
 
 // ========  IMU  ==========
-
 
 /**
  * \brief Configure Wake-on-Motion feature
@@ -479,7 +445,6 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
  *
  */
 void PORT_ImuInit();
-
 
 /**
  * \brief Check if the device should go to sleep

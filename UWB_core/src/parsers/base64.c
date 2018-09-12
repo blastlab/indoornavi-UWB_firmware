@@ -60,12 +60,13 @@ int BASE64_TextSize(unsigned int binSize) {
 // from bin to base64
 // return dst buffer size
 // function add terminating 0 at the end of dst
-int BASE64_Encode(unsigned char *dst, const unsigned char *src,
+int BASE64_Encode(unsigned char* dst,
+                  const unsigned char* src,
                   unsigned short srcSize) {
 #ifdef BASE64_TEST
   assert_pram(dst != src);
 #endif
-  unsigned char *dst_base = dst;
+  unsigned char* dst_base = dst;
   int s = 0;
   while (s < srcSize) {
     unsigned char a = s + 0 < srcSize ? src[s + 0] : 0;
@@ -95,9 +96,10 @@ int BASE64_Encode(unsigned char *dst, const unsigned char *src,
 // from base64 to bin
 // return size of bytes in dst buffer without terminating zero
 // function decode src buff to \0 char or to first occurence of '='
-int BASE64_Decode(unsigned char *dst, const unsigned char *src,
+int BASE64_Decode(unsigned char* dst,
+                  const unsigned char* src,
                   unsigned short dstBufCapacity) {
-  unsigned char *base_dst = dst;
+  unsigned char* base_dst = dst;
   unsigned char tmp[4];
   register int i;
   for (register int d = 0; BASE64_EndC(src[0]) == 0; d += 3, src += 4) {
@@ -113,12 +115,12 @@ int BASE64_Decode(unsigned char *dst, const unsigned char *src,
     } else {
       *(dst++) = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
       if (BASE64_EndC(src[3])) {
-        break; // end of characters
+        break;  // end of characters
       } else {
         *(dst++) = ((tmp[2] & 0x3) << 6) + tmp[3];
       }
     }
   }
 
-  return dst - base_dst; // size of bytes in dst buffer
+  return dst - base_dst;  // size of bytes in dst buffer
 }

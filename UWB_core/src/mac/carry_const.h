@@ -14,7 +14,7 @@
 #define CARRY_FLAG_TARGET_MASK (3 << 6)
 // bit 5, 4
 #define CARRY_FLAG_ACK_REQ (1 << 4)
-#define CARRY_FLAG_REROUTE (2 << 4)
+#define CARRY_FLAG_REROUTE (2 << 4) F
 // bit 3
 
 #endif

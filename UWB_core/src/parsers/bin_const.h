@@ -11,7 +11,7 @@
 typedef enum {
 	FC_BEACON = 0x00, ///< beacon message is send when nobody sent message to this device by a few seconds
 	FC_TURN_ON = 0x01, ///< when device turn on then it should send turn on message
-	FC_TURN_OFF = (FC_TURN_ON+1), ///< when device turn off then it should send turn off message
+	FC_TURN_OFF = (FC_TURN_ON + 1), ///< when device turn off then it should send turn off message
 	FC_DEV_ACCEPTED = 0x03, ///< device accepted in network by local sink
 	FC_CARRY = 0x04, ///< carry message
 	FC_FU = 0x05, ///< firmware upgrade message

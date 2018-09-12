@@ -1,14 +1,14 @@
 #ifndef _PORT_CONST_H
 #define _PORT_CONST_H
 
-#include "decadriver/deca_device_api.h" // decaIrqStatus_t
 #include <stdbool.h>
 #include <stdint.h>
+#include "decadriver/deca_device_api.h"  // decaIrqStatus_t
 
 #include "stm32l4xx_hal.h"
 #include "usbd_cdc_if.h"
 
-#define USE_BLE			0
+#define USE_BLE 0
 
 #if USE_BLE
 #define BLE_CODE(_CODE_) \
@@ -17,10 +17,9 @@
 #define BLE_CODE(_CODE_)
 #endif
 
-
 #define __H_MAJOR__ 1
 #define __H_MINOR__ 5
-#define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))
+#define HARDWARE_UID_64 (*(uint64_t*)(0x1FFF7590))
 #define HARDWARE_OTP_ADDR 0x1FFF7000
 
 #include "iassert.h"

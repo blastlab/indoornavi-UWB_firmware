@@ -11,11 +11,11 @@ void PORT_Init() {
   PORT_AdcInit();
   PORT_CrcInit();
   PORT_TimeInit();
-	PORT_ImuInit();
+  PORT_ImuInit();
 #if !DBG
   PORT_WatchdogInit();
 #endif
-	HAL_NVIC_EnableIRQ(DW_EXTI_IRQn);
+  HAL_NVIC_EnableIRQ(DW_EXTI_IRQn);
 }
 
 void PORT_WatchdogInit() {
@@ -35,30 +35,30 @@ void PORT_WatchdogRefresh() {
 // turn led on
 void PORT_LedOn(int LED_x) {
   switch (LED_x) {
-  case LED_G1:
-    LL_GPIO_SetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
-    break;
-  case LED_R1:
-    LL_GPIO_SetOutputPin(LED_R1_GPIO_Port, LED_R1_Pin);
-    break;
-  default:
-    IASSERT(0);
-    break;
+    case LED_G1:
+      LL_GPIO_SetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
+      break;
+    case LED_R1:
+      LL_GPIO_SetOutputPin(LED_R1_GPIO_Port, LED_R1_Pin);
+      break;
+    default:
+      IASSERT(0);
+      break;
   }
 }
 
 // turrn led off
 void PORT_LedOff(int LED_x) {
   switch (LED_x) {
-  case LED_G1:
-    LL_GPIO_ResetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
-    break;
-  case LED_R1:
-    LL_GPIO_ResetOutputPin(LED_R1_GPIO_Port, LED_R1_Pin);
-    break;
-  default:
-    IASSERT(0);
-    break;
+    case LED_G1:
+      LL_GPIO_ResetOutputPin(LED_G1_GPIO_Port, LED_G1_Pin);
+      break;
+    case LED_R1:
+      LL_GPIO_ResetOutputPin(LED_R1_GPIO_Port, LED_R1_Pin);
+      break;
+    default:
+      IASSERT(0);
+      break;
   }
 }
 
@@ -96,8 +96,8 @@ void PORT_Reboot() {
   USB_StopDevice(USB);
   USB_DevDisconnect(USB);
   for (volatile int i = 99999; i > 0; --i)
-    ;               // disabled irq safe delay
-  PORT_SleepMs(10); // to be sure
+    ;                // disabled irq safe delay
+  PORT_SleepMs(10);  // to be sure
   NVIC_SystemReset();
 }
 
@@ -112,33 +112,33 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 extern USBD_DescriptorsTypeDef FS_Desc;
 volatile uint32_t RCC_config[4];
 void PORT_PrepareSleepMode() {
-	PORT_LedOff(LED_R1);
-	PORT_LedOff(LED_G1);
-	USB_StopDevice(USB);
-	USB_DevDisconnect(USB);
-	RCC_config[0] = RCC->CR;
-	RCC_config[1] = RCC->CFGR;
-	RCC_config[2] = RCC->CSR;
-	RCC_config[3] = RCC->CRRCR;
-	HAL_PWREx_EnableLowPowerRunMode();
-	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, PWR_CR1_LPMS_STOP0);
-	SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+  PORT_LedOff(LED_R1);
+  PORT_LedOff(LED_G1);
+  USB_StopDevice(USB);
+  USB_DevDisconnect(USB);
+  RCC_config[0] = RCC->CR;
+  RCC_config[1] = RCC->CFGR;
+  RCC_config[2] = RCC->CSR;
+  RCC_config[3] = RCC->CRRCR;
+  HAL_PWREx_EnableLowPowerRunMode();
+  MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, PWR_CR1_LPMS_STOP0);
+  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 }
 
 inline void PORT_EnterSleepMode() {
-	 __WFI();
+  __WFI();
 }
 
 void PORT_ExitSleepMode() {
-	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
-	HAL_PWREx_DisableLowPowerRunMode();
-	RCC->CR = RCC_config[0];
-	RCC->CFGR = RCC_config[1];
-	RCC->CSR = RCC_config[2];
-	RCC->CRRCR = RCC_config[3];
-	USB_DevConnect(USB);
-	USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
-	USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
-	USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
-	USBD_Start(&hUsbDeviceFS);
+  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+  HAL_PWREx_DisableLowPowerRunMode();
+  RCC->CR = RCC_config[0];
+  RCC->CFGR = RCC_config[1];
+  RCC->CSR = RCC_config[2];
+  RCC->CRRCR = RCC_config[3];
+  USB_DevConnect(USB);
+  USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
+  USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
+  USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
+  USBD_Start(&hUsbDeviceFS);
 }

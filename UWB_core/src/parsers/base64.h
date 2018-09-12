@@ -9,7 +9,6 @@
 #ifndef UWB_BASE64_H_
 #define UWB_BASE64_H_
 
-
 /**
  * @brief from bin to base64
  * 
@@ -21,9 +20,7 @@
  * @param[in] srcSize size of source data to encode
  * @return int dst buffer size
  */
-int BASE64_Encode(unsigned char *dst, const unsigned char *src,
-                  unsigned short srcSize);
-
+int BASE64_Encode(unsigned char *dst, const unsigned char *src, unsigned short srcSize);
 
 /**
  * @brief from base64 to bin
@@ -37,9 +34,7 @@ int BASE64_Encode(unsigned char *dst, const unsigned char *src,
  * @param[in] dstBufCapacity maximal destination buffer capacity
  * @return int size of bytes in dst buffer without terminating zero
  */
-int BASE64_Decode(unsigned char *dst, const unsigned char *src,
-                  unsigned short dstBufCapacity);
-
+int BASE64_Decode(unsigned char *dst, const unsigned char *src, unsigned short dstBufCapacity);
 
 /**
  * @brief calculate target base64 text size
