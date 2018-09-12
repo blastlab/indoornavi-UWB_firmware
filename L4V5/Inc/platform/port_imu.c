@@ -14,3 +14,7 @@ void PORT_ImuInit() {
 void PORT_ImuMotionControl() {
 
 }
+
+void PORT_ImuIrqHandler() {
+
+}

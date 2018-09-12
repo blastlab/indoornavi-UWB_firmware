@@ -490,4 +490,12 @@ void PORT_ImuInit();
  */
 void PORT_ImuMotionControl();
 
+/**
+ * \brief IMU IRQ handler
+ *
+ * process interrupts from IMU
+ *
+ */
+void PORT_ImuIrqHandler();
+
 #endif
