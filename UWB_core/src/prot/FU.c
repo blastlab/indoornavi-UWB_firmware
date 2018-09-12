@@ -21,6 +21,7 @@ typedef struct {
   uint16_t blockSize;
   uint32_t fileSize;
   uint32_t eot_time;
+  uint32_t active_time;
 } FU_instance_t;
 
 // information about new firmware from SOT frame
@@ -309,6 +310,7 @@ static void FU_Data(const FU_prot* fup, const prot_packet_info_t* info) {
     // gdy ta paczka zawiera version a  nie jest typu EOT, to zglos blad
     FU_SendError(info, FU_ERR_VERSION_IN_PACKAGE);
   }
+  FU.active_time = PORT_TickMs();
   // gdy nie ma wersji firmwaru w tej paczce lub jest, ale zgadza sie CRC
   // to zaladuj program do flash
   uint16_t dataSize = fup->frameLen - FU_PROT_HEAD_SIZE - 2;  // 2 for CRC
@@ -390,9 +392,17 @@ void FU_Init(bool forceNoFirmwareCheck) {
             (void*)(FLASH_BASE + FLASH_BANK_SIZE));
   FU.newVer = FU_GetLocalHash();
   FU.eot_time = 0;
+  FU.active_time = 0;
   if (forceNoFirmwareCheck) {
     FU_AcceptFirmware();
   }
+}
+
+bool FU_IsActive() {
+	decaIrqStatus_t en = decamutexon();
+	bool ifActive = (PORT_TickMs() - FU.active_time < 5000);
+	decamutexoff(en);
+	return ifActive;
 }
 
 void FU_Control() {

@@ -9,7 +9,7 @@
 #include "nrf_drv_gpiote.h"
 #include "nrf_sdh.h"
 #include "bin_parser.h"
-#include "mac.h"
+#include "FU.h"
 
 // 		LSM6DSM registers
 typedef enum {
@@ -61,6 +61,11 @@ static void ImuReset(void) {
 	IASSERT(data == 0x6a);
 }
 
+static inline void ImuResetTimer() {
+	motion_tick = PORT_TickMs();
+	imu_sleep_mode = 0;
+}
+
 void PORT_ImuInit(void) {
 #if !USE_DECA_DEVKIT
   if (PORT_GetHwRole() != RTLS_TAG) {
@@ -86,6 +91,10 @@ void PORT_ImuMotionControl(bool sleep_enabled) {
 		return;
 	}
 	if((PORT_TickMs() - motion_tick) > settings.imu.no_motion_period * 1000) {
+		if(FU_IsActive()) {
+			ImuResetTimer();
+			return;
+		}
 CRITICAL(
 		imu_sleep_mode = 1;
 		PORT_LedOff(LED_G1);
@@ -105,6 +114,5 @@ CRITICAL(
 }
 
 void PORT_ImuIrqHandler(void) {
-	motion_tick = PORT_TickMs();
-	imu_sleep_mode = 0;
+	ImuResetTimer();
 }

@@ -7,7 +7,7 @@
 
 #include "platform/port.h"
 #include "parsers/bin_parser.h"
-#include "mac/mac.h"
+#include "prot/FU.h"
 
 // 		Registers
 #define PWR_MGMT_1			0x6b
@@ -89,11 +89,20 @@ void PORT_ImuInit() {
 	ImuWriteRegister(PWR_MGMT_1, (ACCEL_CYCLE << 5) | (TEMP_DIS << 3) | CLKSEL);
 }
 
+static inline void ImuResetTimer() {
+	motion_tick = PORT_TickMs();
+	imu_sleep_mode = 0;
+}
+
 void PORT_ImuMotionControl(bool sleep_enabled) {
 	if(!sleep_enabled || !settings.imu.is_enabled) {
 		return;
 	}
 	if((PORT_TickMs() - motion_tick) > settings.imu.no_motion_period * 1000) {
+		if(FU_IsActive()) {
+			ImuResetTimer();
+			return;
+		}
 CRITICAL(
 		imu_sleep_mode = 1;
 		TRANSCEIVER_EnterSleep();
@@ -110,6 +119,5 @@ CRITICAL(
 }
 
 void PORT_ImuIrqHandler() {
-	motion_tick = PORT_TickMs();
-	imu_sleep_mode = 0;
+	ImuResetTimer();
 }
