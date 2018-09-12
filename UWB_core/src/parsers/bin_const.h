@@ -43,6 +43,11 @@ typedef enum {
 	FC_BLE_ASK = 0x2B,
 	FC_BLE_RESP = (FC_BLE_ASK + 1),
 	FC_BLE_SET = (FC_BLE_ASK + 2),
+	// empty
+	// empty
+	FC_IMU_ASK = 0x30,
+	FC_IMU_RESP = (FC_IMU_ASK + 1),
+	FC_IMU_SET = (FC_IMU_ASK + 2),
 } FC_t;
 
 #endif

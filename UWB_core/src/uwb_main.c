@@ -80,8 +80,8 @@ void UwbMain() {
 #if !USE_SLOT_TIMER
 		MAC_TryTransmitFrame();
 #endif
-		//BatteryControl();
-    PORT_ImuMotionControl();
+    BatteryControl();
+    PORT_ImuMotionControl(settings.mac.role == RTLS_TAG);
     RANGING_Control();
     RangingReader();
     BeaconSender();
@@ -96,6 +96,8 @@ void SendTurnOnMessage() {
     FC_TURN_ON_s packet;
     packet.FC = FC_TURN_ON;
     packet.len = sizeof(packet);
+    packet.fMinor = settings.version.f_minor;
+    packet.src_did = settings.mac.addr;
     mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
     if(buf != 0){
       MAC_Write(buf, &packet, packet.len);

@@ -125,10 +125,6 @@ void PORT_PrepareSleepMode() {
   SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 }
 
-inline void PORT_EnterSleepMode() {
-  __WFI();
-}
-
 void PORT_ExitSleepMode() {
   CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
   HAL_PWREx_DisableLowPowerRunMode();

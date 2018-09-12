@@ -133,6 +133,11 @@ void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did) {
 	LOG_INF("ble txpower: %d (-40/-20/-16/-12/-8/-4/0/3/4) enable: %d (0/1) did: %X", data->tx_power, data->is_enabled, did);
 }
 
+void PRINT_ImuSet(const FC_IMU_SET_s* data, dev_addr_t did) {
+  LOG_INF("imu delay: %d enable: %d (0/1) did: %X", data->delay,
+          data->is_enabled, did);
+}
+
 void PRINT_Measure(const measure_t *data)
 {
   LOG_INF("a %X>%X %d %d %d %d", data->did1, data->did2, data->dist_cm,

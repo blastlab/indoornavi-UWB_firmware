@@ -471,6 +471,33 @@ static void TXT_BleCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
   LOG_ERR("BLE is disabled");
 }
 
+static void TXT_ImuCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+  int delay = TXT_GetParam(buf, "delay:", 10);
+  int enable = TXT_GetParam(buf, "enable:", 10);
+
+  FC_IMU_SET_s packet;
+  uint8_t changes = 0;
+  if (delay >= 10) {
+    packet.delay = delay;
+    changes++;
+  } else {
+    packet.delay = -1;
+  }
+  switch (enable) {
+    case 0:
+    case 1:
+      packet.is_enabled = enable;
+      changes++;
+      break;
+    default:
+      packet.is_enabled = -1;
+  }
+  packet.FC = changes ? FC_IMU_SET : FC_IMU_ASK;
+  packet.len = changes ? sizeof(packet) : 2;
+
+  _TXT_Finalize(&packet, info);
+}
+
 static void TXT_Role(const txt_buf_t* buf, const prot_packet_info_t* info) {
   const char* role = TXT_PointParamNumber(buf, buf->cmd, 1);
   switch (tolower(role[0])) {
@@ -522,6 +549,7 @@ const txt_cb_t txt_cb_tab[] = {
     {"_autosetup", TXT_AutoSetupCb},
     {"parent", TXT_ParentCb},
     {"ble", TXT_BleCb},
+    {"imu", TXT_ImuCb},
     {"_role", TXT_Role},
     {"route", TXT_Route},
 };

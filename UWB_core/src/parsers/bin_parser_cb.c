@@ -311,6 +311,47 @@ void FC_BLE_SET_cb(const void* data, const prot_packet_info_t* info) {
       if (ble_enabled_buf != settings.ble.is_enabled) { PORT_Reboot(); })
 }
 
+void FC_IMU_ASK_cb(const void* data, const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_IMU_ASK);
+  FC_IMU_SET_s packet;
+  packet.FC = FC_IMU_RESP;
+  packet.len = sizeof(packet);
+  packet.is_enabled = settings.imu.is_enabled;
+  packet.delay = settings.imu.no_motion_period;
+  if (info->original_src == ADDR_BROADCAST) {
+    PRINT_ImuSet(&packet, settings.mac.addr);
+  } else {
+    BIN_SEND_RESP(FC_IMU_RESP, &packet, packet.len, info);
+  }
+}
+
+void FC_IMU_RESP_cb(const void* data, const prot_packet_info_t* info) {
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_IMU_RESP);
+  FC_IMU_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_ImuSet(data, info->original_src);
+}
+
+void FC_IMU_SET_cb(const void* data, const prot_packet_info_t* info) {
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_IMU_SET);
+  FC_IMU_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  if ((int8_t)packet.delay != -1) {
+    PORT_ImuIrqHandler();  // to reset current no-motion time
+    settings.imu.no_motion_period = packet.delay;
+  }
+  if ((int8_t)packet.is_enabled != -1) {
+	PORT_ImuIrqHandler();  // to reset current no-motion time
+    settings.imu.is_enabled = packet.is_enabled;
+  }
+  uint8_t ask_data[2];
+  ask_data[0] = FC_IMU_ASK;
+  ask_data[1] = 2;
+  FC_IMU_ASK_cb(&ask_data, info);
+}
+
 const prot_cb_t prot_cb_tab[] = {
     {FC_BEACON, FC_BEACON_cb},
     {FC_TURN_ON, FC_TURN_ON_cb},
@@ -333,5 +374,8 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_BLE_ASK, FC_BLE_ASK_cb},
     {FC_BLE_RESP, FC_BLE_RESP_cb},
     {FC_BLE_SET, FC_BLE_SET_cb},
+    {FC_IMU_ASK, FC_IMU_ASK_cb},
+    {FC_IMU_RESP, FC_IMU_RESP_cb},
+    {FC_IMU_SET, FC_IMU_SET_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

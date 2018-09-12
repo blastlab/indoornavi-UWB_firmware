@@ -16,6 +16,7 @@
 #include "transceiver_settings.h"
 #include "platform/ble_settings.h"
 #include "ranging_settings.h"
+#include "imu_settings.h"
 
 /**
  * @brief generate hardware version description byte from major and minor
@@ -102,6 +103,7 @@ typedef struct {
   carry_settings_t carry;      ///< carry protocol settings
   ble_settings_t ble;         ///< bluetooth low energy protocol settings
   ranging_settings_t ranging;  ///< ranging traces
+  imu_settings_t imu;       ///< imu settings
 } settings_t;
 
 /**
@@ -126,7 +128,8 @@ typedef struct {
   {                                                                           \
     .version = VERSION_SETTINGS_DEF, .transceiver = TRANSCEIVER_SETTINGS_DEF, \
     .mac = MAC_SETTINGS_DEF, .carry = CARRY_SETTINGS_DEF,                     \
-    .ble = BLE_SETTINGS_DEF, .ranging = RANGING_SETTINGS_DEF,                                          \
+    .ble = BLE_SETTINGS_DEF, .ranging = RANGING_SETTINGS_DEF,				  \
+    .imu = IMU_SETTINGS_DEF,                                                  \
   }
 
 /**

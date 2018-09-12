@@ -11,9 +11,6 @@
 #include "bin_parser.h"
 #include "mac.h"
 
-#define IMU_ACCEL_WOM_THRESHOLD 0b00001000
-#define	IMU_NO_MOTION_PERIOD	10000			// When the time (in milis) run out and no motion is detected, device will go to sleep
-
 // 		LSM6DSM registers
 typedef enum {
 	FUNC_CFG_ACCESS = 0x01,
@@ -66,7 +63,7 @@ static void ImuReset(void) {
 
 void PORT_ImuInit(void) {
 #if !USE_DECA_DEVKIT
-	if(settings.mac.role != RTLS_TAG) {
+  if (PORT_GetHwRole() != RTLS_TAG) {
 		return;
 	}
 	nrf_gpio_cfg_output(IMU_SPI_SS_PIN);
@@ -83,31 +80,31 @@ void PORT_ImuInit(void) {
 #endif
 }
 
-void PORT_ImuMotionControl(void) {
+void PORT_ImuMotionControl(bool sleep_enabled) {
 #if !USE_DECA_DEVKIT
-	if(settings.mac.role != RTLS_TAG)
+	if(!sleep_enabled || !settings.imu.is_enabled) {
 		return;
-	if((PORT_TickMs() - motion_tick) > IMU_NO_MOTION_PERIOD) {
+	}
+	if((PORT_TickMs() - motion_tick) > settings.imu.no_motion_period * 1000) {
 CRITICAL(
 		imu_sleep_mode = 1;
 		PORT_LedOff(LED_G1);
 		PORT_LedOff(LED_R1);
-		TRANSCEIVER_EnterDeepSleep();		// don't need to suspend SDH - tags aren't using it
+		TRANSCEIVER_EnterSleep();		// don't need to suspend SDH - tags aren't using it
 		)
 // prepare to sleep
 		while(imu_sleep_mode) {
 			__WFI();
 		}
 // exit from sleep
-		uint8_t *dummy_buf = malloc(256);
-		TRANSCEIVER_WakeUp(dummy_buf, 256);
+		PORT_WakeupTransceiver();
+		IASSERT(dwt_readdevid() == DWT_DEVICE_ID);
 		MAC_Init(BIN_Parse);
-		free(dummy_buf);
 	}
 #endif
 }
 
-void ImuIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
+void PORT_ImuIrqHandler(void) {
 	motion_tick = PORT_TickMs();
 	imu_sleep_mode = 0;
 }

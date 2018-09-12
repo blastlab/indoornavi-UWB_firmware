@@ -146,7 +146,7 @@ int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
 void PORT_WakeupTransceiver(void)
 {
 	nrf_gpio_pin_clear(DW_SPI_SS_PIN);
-	PORT_SleepMs(1);
+	PORT_SleepMs(2);
 	nrf_gpio_pin_set(DW_SPI_SS_PIN);
 	PORT_SleepMs(7); 					// wait 7ms for DW1000 XTAL to stabilise
 }

@@ -10,7 +10,6 @@ void PORT_BatteryInit();
 void PORT_CrcInit();
 void PORT_ExtiInit();
 void PORT_UsbUartInit();
-void ImuIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 void PORT_Init() {
 	PORT_BleBeaconInit();
@@ -115,6 +114,12 @@ void DW_EXTI_IRQ_Handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 	} while(nrf_gpio_pin_read(DW_EXTI_IRQn) == 1);
 }
 
+#if IMU_EXTI_IRQ1
+void ImuIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
+  PORT_ImuIrqHandler();
+}
+#endif
+
 void PORT_ExtiInit() {
     APP_ERROR_CHECK(nrf_drv_gpiote_init());
     nrf_drv_gpiote_in_config_t dw_int_config = {
@@ -127,8 +132,9 @@ void PORT_ExtiInit() {
     nrf_drv_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 
 #if IMU_EXTI_IRQ1
-   if(settings.mac.role != RTLS_TAG)
-	   return;
+    if (PORT_GetHwRole() != RTLS_TAG) {
+  		return;
+  	}
 	nrf_drv_gpiote_in_config_t imu_int_config = {
 		.is_watcher = false,
 		.hi_accuracy = false,
