@@ -80,32 +80,31 @@ void UwbMain() {
 #if !USE_SLOT_TIMER
 		MAC_TryTransmitFrame();
 #endif
-    BatteryControl();
-    PORT_ImuMotionControl(settings.mac.role == RTLS_TAG);
-    RANGING_Control();
-    RangingReader();
-    BeaconSender();
-    TXT_Control();
-    FU_Control();
-    PORT_WatchdogRefresh();
-  }
+		BatteryControl();
+		PORT_ImuMotionControl(settings.mac.role == RTLS_TAG);
+		RANGING_Control();
+		RangingReader();
+		BeaconSender();
+		TXT_Control();
+		FU_Control();
+		PORT_WatchdogRefresh();
+	}
 }
 
 void SendTurnOnMessage() {
-  if (settings.mac.role != RTLS_LISTENER) {
-    FC_TURN_ON_s packet;
-    packet.FC = FC_TURN_ON;
-    packet.len = sizeof(packet);
-    packet.fMinor = settings.version.f_minor;
-    packet.src_did = settings.mac.addr;
-    mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-    if(buf != 0){
-      MAC_Write(buf, &packet, packet.len);
-      MAC_Send(buf, false);
-      LOG_DBG("I send turn on - %X %c", settings.mac.addr,
-              (char)settings.mac.role);
-    }
-  }
+	if (settings.mac.role != RTLS_LISTENER) {
+		FC_TURN_ON_s packet;
+		packet.FC = FC_TURN_ON;
+		packet.len = sizeof(packet);
+		packet.fMinor = settings.version.f_minor;
+		packet.src_did = settings.mac.addr;
+		mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+		if (buf != 0) {
+			MAC_Write(buf, &packet, packet.len);
+			MAC_Send(buf, false);
+			LOG_DBG("I send turn on - %X %c", settings.mac.addr, (char )settings.mac.role);
+		}
+	}
 }
 
 void SendTurnOffMessage(uint8_t reason) {
