@@ -21,44 +21,44 @@
 #endif
 
 typedef enum {
-  TOA_IDLE,
-  TOA_POLL_WAIT_TO_SEND,
-  TOA_POLL_SENT,
-  TOA_RESP_REC,
-  TOA_FIN_WAIT_TO_SEND,
-  TOA_FIN_SENT,
-  TOA_POLL_REC,
-  TOA_RESP_WAIT_TO_SEND,
-  TOA_RESP_SENT,
-  TOA_FIN_REC,
+	TOA_IDLE,
+	TOA_POLL_WAIT_TO_SEND,
+	TOA_POLL_SENT,
+	TOA_RESP_REC,
+	TOA_FIN_WAIT_TO_SEND,
+	TOA_FIN_SENT,
+	TOA_POLL_REC,
+	TOA_RESP_WAIT_TO_SEND,
+	TOA_RESP_SENT,
+	TOA_FIN_REC,
 } toa_state_t;
 
 typedef struct {
-  toa_state_t state, prev_state;
-  int64_t TsPollRx, TsPollTx;
-  uint32_t TsRespRx[TOA_MAX_DEV_IN_POLL];
-  uint32_t TsFinTx;
-  uint32_t TsRespTx;
-  uint32_t TsFinRx;
-  uint8_t resp_ind;                          ///< 0..anc_in_poll_cnt-1
-  uint8_t anc_in_poll_cnt;                   ///< 1..TOA_MAX_DEV_IN_POLL
-  dev_addr_t addr_tab[TOA_MAX_DEV_IN_POLL];  ///< anchors addresses
-  dev_addr_t initiator;                      ///< address of measure initiator
+	toa_state_t state, prev_state;
+	int64_t TsPollRx, TsPollTx;
+	uint32_t TsRespRx[TOA_MAX_DEV_IN_POLL];
+	uint32_t TsFinTx;
+	uint32_t TsRespTx;
+	uint32_t TsFinRx;
+	uint8_t resp_ind;                          ///< 0..anc_in_poll_cnt-1
+	uint8_t anc_in_poll_cnt;                   ///< 1..TOA_MAX_DEV_IN_POLL
+	dev_addr_t addr_tab[TOA_MAX_DEV_IN_POLL];  ///< anchors addresses
+	dev_addr_t initiator;                      ///< address of measure initiator
 } toa_core_t;
 
-typedef struct __packed {
-  uint16_t did1, did2;
-  int16_t dist_cm;    ///< distance in cm
-  int16_t rssi_cdbm;  ///< rssi in centy db
-  int16_t fpp_cdbm;   ///< first path power in centy db
-  int16_t snr_cdbm;   ///< signal to noise ratio in centy dbm
-} measure_t;
+typedef struct {
+	uint16_t did1, did2;
+	int16_t dist_cm;    ///< distance in cm
+	int16_t rssi_cdbm;  ///< rssi in centy db
+	int16_t fpp_cdbm;   ///< first path power in centy db
+	int16_t snr_cdbm;   ///< signal to noise ratio in centy dbm
+}__packed measure_t;
 
 typedef struct {
-  toa_core_t core;
-  measure_t measures[TOA_MEASURES_BUF_SIZE];
-  int measures_read_ind;
-  int measures_write_ind;
+	toa_core_t core;
+	measure_t measures[TOA_MEASURES_BUF_SIZE];
+	int measures_read_ind;
+	int measures_write_ind;
 } toa_instance_t;
 
 /**
@@ -152,9 +152,7 @@ int64_t TOA_SetTxTime(int64_t dw_time, uint32_t delay_us);
  * @param DwPollRxTs time in local dtu
  * @return int 0 if sussess or error code
  */
-int TOA_EnableRxBeforeFin(const toa_core_t* toa,
-                          const toa_settings_t* tset,
-                          uint64_t DwPollRxTs);
+int TOA_EnableRxBeforeFin(const toa_core_t* toa, const toa_settings_t* tset, uint64_t DwPollRxTs);
 
 /**
  * @brief usefull when writing full timestamp

@@ -14,43 +14,43 @@
 #include "mac_const.h"
 #include "toa.h"
 
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint8_t padding;
-  uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
-  dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
-} FC_TOA_INIT_s;
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	uint8_t padding;
+	uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
+	dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
+}__packed FC_TOA_INIT_s;
 
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint8_t padding;
-  uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
-  dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
-} FC_TOA_POLL_s;
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	uint8_t padding;
+	uint8_t num_poll_anchor;  ///< number of addresses in array poll_addr
+	dev_addr_t poll_addr[0];  ///< list of anchors addresses to poll
+}__packed FC_TOA_POLL_s;
 
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint32_t TsPollRx;  ///< poll receive timestamp in dw time units
-  uint32_t TsRespTx;  ///< response transmit timestamp in dw time units
-} FC_TOA_RESP_s;
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	uint32_t TsPollRx;  ///< poll receive timestamp in dw time units
+	uint32_t TsRespTx;  ///< response transmit timestamp in dw time units
+}__packed FC_TOA_RESP_s;
 
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  uint8_t slot_num;
-  uint8_t TsFinTxBuf[5];  ///< 40b fin transmit timestamp in dw time units
-  uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
-  uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
-} FC_TOA_FIN_s;
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	uint8_t slot_num;
+	uint8_t TsFinTxBuf[5];  ///< 40b fin transmit timestamp in dw time units
+	uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
+	uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
+}__packed FC_TOA_FIN_s;
 
-typedef struct __packed {
-  uint8_t FC;
-  uint8_t len;
-  measure_t meas;
-} FC_TOA_RES_s;
+typedef struct {
+	uint8_t FC;
+	uint8_t len;
+	measure_t meas;
+}__packed FC_TOA_RES_s;
 
 /**
  * @brief Initialize TOA module

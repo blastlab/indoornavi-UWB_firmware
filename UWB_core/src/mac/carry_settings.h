@@ -29,11 +29,11 @@
  *
  */
 typedef struct {
-  dev_addr_t addr;
-  dev_addr_t parents[CARRY_MAX_PARENTS];
-  int16_t parentsScore[CARRY_MAX_PARENTS];
-  int16_t level;
-  mac_buff_time_t lastUpdateTime;
+	dev_addr_t addr;
+	dev_addr_t parents[CARRY_MAX_PARENTS];
+	int16_t parentsScore[CARRY_MAX_PARENTS];
+	int16_t level;
+	mac_buff_time_t lastUpdateTime;
 } carry_target_t;
 
 /**
@@ -41,13 +41,12 @@ typedef struct {
  *
  */
 typedef struct {
-  mac_buff_time_t
-      traceMaxInactiveTime;  ///< max time from last message to be kept
-  int traceMaxFailCnt;       ///< trace retransmit/delete threshold
-  int targetCounter;
-  bool autoRoute;
-  int minParentLiveTimeMs;
-  carry_target_t target[CARRY_MAX_TARGETS];
+	mac_buff_time_t traceMaxInactiveTime;  ///< max time from last message to be kept
+	int traceMaxFailCnt;       ///< trace retransmit/delete threshold
+	int targetCounter;
+	bool autoRoute;
+	int minParentLiveTimeMs;
+	carry_target_t target[CARRY_MAX_TARGETS];
 } carry_settings_t;
 
 #define CARRY_SETTINGS_DEF                                                  \

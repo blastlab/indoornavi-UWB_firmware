@@ -24,14 +24,13 @@
  * @brief protocol struct
  *
  */
-typedef struct __packed {
-  uint8_t FC, len;
-  unsigned char flags;  ///< extra flags field, CARRY_FLAG_xx
-  unsigned char
-      verHopsNum;       ///< version (upper nibble) hops number (lower nibble)
-  dev_addr_t src_addr;  ///< source address
-  dev_addr_t hops[0];   ///< destination .. next hop
-} FC_CARRY_s;
+typedef struct {
+	uint8_t FC, len;
+	unsigned char flags;  ///< extra flags field, CARRY_FLAG_xx
+	unsigned char verHopsNum;       ///< version (upper nibble) hops number (lower nibble)
+	dev_addr_t src_addr;  ///< source address
+	dev_addr_t hops[0];   ///< destination .. next hop
+}__packed FC_CARRY_s;
 
 /**
  * @brief carry head minimal length
@@ -56,8 +55,8 @@ typedef struct __packed {
  *
  */
 typedef struct {
-  bool isConnectedToServer;
-  dev_addr_t toSinkId;
+	bool isConnectedToServer;
+	dev_addr_t toSinkId;
 } carry_instance_t;
 
 /**
@@ -190,9 +189,6 @@ void CARRY_Read(mac_buf_t* frame, void* destination, unsigned int len);
  * @param[in] src address of data to write
  * @param[in] len number of bytes to write
  */
-void CARRY_Write(FC_CARRY_s* carry,
-                 mac_buf_t* frame,
-                 const void* src,
-                 unsigned int len);
+void CARRY_Write(FC_CARRY_s* carry, mac_buf_t* frame, const void* src, unsigned int len);
 
 #endif  // _CARRY_H

@@ -17,10 +17,10 @@
 #include "ranging_settings.h"
 
 typedef struct {
-  dev_addr_t tempAncList[RANGING_TEMP_ANC_LIST_DEPTH];
-  int tempAncListCnt;
-  int measureReadInd;
-  unsigned int resetTime, lastInitSendTime;
+	dev_addr_t tempAncList[RANGING_TEMP_ANC_LIST_DEPTH];
+	int tempAncListCnt;
+	int measureReadInd;
+	unsigned int resetTime, lastInitSendTime;
 } ranging_instance_t;
 
 /**

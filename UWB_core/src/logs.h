@@ -1,6 +1,6 @@
 /**
- * @brief 
- * 
+ * @brief
+ *
  * @file logs.h
  * @author Karol Trzcinski
  * @date 2018-06-29
@@ -21,25 +21,24 @@
 
 /**
  * @brief log text data
- * 
+ *
  * implemented in platform folder
- * 
+ *
  * @param type log type
  * @param frm formating string
  * @param ... extra arguments
- * @return int 
+ * @return int
  */
 int LOG_Text(char type, const char *frm, ...);
 
-
 /**
  * @brief log binary data
- * 
+ *
  * implemented in platform folder
- * 
+ *
  * @param[in] bin pointer to binary data
  * @param[in] size of binary data
- * @return int 
+ * @return int
  */
 int LOG_Bin(const void *bin, int size);
 

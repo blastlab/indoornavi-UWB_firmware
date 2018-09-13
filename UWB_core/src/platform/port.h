@@ -355,9 +355,7 @@ void PORT_SpiSpeedSlow(bool slow);
  *
  * \return 0 if success error code otherwise
  */
-int readfromspi(uint16_t headerLength,
-                const uint8_t* headerBuffer,
-                uint32_t readlength,
+int readfromspi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t readlength,
                 uint8_t* readBuffer);
 
 /**
@@ -372,9 +370,7 @@ int readfromspi(uint16_t headerLength,
  *
  * \return 0 if success error code otherwise
  */
-int writetospi(uint16_t headerLength,
-               const uint8_t* headerBuffer,
-               uint32_t bodylength,
+int writetospi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t bodylength,
                const uint8_t* bodyBuffer);
 
 void PORT_SpiTx(uint32_t length, const uint8_t* buf);
