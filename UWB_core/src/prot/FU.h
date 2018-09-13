@@ -289,6 +289,8 @@ typedef struct {
  */
 void FU_Init(bool forceNoFirmwareCheck);
 
+bool FU_IsActive();
+
 void FU_Control();
 
 /**

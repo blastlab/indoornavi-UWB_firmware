@@ -76,6 +76,8 @@ rtls_role PORT_GetHwRole() {
 #if HW_TYPE_PULL
 	int16_t voltage = 0;
 	nrf_gpio_cfg_input(HW_TYPE_PULL, NRF_GPIO_PIN_PULLUP);
+	PORT_SleepMs(5);
+	PORT_WatchdogRefresh();
 	int32_t sum = 0;
 	for(uint8_t i = 0; i < 4; i++) {
 		nrf_drv_saadc_sample_convert(1, &voltage);
@@ -91,7 +93,7 @@ rtls_role PORT_GetHwRole() {
 	}
 	else {
 		return RTLS_SINK;
-	}									// TODO chceck roles-to-values relation
+	}
 #endif
 	return RTLS_DEFAULT;
 }

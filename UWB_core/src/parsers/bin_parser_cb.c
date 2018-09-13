@@ -6,19 +6,17 @@
 #include "printer.h"
 
 static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
-	mac_buf_t* buf;
-	FC_CARRY_s* carry;
-	FC_DEV_ACCEPTED_s acc;
-	acc.FC = FC_DEV_ACCEPTED;
-	acc.len = sizeof(acc);
-	acc.newParent = parent;
-	buf = CARRY_PrepareBufTo(target, &carry);
-	if (buf != 0) {
-		CARRY_Write(carry, buf, &acc, acc.len);
-		CARRY_Send(buf, true);
-	} else {
-		LOG_WRN("Not enough buf for DEV_ACC");
-	}
+  mac_buf_t* buf;
+  FC_CARRY_s* carry;
+  FC_DEV_ACCEPTED_s acc;
+  acc.FC = FC_DEV_ACCEPTED;
+  acc.len = sizeof(acc);
+  acc.newParent = parent;
+  buf = CARRY_PrepareBufTo(target, &carry);
+  if (buf != 0) {
+    CARRY_Write(carry, buf, &acc, acc.len);
+    CARRY_Send(buf, true);
+  }
 }
 
 static void TransferBeacon(FC_BEACON_s* packet) {
@@ -53,21 +51,25 @@ void BIN_SEND_RESP(FC_t FC, const void* data, uint8_t len, const prot_packet_inf
 }
 
 void FC_TURN_ON_cb(const void* data, const prot_packet_info_t* info) {
-	BIN_ASSERT(*(uint8_t* )data == FC_TURN_ON);
-	FC_TURN_ON_s packet;
-	memcpy(&packet, data, sizeof(packet));
-	PRINT_TurnOn(data, info->original_src);
-	if (settings.mac.role == RTLS_SINK) {
-		SendDevAccepted(packet.src_did, info->original_src);
-	} else if (settings.mac.role == RTLS_ANCHOR) {
-		mac_buf_t* buf;
-		FC_CARRY_s* carry;
-		buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
-		if (buf != 0) {
-			CARRY_Write(carry, buf, &packet, sizeof(packet));
-			CARRY_Send(buf, true);
-		}
-	}
+  BIN_ASSERT(*(uint8_t*)data == FC_TURN_ON);
+  FC_TURN_ON_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_TurnOn(data, info->original_src);
+  if (settings.mac.role == RTLS_SINK) {
+	  if(packet.src_did == info->original_src) {
+		  SendDevAccepted(packet.src_did, settings.mac.addr);
+	  } else {
+		  SendDevAccepted(packet.src_did, info->original_src);
+	  }
+  } else if (settings.mac.role == RTLS_ANCHOR && packet.src_did != CARRY_ParentAddres()) {
+    mac_buf_t* buf;
+    FC_CARRY_s* carry;
+    buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
+    if (buf != 0) {
+      CARRY_Write(carry, buf, &packet, sizeof(packet));
+      CARRY_Send(buf, true);
+    }
+  }
 }
 
 void FC_TURN_OFF_cb(const void* data, const prot_packet_info_t* info) {
@@ -76,36 +78,36 @@ void FC_TURN_OFF_cb(const void* data, const prot_packet_info_t* info) {
 }
 
 void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
-	FC_BEACON_s packet;
-	BIN_ASSERT(*(uint8_t* )data == FC_BEACON);
-	memcpy(&packet, data, sizeof(packet));
-	if (info->last_src & ADDR_ANCHOR_FLAG) {
-		uint8_t default_tree_level = 255;
-		SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
-	}
-	// add your trace and send message to sink
-	// you can't sent info about beacon to your parent
-	// because he doesn't know path to sink yet
-	dev_addr_t yourParent = CARRY_ParentAddres();
-	bool good_parent = yourParent != 0 && yourParent != info->last_src;
-	if (settings.mac.role == RTLS_ANCHOR && good_parent) {
-		TransferBeacon(&packet);
-	}
-	// accept new device and make autoRoute
-	else if (settings.mac.role == RTLS_SINK) {
-		dev_addr_t hooped_parent = packet.hops[packet.hop_cnt - 1];
-		dev_addr_t parent = packet.hop_cnt > 0 ? hooped_parent : settings.mac.addr;
-		if (settings.carry.autoRoute && (packet.src_did & ADDR_ANCHOR_FLAG) != 0) {
-			// when parent changed, then log this event
-			if (CARRY_ParentSet(packet.src_did, parent) >= 3) {
-				int level = CARRY_GetTargetLevel(packet.src_did);
-				PRINT_Parent(parent, packet.src_did, level);
-			}
-		}
-		// send accept message
-		SendDevAccepted(packet.src_did, parent);
-	}
-	PRINT_Beacon(data, packet.src_did);
+  FC_BEACON_s packet;
+  BIN_ASSERT(*(uint8_t*)data == FC_BEACON);
+  memcpy(&packet, data, sizeof(packet));
+  if ((info->last_src & ADDR_ANCHOR_FLAG) && packet.hop_cnt == 0) {
+    uint8_t default_tree_level = 255;
+    SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
+  }
+  // add your trace and send message to sink
+  // you can't sent info about beacon to your parent
+  // because he doesn't know path to sink yet
+  dev_addr_t yourParent = CARRY_ParentAddres();
+  bool good_parent = yourParent != 0 && yourParent != info->last_src;
+  if (settings.mac.role == RTLS_ANCHOR && good_parent) {
+    TransferBeacon(&packet);
+  }
+  // accept new device and make autoRoute
+  else if (settings.mac.role == RTLS_SINK) {
+    dev_addr_t hooped_parent = packet.hops[packet.hop_cnt - 1];
+    dev_addr_t parent = packet.hop_cnt > 0 ? hooped_parent : settings.mac.addr;
+    if (settings.carry.autoRoute && (packet.src_did & ADDR_ANCHOR_FLAG) != 0) {
+      // when parent changed, then log this event
+      if (CARRY_ParentSet(packet.src_did, parent) >= 3) {
+        int level = CARRY_GetTargetLevel(packet.src_did);
+        PRINT_Parent(parent, packet.src_did, level);
+      }
+    }
+    // send accept message
+    SendDevAccepted(packet.src_did, parent);
+  }
+  PRINT_Beacon(data, packet.src_did);
 }
 
 void FC_STAT_ASK_cb(const void* data, const prot_packet_info_t* info) {
@@ -163,12 +165,16 @@ void FC_VERSION_RESP_cb(const void* data, const prot_packet_info_t* info) {
 }
 
 void FC_DEV_ACCEPTED_cb(const void* data, const prot_packet_info_t* info) {
-	// message is copied to local struct to avoid unaligned access exception
-	BIN_ASSERT(*(uint8_t* )data == FC_DEV_ACCEPTED);
-	FC_DEV_ACCEPTED_s packet;
-	memcpy(&packet, data, sizeof(packet));
-	CARRY_SetYourParent(packet.newParent);
-	PRINT_DeviceAccepted(&packet, info->original_src);
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_DEV_ACCEPTED);
+  if(settings.mac.role == RTLS_SINK) {
+	  LOG_WRN("Dev accepted from other sink");
+	  return;
+  }
+  FC_DEV_ACCEPTED_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  CARRY_SetYourParent(packet.newParent);
+  PRINT_DeviceAccepted(&packet, info->original_src);
 }
 
 void FC_SETTINGS_SAVE_cb(const void* data, const prot_packet_info_t* info) {
@@ -306,19 +312,71 @@ PORT_WatchdogRefresh();
 if (ble_enabled_buf != settings.ble.is_enabled) {PORT_Reboot();})
 }
 
-const prot_cb_t prot_cb_tab[] = { { FC_BEACON, FC_BEACON_cb }, { FC_TURN_ON, FC_TURN_ON_cb }, {
-FC_TURN_OFF,
-FC_TURN_OFF_cb }, { FC_DEV_ACCEPTED, FC_DEV_ACCEPTED_cb }, { FC_CARRY, CARRY_ParseMessage }, {
-FC_FU,
-FU_HandleAsDevice }, { FC_SETTINGS_SAVE, FC_SETTINGS_SAVE_cb }, {
-FC_SETTINGS_SAVE_RESULT,
-FC_SETTINGS_SAVE_RESULT_cb }, { FC_RESET, FC_RESET_cb }, { FC_VERSION_ASK, FC_VERSION_ASK_cb }, {
-FC_VERSION_RESP,
-FC_VERSION_RESP_cb }, { FC_STAT_ASK, FC_STAT_ASK_cb }, { FC_STAT_RESP, FC_STAT_RESP_cb }, {
-FC_RFSET_ASK,
-FC_RFSET_ASK_cb }, { FC_RFSET_RESP, FC_RFSET_RESP_cb }, { FC_RFSET_SET, FC_RFSET_SET_cb }, {
-FC_TOA_INIT,
-FC_TOA_INIT_cb }, { FC_TOA_RES, FC_TOA_RES_cb }, { FC_BLE_ASK, FC_BLE_ASK_cb }, {
-FC_BLE_RESP,
-FC_BLE_RESP_cb }, { FC_BLE_SET, FC_BLE_SET_cb }, };
+void FC_IMU_ASK_cb(const void* data, const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_IMU_ASK);
+  FC_IMU_SET_s packet;
+  packet.FC = FC_IMU_RESP;
+  packet.len = sizeof(packet);
+  packet.is_enabled = settings.imu.is_enabled;
+  packet.delay = settings.imu.no_motion_period;
+  if (info->original_src == ADDR_BROADCAST) {
+    PRINT_ImuSet(&packet, settings.mac.addr);
+  } else {
+    BIN_SEND_RESP(FC_IMU_RESP, &packet, packet.len, info);
+  }
+}
+
+void FC_IMU_RESP_cb(const void* data, const prot_packet_info_t* info) {
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_IMU_RESP);
+  FC_IMU_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_ImuSet(data, info->original_src);
+}
+
+void FC_IMU_SET_cb(const void* data, const prot_packet_info_t* info) {
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_IMU_SET);
+  FC_IMU_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  if ((int8_t)packet.delay != -1) {
+    PORT_ImuIrqHandler();  // to reset current no-motion time
+    settings.imu.no_motion_period = packet.delay;
+  }
+  if ((int8_t)packet.is_enabled != -1) {
+	PORT_ImuIrqHandler();  // to reset current no-motion time
+    settings.imu.is_enabled = packet.is_enabled;
+  }
+  uint8_t ask_data[2];
+  ask_data[0] = FC_IMU_ASK;
+  ask_data[1] = 2;
+  FC_IMU_ASK_cb(&ask_data, info);
+}
+
+const prot_cb_t prot_cb_tab[] = {
+    {FC_BEACON, FC_BEACON_cb},
+    {FC_TURN_ON, FC_TURN_ON_cb},
+    {FC_TURN_OFF, FC_TURN_OFF_cb},
+    {FC_DEV_ACCEPTED, FC_DEV_ACCEPTED_cb},
+    {FC_CARRY, CARRY_ParseMessage},
+    {FC_FU, FU_HandleAsDevice},
+    {FC_SETTINGS_SAVE, FC_SETTINGS_SAVE_cb},
+    {FC_SETTINGS_SAVE_RESULT, FC_SETTINGS_SAVE_RESULT_cb},
+    {FC_RESET, FC_RESET_cb},
+    {FC_VERSION_ASK, FC_VERSION_ASK_cb},
+    {FC_VERSION_RESP, FC_VERSION_RESP_cb},
+    {FC_STAT_ASK, FC_STAT_ASK_cb},
+    {FC_STAT_RESP, FC_STAT_RESP_cb},
+    {FC_RFSET_ASK, FC_RFSET_ASK_cb},
+    {FC_RFSET_RESP, FC_RFSET_RESP_cb},
+    {FC_RFSET_SET, FC_RFSET_SET_cb},
+    {FC_TOA_INIT, FC_TOA_INIT_cb},
+    {FC_TOA_RES, FC_TOA_RES_cb},
+    {FC_BLE_ASK, FC_BLE_ASK_cb},
+    {FC_BLE_RESP, FC_BLE_RESP_cb},
+    {FC_BLE_SET, FC_BLE_SET_cb},
+    {FC_IMU_ASK, FC_IMU_ASK_cb},
+    {FC_IMU_RESP, FC_IMU_RESP_cb},
+    {FC_IMU_SET, FC_IMU_SET_cb},
+};
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

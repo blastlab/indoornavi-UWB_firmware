@@ -122,4 +122,11 @@ typedef struct {
 	int8_t tx_power;
 	uint8_t is_enabled;
 }__packed FC_BLE_SET_s;
+
+typedef struct {
+  uint8_t FC, len;
+  uint8_t is_enabled;
+  uint8_t threshold;
+  uint32_t delay;
+}__packed FC_IMU_SET_s;
 #endif

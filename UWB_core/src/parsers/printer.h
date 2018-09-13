@@ -87,6 +87,13 @@ void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did);
 void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did);
 
 /**
+ * @brief print imu settings
+ *
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_ImuSet(const FC_IMU_SET_s *data, dev_addr_t did);
+/**
  * @brief print measure info
  *
  * @param data pointer to structure with data to print

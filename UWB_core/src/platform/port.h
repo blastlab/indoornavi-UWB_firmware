@@ -169,6 +169,8 @@ int PORT_BatteryVoltage();
 /**
  * \brief Return device role, base on HW select resistor or DipSwitch settings
  *
+ * \note adc must be already initialized
+ *
  * \return current device role
  */
 rtls_role PORT_GetHwRole();
@@ -432,6 +434,22 @@ int PORT_FlashSave(void* destination, const void* p_source, uint32_t length);
 // ========  IMU  ==========
 
 /**
+ * \brief Prepare uC to enter sleep-mode
+ *
+ * It turns off peripherals and minimize current consumption
+ *
+ */
+void PORT_PrepareSleepMode();
+
+/**
+ * \brief Reinitialize uC after sleep-mode
+ *
+ * It turns peripherals back on and prepares uC to work
+ *
+ */
+void PORT_ExitSleepMode();
+
+/**
  * \brief Configure Wake-on-Motion feature
  *
  * It configures imu registers for low power cycled accelerometer mode
@@ -449,7 +467,7 @@ void PORT_ImuInit();
  * if so, it sets the device to sleep
  *
  */
-void PORT_ImuMotionControl();
+void PORT_ImuMotionControl(bool sleep_enabled);
 
 /**
  * \brief IMU IRQ handler
