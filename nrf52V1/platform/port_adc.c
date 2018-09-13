@@ -93,7 +93,7 @@ rtls_role PORT_GetHwRole() {
 	}
 	else {
 		return RTLS_SINK;
-	}									// TODO chceck roles-to-values relation
+	}
 #endif
 	return RTLS_DEFAULT;
 }

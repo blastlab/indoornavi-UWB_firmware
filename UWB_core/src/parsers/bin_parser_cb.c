@@ -16,8 +16,6 @@ static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
   if (buf != 0) {
     CARRY_Write(carry, buf, &acc, acc.len);
     CARRY_Send(buf, true);
-  } else {
-    LOG_WRN("Not enough buf for DEV_ACC");
   }
 }
 
@@ -61,8 +59,12 @@ void FC_TURN_ON_cb(const void* data, const prot_packet_info_t* info) {
   memcpy(&packet, data, sizeof(packet));
   PRINT_TurnOn(data, info->original_src);
   if (settings.mac.role == RTLS_SINK) {
-    SendDevAccepted(packet.src_did, info->original_src);
-  } else if (settings.mac.role == RTLS_ANCHOR) {
+	  if(packet.src_did == info->original_src) {
+		  SendDevAccepted(packet.src_did, settings.mac.addr);
+	  } else {
+		  SendDevAccepted(packet.src_did, info->original_src);
+	  }
+  } else if (settings.mac.role == RTLS_ANCHOR && packet.src_did != CARRY_ParentAddres()) {
     mac_buf_t* buf;
     FC_CARRY_s* carry;
     buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
@@ -82,7 +84,7 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   FC_BEACON_s packet;
   BIN_ASSERT(*(uint8_t*)data == FC_BEACON);
   memcpy(&packet, data, sizeof(packet));
-  if (info->last_src & ADDR_ANCHOR_FLAG) {
+  if ((info->last_src & ADDR_ANCHOR_FLAG) && packet.hop_cnt == 0) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
   }
@@ -168,6 +170,10 @@ void FC_VERSION_RESP_cb(const void* data, const prot_packet_info_t* info) {
 void FC_DEV_ACCEPTED_cb(const void* data, const prot_packet_info_t* info) {
   // message is copied to local struct to avoid unaligned access exception
   BIN_ASSERT(*(uint8_t*)data == FC_DEV_ACCEPTED);
+  if(settings.mac.role == RTLS_SINK) {
+	  LOG_WRN("Dev accepted from other sink");
+	  return;
+  }
   FC_DEV_ACCEPTED_s packet;
   memcpy(&packet, data, sizeof(packet));
   CARRY_SetYourParent(packet.newParent);
