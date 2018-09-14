@@ -76,8 +76,7 @@ int PORT_FlashSave(void* destination, const void* p_source, uint32_t length) {
 	                                                      // Device voltage range supposed to be [2.7V to 3.6V], the
 	                                                      // operation will be done by word
 		uint64_t t;
-		*(uint32_t*)&t = *src;
-		*(((uint32_t*)&t) + 1) = *(src + 1);
+		memcpy(&t, src, 8);
 		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)dst, t) == HAL_OK) {
 			if (*(uint64_t*)dst != t) {  // Check the written value
 				status = 2;                // Flash content doesn't match SRAM content
