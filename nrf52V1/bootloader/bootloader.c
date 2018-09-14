@@ -168,6 +168,9 @@ void Bootloader_MarkFirmwareAsOld(int app)
 
 	nrf_delay_ms(200); // to wait for eventually watchdogs before
 
+	if(!memcmp((uint32_t*)addr_to_read, (uint32_t*)addr_to_write, size)) {
+		return;
+	}
 	do {
 		// Page erase
 		sd_flash_page_erase((uint32_t)addr_to_write/FLASH_PAGE_SIZE);
@@ -188,7 +191,6 @@ int Bootloader_CheckNewFirmware(int app)
 	// check magic number at the end of a first page
 	uint32_t* ptr = (uint32_t*)(APP1_ADDR+APP_MAX_SIZE*app+APP_TO_SETTINGS_OFFSET);
 	if(*ptr != BOOTLOADER_MAGIC_NUMBER) {
-		Bootloader_MarkFirmwareAsOld(app);
 		new_ver = 1;
 	}
 	// if firmware changed
@@ -213,7 +215,7 @@ int Bootloader_CheckNewFirmware(int app)
 		Bootloader_StartIWDG();
 		Bootloader_JumpApp(app);
 	}
-	return new_ver;
+	return 0;
 }
 
 int Bootloader_CheckHardwareVersions()
@@ -302,7 +304,7 @@ int Bootloader_UpdateAppPassFailCounter(int previous_app)
 	return 0;
 }
 
-static inline bool Bootloader_IfNewFirmware(uint32_t reset_reason) {	// all pass/fail counters are set to 0 whenever new application appears in flash
+static inline bool Bootloader_IfNewFirmware() {	// all pass/fail counters are set to 0 whenever new application appears in flash
 	return !settings.stat[0].pass_cnt && !settings.stat[1].pass_cnt && !settings.stat[0].fail_cnt && !settings.stat[1].fail_cnt;
 }
 
@@ -320,8 +322,9 @@ void Bootloader_Init(uint32_t reset_reason)
 	memcpy(&settings, &_flash_settings, sizeof(settings));
 
 	// check reset source
-	if(Bootloader_IfNewFirmware(reset_reason) && *BOOTLOADER_BKP_REG != 0) {
+	if(Bootloader_IfNewFirmware() && (*BOOTLOADER_BKP_REG == 1 || *BOOTLOADER_BKP_REG == 2)) {
 		change_cnt += Bootloader_UpdateAppPassFailCounter(previous_app);
+		Bootloader_MarkFirmwareAsOld(previous_app);
 		Bootloader_BkpSave(0);
 	}
 	// set proper pointers in pset[i].settings
