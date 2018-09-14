@@ -70,6 +70,9 @@ void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t 
 		case 3:
 			LOG_INF("no changes to be saved did:%X", did);
 			break;
+		case 4:
+			LOG_WRN("new firmware not accepted yet! did:%X", did);
+			break;
 		default:
 			LOG_ERR("SETTINGS_Save bad implementation did:%X", did);
 			break;

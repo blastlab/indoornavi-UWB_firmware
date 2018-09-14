@@ -7,7 +7,7 @@
 #include "nordic_common.h"
 #include "nrf_error.h"
 
-#define __H_MAJOR__ 0
+#define __H_MAJOR__ 2
 #define __H_MINOR__ 1
 
 #include "iassert.h"
