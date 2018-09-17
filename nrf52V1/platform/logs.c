@@ -3,10 +3,6 @@
 #include "parsers/base64.h"
 #include "port.h"
 
-#define LOG_USB_EN 1
-#define LOG_SD_EN 0
-#define LOG_USB_UART 0
-
 #define LOG_BUF_LEN 256
 
 static char buf[LOG_BUF_LEN + 1];

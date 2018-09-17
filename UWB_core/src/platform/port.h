@@ -458,7 +458,7 @@ void PORT_ExitSleepMode();
  *  \note imu WoM feature is set only on TAG devices to save energy
  *
  */
-void PORT_ImuInit();
+void PORT_ImuInit(bool imu_available);
 
 /**
  * \brief Check if the device should go to sleep

@@ -30,7 +30,7 @@ branch = str(subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'
 print("GIT branch: \"" + branch + "\";")
 
 firmwareMajor = 0
-firmwareMinor = 1
+firmwareMinor = 2
 firmwareMinorMax = 256*256
 
 str = '''// file generated automatically from updateHash.py, do not edit

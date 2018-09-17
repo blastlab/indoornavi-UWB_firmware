@@ -11,7 +11,7 @@ void PORT_Init() {
 	PORT_AdcInit();
 	PORT_CrcInit();
 	PORT_TimeInit();
-	PORT_ImuInit();
+	PORT_ImuInit(PORT_GetHwRole() == RTLS_TAG);
 #if !DBG
 	PORT_WatchdogInit();
 #endif

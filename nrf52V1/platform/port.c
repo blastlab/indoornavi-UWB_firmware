@@ -19,7 +19,7 @@ void PORT_Init() {
 	PORT_CrcInit();
 	PORT_SpiInit();
 	PORT_GpioInit();
-	PORT_ImuInit();
+	PORT_ImuInit(PORT_GetHwRole() == RTLS_TAG);
 	PORT_ExtiInit();
 #if !DBG
 	PORT_WatchdogInit();

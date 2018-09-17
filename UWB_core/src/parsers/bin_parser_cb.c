@@ -344,8 +344,8 @@ void FC_IMU_SET_cb(const void* data, const prot_packet_info_t* info) {
     settings.imu.no_motion_period = packet.delay;
   }
   if ((int8_t)packet.is_enabled != -1) {
-	PORT_ImuIrqHandler();  // to reset current no-motion time
     settings.imu.is_enabled = packet.is_enabled;
+    PORT_ImuInit(settings.mac.role == RTLS_TAG);
   }
   uint8_t ask_data[2];
   ask_data[0] = FC_IMU_ASK;

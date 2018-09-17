@@ -65,22 +65,24 @@ static inline void ImuResetTimer() {
 	imu_sleep_mode = 0;
 }
 
-void PORT_ImuInit(void) {
-#if !USE_DECA_DEVKIT
-	if (PORT_GetHwRole() != RTLS_TAG) {
+void PORT_ImuInit(bool imu_available) {
+#if IMU_EXTI_IRQ1
+	if (!imu_available) {
 		return;
 	}
 	nrf_gpio_cfg_output(IMU_SPI_SS_PIN);
 	nrf_gpio_pin_set(IMU_SPI_SS_PIN);
-	motion_tick = 0;
+	motion_tick = PORT_TickMs();
 	imu_sleep_mode = 0;
 	ImuReset();
-	ImuWriteRegister(CTRL10_C, 0b101);				// enabling FUNC_EN and SIGN_MOTION_EN
-	ImuWriteRegister(INT1_CTRL, 0b01000000); 		// enabling INT1_SIGN_MOT
-	ImuWriteRegister(FUNC_CFG_ACCESS, 0b10000000);// enabling embedded functions register configuration
-	ImuWriteRegister(SM_THS, 1);// setting a significant motion detection threshold			TODO: change interrupt to wakeup feature
-	ImuWriteRegister(FUNC_CFG_ACCESS, 0);			// disabling embedded functions register configuration
-	ImuWriteRegister(CTRL1_XL, 0b01100000);	// enabling accel, setting ODR (hi-pwoer mode) and full-scale
+	if(settings.imu.is_enabled) {
+		ImuWriteRegister(CTRL10_C, 0b101);				// enabling FUNC_EN and SIGN_MOTION_EN
+		ImuWriteRegister(INT1_CTRL, 0b01000000); 		// enabling INT1_SIGN_MOT
+		ImuWriteRegister(FUNC_CFG_ACCESS, 0b10000000);// enabling embedded functions register configuration
+		ImuWriteRegister(SM_THS, 1);// setting a significant motion detection threshold			TODO: change interrupt to wakeup feature
+		ImuWriteRegister(FUNC_CFG_ACCESS, 0);			// disabling embedded functions register configuration
+		ImuWriteRegister(CTRL1_XL, 0b01100000);	// enabling accel, setting ODR (hi-pwoer mode) and full-scale
+	}
 #endif
 }
 
@@ -89,7 +91,7 @@ void PORT_ImuMotionControl(bool sleep_enabled) {
 	if (!sleep_enabled || !settings.imu.is_enabled) {
 		return;
 	}
-	if ((PORT_TickMs() - motion_tick) > settings.imu.no_motion_period * 1000) {
+	if ((int32_t)(PORT_TickMs() - motion_tick) > settings.imu.no_motion_period * 1000) {
 		if (FU_IsActive()) {
 			ImuResetTimer();
 			return;

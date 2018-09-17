@@ -68,25 +68,27 @@ static void ImuReset(void) {
 	}
 }
 
-void PORT_ImuInit() {
-	if(PORT_GetHwRole() != RTLS_TAG) {
+void PORT_ImuInit(bool imu_available) {
+	if (!imu_available) {
 		return;
 	}
-	motion_tick = 0;
+	motion_tick = PORT_TickMs();
 	imu_sleep_mode = 0;
 	ImuReset();
-	ImuWriteRegister(PWR_MGMT_1, (TEMP_DIS << 3) | CLKSEL);
-	ImuWriteRegister(PWR_MGMT_2, XYZ_GYRO_EN);
-	ImuWriteRegister(ACCEL_CONFIG, (ACCEL_FS_SEL << 3));
-	ImuWriteRegister(ACCEL_CONFIG_2, A_DLPF_CFG);
-	ImuWriteRegister(INT_ENABLE, (WOM_INT_EN << 5));
-	ImuWriteRegister(INT_PIN_CFG, 0);
-	ImuWriteRegister(ACCEL_WOM_X_THR, IMU_ACCEL_WOM_THRESHOLD);
-	ImuWriteRegister(ACCEL_WOM_Y_THR, IMU_ACCEL_WOM_THRESHOLD);
-	ImuWriteRegister(ACCEL_WOM_Z_THR, IMU_ACCEL_WOM_THRESHOLD);
-	ImuWriteRegister(ACCEL_INTEL_CTRL, (ACCEL_INTEL_EN << 7) | (ACCEL_INTEL_MODE << 6));
-	ImuWriteRegister(SMPLRT_DIV, SMPLRT_DIV_VAL);
-	ImuWriteRegister(PWR_MGMT_1, (ACCEL_CYCLE << 5) | (TEMP_DIS << 3) | CLKSEL);
+	if(settings.imu.is_enabled) {
+		ImuWriteRegister(PWR_MGMT_1, (TEMP_DIS << 3) | CLKSEL);
+		ImuWriteRegister(PWR_MGMT_2, XYZ_GYRO_EN);
+		ImuWriteRegister(ACCEL_CONFIG, (ACCEL_FS_SEL << 3));
+		ImuWriteRegister(ACCEL_CONFIG_2, A_DLPF_CFG);
+		ImuWriteRegister(INT_ENABLE, (WOM_INT_EN << 5));
+		ImuWriteRegister(INT_PIN_CFG, 0);
+		ImuWriteRegister(ACCEL_WOM_X_THR, IMU_ACCEL_WOM_THRESHOLD);
+		ImuWriteRegister(ACCEL_WOM_Y_THR, IMU_ACCEL_WOM_THRESHOLD);
+		ImuWriteRegister(ACCEL_WOM_Z_THR, IMU_ACCEL_WOM_THRESHOLD);
+		ImuWriteRegister(ACCEL_INTEL_CTRL, (ACCEL_INTEL_EN << 7) | (ACCEL_INTEL_MODE << 6));
+		ImuWriteRegister(SMPLRT_DIV, SMPLRT_DIV_VAL);
+		ImuWriteRegister(PWR_MGMT_1, (ACCEL_CYCLE << 5) | (TEMP_DIS << 3) | CLKSEL);
+	}
 }
 
 static inline void ImuResetTimer() {
