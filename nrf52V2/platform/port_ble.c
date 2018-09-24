@@ -7,7 +7,6 @@
 #include "port.h"
 #include "FU.h"
 #include "app_error.h"
-#include "nrf_sdm.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 
@@ -38,8 +37,6 @@ static void ble_stack_init(void)
 }
 
 void PORT_BleBeaconInit(void) {
-	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
-	IASSERT(NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
 	if(settings.mac.role != RTLS_SINK && settings.mac.role != RTLS_ANCHOR) {
 		settings.ble.is_enabled = 0;
 	}

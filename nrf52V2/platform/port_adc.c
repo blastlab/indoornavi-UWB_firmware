@@ -23,10 +23,24 @@ void saadc_callback(nrfx_saadc_evt_t const * p_event) {
 	}
 }
 
+static void waitForVcc() {
+	nrf_saadc_channel_config_t check_vcc_config =
+	NRFX_SAADC_DEFAULT_CHANNEL_CONFIG_SE(NRF_SAADC_INPUT_VDD);
+	APP_ERROR_CHECK(nrfx_saadc_channel_init(2, &check_vcc_config));
+	float vcc = 0;
+	do {
+		nrf_saadc_value_t raw_voltage;
+		nrfx_saadc_sample_convert(2, &raw_voltage);
+		vcc = (float)raw_voltage / 1024.0 * VREF;
+	} while (vcc < 2.8);
+	nrfx_saadc_channel_uninit(2);
+}
+
 void PORT_BatteryInit() {
 #if HW_TYPE_PULL || BATT_ADC_TRIG_PIN
 	nrfx_saadc_config_t saadc_conf = NRFX_SAADC_DEFAULT_CONFIG;
 	nrfx_saadc_init(&saadc_conf, saadc_callback);
+	waitForVcc();
 	saadc_ready = false;
 	APP_ERROR_CHECK(nrfx_saadc_calibrate_offset());
 	while(!saadc_ready) PORT_WatchdogRefresh();

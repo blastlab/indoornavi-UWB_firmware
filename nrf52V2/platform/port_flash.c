@@ -120,7 +120,7 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
 			memset(fu_buf, 0xff, FLASH_PAGE_SIZE);
 			addr_buf = 0;
 			return status;
-		} else if(dst == (FU_DESTINATION_1 + FLASH_PAGE_SIZE) || dst == (FU_DESTINATION_2 + FLASH_PAGE_SIZE)) {
+		} else if(dst == (FU_DESTINATION_1 + FLASH_PAGE_SIZE) || dst == (FU_DESTINATION_2 + FLASH_PAGE_SIZE)) {		// if this is EOT packet from FU
 			memcpy(fu_buf, dst, FLASH_PAGE_SIZE);
 			memcpy(fu_buf, src, length);
 			status = PORT_FlashErase(dst, FLASH_PAGE_SIZE);

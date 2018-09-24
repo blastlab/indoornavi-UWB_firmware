@@ -334,10 +334,6 @@ static void FU_EOT(const FU_prot* fup, const prot_packet_info_t* info) {
 	if (fup->hash != (uint8_t)FU.newHash) {
 		// sprawdz czy zgadza sie wersja z ta z ramki SOT
 		FU_SendError(info, FU_ERR_BAD_FRAME_HASH);
-		return;
-	} else if (FU.fileSize == 0) {
-		FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
-		return;
 	} else if (FU_IsFlashCRCError(fup)) {
 		FU_SendError(info, FU_ERR_BAD_FLASH_CRC);
 	} else if (FU_IsNewFirmwareInBadPlace(((uint32_t*)FU_GetAddressToWrite()) + 1)) {
@@ -348,7 +344,9 @@ static void FU_EOT(const FU_prot* fup, const prot_packet_info_t* info) {
 		FU.newHash = 0;
 		LOG_INF("FU successfully firmware uploaded");
 		FU.eot_time = PORT_TickMs();
+		return;
 	}
+	PORT_FlashErase(FU_GetAddressToWrite(), FU.fileSize);				// erasing bad firmware
 }
 
 /* Public functions ---------------------------------------------------------*/
@@ -367,6 +365,7 @@ void FU_HandleAsDevice(const void* data, const prot_packet_info_t* info) {
 		FU_Data(fup, info);
 	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_SOT)) {
 		// rozpoczyna transmisje nowej paczki
+		CARRY_SetYourParent(info->last_src);
 		FU_SOT(fup, info);
 	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_EOT)) {
 		FU_EOT(fup, info);

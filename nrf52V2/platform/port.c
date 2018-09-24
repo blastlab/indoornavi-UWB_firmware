@@ -1,7 +1,9 @@
 #include "port.h"
 #include "nrfx_gpiote.h"
 #include "nrfx_wdt.h"
+#include "nrf_sdm.h"
 #include "settings.h"
+#include "FU.h"
 
 void PORT_TimeInit();
 void PORT_GpioInit();
@@ -12,8 +14,10 @@ void PORT_ExtiInit();
 void PORT_UsbUartInit();
 
 void PORT_Init() {
-	PORT_BleBeaconInit();
+	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
+	IASSERT(NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
 	PORT_BatteryInit();
+	PORT_BleBeaconInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
 	PORT_CrcInit();

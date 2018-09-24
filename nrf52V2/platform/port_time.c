@@ -73,7 +73,7 @@ BLE_CODE(
 	}
 )
 #if USE_SLOT_TIMER
-	nrf_drv_timer_enable(&TIMER_SLOT);
+	nrfx_timer_enable(&TIMER_SLOT);
 #endif
 }
 
