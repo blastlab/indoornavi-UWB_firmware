@@ -53,7 +53,8 @@ SECTIONS
     	KEEP(*(.isr_vector))
     	. = ALIGN(4K);
     	KEEP(*(.settings*))
-    	. = ALIGN(8K);
+    	. = ALIGN(4K);
+    	. = . + 4K;
         *(.text*)
 
         KEEP(*(.init))
