@@ -9,34 +9,47 @@
 #include "txt_parser.h"
 #include "nrfx_uarte.h"
 #include "nrf52.h"
+#include "app_uart.h"
 
-#define NRFX_UARTE_CONFIG                                                   				\
-{                                                                                   \
-    .pseltxd            = USB_UART_TX_PIN,                              						\
-    .pselrxd            = USB_UART_RX_PIN,                              						\
-    .pselcts            = NRF_UARTE_PSEL_DISCONNECTED,                              \
-    .pselrts            = NRF_UARTE_PSEL_DISCONNECTED,                              \
-    .p_context          = NULL,                                                     \
-    .hwfc               = (nrf_uarte_hwfc_t)NRFX_UARTE_DEFAULT_CONFIG_HWFC,         \
-    .parity             = (nrf_uarte_parity_t)NRFX_UARTE_DEFAULT_CONFIG_PARITY,     \
-    .baudrate           = (nrf_uarte_baudrate_t)NRFX_UARTE_DEFAULT_CONFIG_BAUDRATE, \
-    .interrupt_priority = NRFX_UARTE_DEFAULT_CONFIG_IRQ_PRIORITY,                   \
+#define MAX_TEST_DATA_BYTES     (15U)             /**< max number of test bytes to be used for tx and rx. */
+#define UART_TX_BUF_SIZE 				256	              /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE 				256 	           	/**< UART RX buffer size. */
+
+void uart_error_handle(app_uart_evt_t * p_event) {
+	if (p_event->evt_type == APP_UART_COMMUNICATION_ERROR) {
+//        APP_ERROR_HANDLER(p_event->data.error_communication);
+	} else if (p_event->evt_type == APP_UART_FIFO_ERROR) {
+//        APP_ERROR_HANDLER(p_event->data.error_code);
+	} else if (p_event->evt_type == APP_UART_DATA_READY) {
+		uint8_t byte;
+		app_uart_get(&byte);
+		TXT_Input((char *)&byte, 1);
+	}
 }
 
-static const nrfx_uarte_t uarte0 = NRFX_UARTE_INSTANCE(0);
-void uarte0_handler(nrfx_uarte_event_t const * p_event, void *p_context) { }
-
 void PORT_UsbUartInit(void) {
-	nrfx_uarte_config_t uarte0_config = NRFX_UARTE_CONFIG;
-	nrfx_uarte_init(&uarte0, &uarte0_config, uarte0_handler);
+	uint32_t err_code;
+	const app_uart_comm_params_t comm_params = {
+			.rx_pin_no = USB_UART_RX_PIN,
+			.tx_pin_no = USB_UART_TX_PIN,
+			.rts_pin_no = 0,
+			.cts_pin_no = 0,
+			.flow_control =  APP_UART_FLOW_CONTROL_DISABLED,
+			.use_parity = false,
+			.baud_rate = (nrf_uarte_baudrate_t)NRFX_UARTE_DEFAULT_CONFIG_BAUDRATE
+	  };
+	APP_UART_FIFO_INIT(&comm_params,
+						 UART_RX_BUF_SIZE,
+						 UART_TX_BUF_SIZE,
+						 uart_error_handle,
+						 APP_IRQ_PRIORITY_LOWEST,
+						 err_code);
+	APP_ERROR_CHECK(err_code);
 }
 
 uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len) {
-	IASSERT(nrfx_is_in_ram(buf));
-	NRF_UARTE0->TXD.PTR = (uint32_t)buf;
-	NRF_UARTE0->TXD.MAXCNT = len;
-	while(nrfx_uarte_tx_in_progress(&uarte0));
-	NRF_UARTE0->TASKS_STARTTX = 0x1UL;
-	while(NRF_UARTE0->EVENTS_TXSTARTED == 0x0UL);
+	for (uint16_t i = 0; i < len; i++) {
+		app_uart_put(*(buf + i));
+	}
 	return PORT_Success;
 }
