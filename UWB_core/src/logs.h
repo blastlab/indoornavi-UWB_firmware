@@ -44,6 +44,11 @@ typedef enum {
 #undef ADD_ITEM
 #undef ADD_ITEM_M
 
+/**
+ * @brief logger informations code tester
+ * 
+ */
+void LOG_SelfTest();
 
 /**
  * @brief log text data
@@ -69,15 +74,51 @@ int LOG_Text(char type, int num, const char *frm, va_list arg);
  */
 int LOG_Bin(const void *bin, int size);
 
+/**
+ * @brief log criticcal information
+ * 
+ * @param code of message
+ * @param ... extra arguments
+ */
 void LOG_CRIT(ERR_codes code, ...);
 
+/**
+ * @brief log error information
+ * 
+ * @param code of message
+ * @param ... extra arguments
+ */
 void LOG_ERR(ERR_codes code, ...);
 
+/**
+ * @brief log warning information
+ * 
+ * @param code of message
+ * @param ... extra arguments
+ */
 void LOG_WRN(WRN_codes code, ...);
 
+/**
+ * @brief log informations
+ * 
+ * @param code of message
+ * @param ... extra arguments
+ */
 void LOG_INF(INF_codes code, ...);
 
+/**
+ * @brief debug information logger
+ * 
+ * @param code of message
+ * @param ... extra arguments
+ */
 void LOG_DBG(const char *frm, ...);
 
+/**
+ * @brief target device integration test logger
+ * 
+ * @param code of message
+ * @param ... extra arguments
+ */
 void LOG_TEST(TEST_codes code, ...);
 #endif // _LOGS_H

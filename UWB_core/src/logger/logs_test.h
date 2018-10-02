@@ -2,7 +2,6 @@
  * @file logs_test.h
  * @author Karol Trzcinski
  * @brief test logs definitions
- * @version 0.1
  * @date 2018-10-02
  * 
  * @copyright Copyright (c) 2018

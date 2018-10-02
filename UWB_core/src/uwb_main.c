@@ -67,6 +67,10 @@ void UwbMain() {
 		settings.mac.role = PORT_GetHwRole();
 	}
 
+#ifdef DBG
+	LOG_SelfTest();
+#endif
+
 	MAC_Init(BIN_Parse);
 	CARRY_Init(settings.mac.role == RTLS_SINK);
 	FU_Init(settings.mac.role == RTLS_SINK);

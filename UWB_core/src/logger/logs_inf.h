@@ -2,14 +2,13 @@
  * @file logs_inf.h
  * @author Karol Trzcinski
  * @brief informational logs definition
- * @version 0.1
  * @date 2018-10-02
  * 
  * @copyright Copyright (c) 2018
  * 
  */
 
-// network work time events
+// network
 ADD_ITEM_M(1101, INF_DEVICE_TURN_ON, "Device turn on did:%X fV:%d")
 ADD_ITEM_M(1102, INF_DEVICE_TURN_OFF, "Device turn off did:%X")
 ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X")
@@ -36,9 +35,9 @@ ADD_ITEM_M(1307, INF_CLEARED_PARENTS, "cleared parents")
 ADD_ITEM_M(1308, INF_CLEARED_MEASURES, "cleared measures")
 ADD_ITEM_M(1309, INF_CLEARED_PARENTS_AND_MEASURES, "cleared parents and measures")
 ADD_ITEM_M(1310, INF_CLEAR_HELP, "clear [-m,-p,-mp]")
-ADD_ITEM_M(1109, INF_SETANCHORS_SET, "setanchors set %d anchors")
-ADD_ITEM_M(1110, INF_SETTAGS_SET, "settags set %d tags with %d anchors")
-ADD_ITEM_M(1110, INF_DELETETAGS, "deletetags deleted %d tags")
+ADD_ITEM_M(1311, INF_SETANCHORS_SET, "setanchors set %d anchors")
+ADD_ITEM_M(1312, INF_SETTAGS_SET, "settags set %d tags with %d anchors")
+ADD_ITEM_M(1313, INF_DELETETAGS, "deletetags deleted %d tags")
 
 // settings
 ADD_ITEM_M(1401, INF_SETTINGS_SAVED, "settings saved did:%X")
@@ -46,4 +45,4 @@ ADD_ITEM_M(1402, INF_SETTINGS_NO_CHANGES, "no changes to be saved did:%X")
 
 // others
 ADD_ITEM_M(1501, INF_IMU_SETTINGS, "imu delay:%d enable:%d (0/1) did:%X")
-ADD_ITEM_M(1502, INF_FU_SUCCESS, "settags set %d tags with %d anchors")
+ADD_ITEM_M(1502, INF_FU_SUCCESS, "Firmware upgrade success")

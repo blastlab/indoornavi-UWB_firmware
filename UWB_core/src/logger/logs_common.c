@@ -2,11 +2,10 @@
  * @file logs_common.c
  * @author Karol Trzcinski
  * @brief logger engine implementation
- * @version 0.1
  * @date 2018-10-02
- * 
+ *
  * @copyright Copyright (c) 2018
- * 
+ *
  */
 #include "logs.h"
 
@@ -38,24 +37,46 @@ static LOG_CODE_t LOG_CodeTest[TEST_codes_N] = {
 #include "logger/logs_test.h"
     };
 
-
-const char* LOG_GetFormat(int number, LOG_CODE_t array[], int len)
+int LOG_CheckUniqInArray(LOG_CODE_t target[], int len)
 {
-  LOG_CODE_t* end = &array[len];
-  LOG_CODE_t* ptr = &array[0];
-
-  while(ptr != end)
+	int repeats = 0;
+  for(int i = 1; i < len; ++i)
   {
-    if(ptr->code == number)
-    {
-      return ptr->frm;
+    for(int j = 0; j < i; ++j) {
+      if(target[i].code == target[j].code) {
+				LOG_CRIT(CRIT_LOG_CODES_ARENT_UNIQ, target[i].code);
+				++repeats;
+      }
     }
-    ++ptr;
   }
-
-  return 0;
+	return repeats;
 }
 
+int LOG_CheckMonotonousInArray(LOG_CODE_t target[], int len) {
+	int unmonotonous = 0;
+	for (int i = 1; i < len; ++i) {
+		if (target[i].code < target[i - 1].code) {
+			LOG_CRIT(CRIT_LOG_CODES_ARENT_MONOTONOUS, target[i].code);
+			++unmonotonous;
+		}
+	}
+	return unmonotonous;
+}
+
+int LOG_CheckArray(LOG_CODE_t target[], int len) {
+	int i = 0;
+	i += LOG_CheckUniqInArray(target, len);
+	i += LOG_CheckMonotonousInArray(target, len);
+	return i;
+}
+
+void LOG_SelfTest() {
+	LOG_CheckArray(LOG_CodeCrit, CRIT_codes_N);
+	LOG_CheckArray(LOG_CodeErr, ERR_codes_N);
+	LOG_CheckArray(LOG_CodeWrn, WRN_codes_N);
+	LOG_CheckArray(LOG_CodeInf, INF_codes_N);
+	LOG_CheckArray(LOG_CodeTest, TEST_codes_N);
+}
 
 void LOG_CRIT(ERR_codes code, ...) {
 	const char* frm = LOG_CodeCrit[code].frm;
