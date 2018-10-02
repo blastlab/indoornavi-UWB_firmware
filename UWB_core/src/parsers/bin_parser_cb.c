@@ -12,6 +12,7 @@ static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
   acc.FC = FC_DEV_ACCEPTED;
   acc.len = sizeof(acc);
   acc.newParent = parent;
+	acc.rangingPeriod = settings.ranging.rangingPeriodMs / 100;
   buf = CARRY_PrepareBufTo(target, &carry);
   if (buf != 0) {
     CARRY_Write(carry, buf, &acc, acc.len);

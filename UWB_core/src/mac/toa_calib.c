@@ -615,6 +615,7 @@ const uint8 range25cm64PRFwb[2][NUM_64M_OFFSETWB] = {
  * @param chan  - specifies the operating channel (e.g. 1, 2, 3, 4, 5, 6 or 7)
  * @param range - the calculated distance before correction
  * @param prf	- this is the PRF e.g. DWT_PRF_16M or DWT_PRF_64M
+ * @param smartTxPower - bool value, see transceiver init routine or value from settings
  *
  * output parameters
  *
