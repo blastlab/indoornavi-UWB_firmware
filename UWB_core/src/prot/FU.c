@@ -342,7 +342,7 @@ static void FU_EOT(const FU_prot* fup, const prot_packet_info_t* info) {
 		FU_Data(fup, info);  // zapisz ostatnio porcje danych we flashu
 		FU.fileSize = 0;
 		FU.newHash = 0;
-		LOG_INF("FU successfully firmware uploaded");
+		LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
 		FU.eot_time = PORT_TickMs();
 		return;
 	}

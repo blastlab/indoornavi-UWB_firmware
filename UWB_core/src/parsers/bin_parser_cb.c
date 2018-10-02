@@ -32,8 +32,6 @@ static void TransferBeacon(FC_BEACON_s* packet) {
 		            sizeof(dev_addr_t) * (packet->hop_cnt - 1));
 		CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
 		CARRY_Send(buf, false);
-	} else {
-		LOG_WRN("BEACON parser not enough buffers");
 	}
 }
 
@@ -46,8 +44,6 @@ void BIN_SEND_RESP(FC_t FC, const void* data, uint8_t len, const prot_packet_inf
 	if (buf != 0) {
 		CARRY_Write(carry, buf, data, len);
 		CARRY_Send(buf, false);
-	} else {
-		LOG_WRN("Not enough buffer to send bin resp");
 	}
 }
 
@@ -169,7 +165,7 @@ void FC_DEV_ACCEPTED_cb(const void* data, const prot_packet_info_t* info) {
   // message is copied to local struct to avoid unaligned access exception
   BIN_ASSERT(*(uint8_t*)data == FC_DEV_ACCEPTED);
   if(settings.mac.role == RTLS_SINK) {
-	  LOG_WRN("Dev accepted from other sink");
+		LOG_WRN(WRN_SINK_ACCEPT_SINK, "Dev accepted from other sink");
 	  return;
   }
   FC_DEV_ACCEPTED_s packet;

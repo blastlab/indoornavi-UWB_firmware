@@ -9,7 +9,7 @@ const char sync_bad_len_msg[] = "%s bad len %d!=%d";
                                                          \
   do {                                                   \
     if ((len) < (expected)) {                            \
-      LOG_ERR(sync_bad_len_msg, #FC, (len), (expected)); \
+      LOG_ERR(WRN_MAC_BAD_LEN_IN_MSG, sync_bad_len_msg, #FC, (len), (expected)); \
       return -1;                                         \
     }                                                    \
                                                          \

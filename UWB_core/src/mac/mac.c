@@ -135,7 +135,7 @@ static void MAC_RxCb(const dwt_cb_data_t* data) {
 					ret = TOA_RxCb(buf->dPtr, &info);
 				}
 				if (ret == 0) {
-					LOG_WRN("Unsupported MAC frame %X", buf->frame.data[0]);
+					LOG_WRN(WRN_MAC_FRAME_BAD_OPCODE, buf->frame.data[0]);
 				}
 			} else if (type == FR_CR_DATA) {
 				TRANSCEIVER_DefaultRx();
@@ -144,9 +144,9 @@ static void MAC_RxCb(const dwt_cb_data_t* data) {
 				TRANSCEIVER_DefaultRx();
 				_dataParser(buf->dPtr, &info, buf->rx_len - MAC_HEAD_LENGTH);
 			} else if (type == FR_CR_ACK) {
-				LOG_WRN("ACK frame is not supported");
+				LOG_WRN(WRN_MAC_UNSUPPORTED_ACK_FRAME);
 			} else {
-				LOG_ERR("This kind of frame is not supported: %x", buf->frame.control[0]);
+				LOG_WRN(WRN_MAC_UNSUPPORTED_MAC_FRAME, buf->frame.control[0]);
 				TRANSCEIVER_DefaultRx();
 			}
 		} else {
@@ -270,7 +270,7 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
 	end_us += settings.mac.slot_tolerance_time_us;
 	end_us -= settings.mac.slot_guard_time_us;
 	if (tx_est_time > settings.mac.slot_time_us - settings.mac.slot_guard_time_us) {
-		LOG_WRN("Frame with size %d can't be send within %dus slot", len, settings.mac.slot_time_us);
+		LOG_WRN(WRN_MAC_TOO_BIG_FRAME, len, settings.mac.slot_time_us);
 		MAC_Free(buf);
 	}
 	// when it is too late or too early to send this packet
@@ -291,7 +291,7 @@ int MAC_TryTransmitFrameInSlot(int64_t glob_time) {
 		// try send next frame after tx fail
 		int64_t glob_time = SYNC_GlobTime(TRANSCEIVER_GetTime());
 		MAC_TryTransmitFrameInSlot(glob_time);
-		LOG_WRN("Tx err");
+		LOG_WRN(WRN_MAC_TX_ERROR);
 	}
 	return 1;
 }
@@ -315,7 +315,7 @@ int MAC_TryTransmitFrame() {
 	decamutexoff(en);
 	if (ret != 0) {
 		// try send next frame after tx fail
-		LOG_WRN("Tx err");
+		LOG_WRN(WRN_MAC_TX_ERROR);
 		MAC_TryTransmitFrame();
 	}
 	return 1;
@@ -393,7 +393,7 @@ mac_buf_t* MAC_Buffer() {
 		}
 	}
 	// else return null
-	LOG_WRN("No more buffers");
+	LOG_WRN(WRN_MAC_NO_MORE_BUFFERS);
 	return 0;
 }
 

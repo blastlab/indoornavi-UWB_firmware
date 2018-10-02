@@ -21,8 +21,6 @@ static void _TXT_Finalize(const void* buf, const prot_packet_info_t* info) {
 			// length is always second byte of frame
 			CARRY_Write(carry, mbuf, buf, ibuf[1]);
 			CARRY_Send(mbuf, true);
-		} else {
-			LOG_WRN("Not enough buffers to send frame, FC:%X", *(uint8_t* )buf);
 		}
 	}
 }
@@ -59,7 +57,7 @@ static bool _RFSet_ValidateAndTranslateA(int* ch, int* br, int* plen, int* prf) 
 
 	if (*ch >= 0) {
 		if (!(0 < *ch && *ch < 8 && *ch != 6)) {
-			LOG_ERR("rfset ch 1..7 (without 6)");
+			LOG_ERR(ERR_RF_BAD_CHANNEL);
 			*ch = -1;
 		}
 		some_change = true;
@@ -72,7 +70,7 @@ static bool _RFSet_ValidateAndTranslateA(int* ch, int* br, int* plen, int* prf) 
 		} else if (*br == 6800) {
 			*br = DWT_BR_6M8;
 		} else {
-			LOG_ERR("rfset br 110/850/6800");
+			LOG_ERR(ERR_RF_BAD_BAUDRATE);
 			*br = -1;
 		}
 		some_change = true;
@@ -95,7 +93,7 @@ static bool _RFSet_ValidateAndTranslateA(int* ch, int* br, int* plen, int* prf) 
 		else if (*plen == 4096)
 			*plen = DWT_PLEN_4096;  // standard
 		else {
-			LOG_ERR("rfset plen 64/128/256/512/1024/1536/2048/4096");
+			LOG_ERR(ERR_RF_BAD_PREAMBLE_LEN);
 			*plen = -1;
 		}
 		some_change = true;
@@ -106,7 +104,7 @@ static bool _RFSet_ValidateAndTranslateA(int* ch, int* br, int* plen, int* prf) 
 		else if (*prf == 16)
 			*prf = DWT_PRF_16M;
 		else {
-			LOG_ERR("rfset prf 16/64");
+			LOG_ERR(ERR_RF_BAD_PRF);
 			*prf = -1;
 		}
 		some_change = true;
@@ -126,18 +124,18 @@ static bool _RFSet_ValidateAndTranslateB(int* pac, int* code, int* nssfd, int* p
 		else if (*pac == 64)
 			*pac = DWT_PAC64;
 		else {
-			LOG_ERR("rfset pac 8/16/32/64");
+			LOG_ERR(ERR_RF_BAD_PAC);
 			*pac = -1;
 		}
 		some_change = true;
 	}
 	if (*code >= 0 && !(0 < *code && *code < 25)) {
-		LOG_ERR("rfset code 1..24");
+		LOG_ERR(ERR_RF_BAD_CODE);
 		*code = -1;
 		some_change = true;
 	}
 	if (*nssfd >= 0 && !(*nssfd == 0 || *nssfd == 1)) {
-		LOG_ERR("rfset nssfd 0/1");
+		LOG_ERR(ERR_RF_BAD_NSSFD);
 		some_change = true;
 	}
 	if (*power != -1) {
@@ -192,9 +190,31 @@ static void TXT_SaveCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 }
 
 static void TXT_ClearCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
-	RANGING_MeasureDeleteAll();
-	CARRY_ParentDeleteAll();
-	LOG_INF("cleared");
+	bool clear_both = TXT_CheckFlag(buf, "-pm") | TXT_CheckFlag(buf, "-mp");
+	bool clear_parent = TXT_CheckFlag(buf, "-p") | clear_both;
+	bool clear_measures = TXT_CheckFlag(buf, "-m") | clear_both;
+	bool cleared = false;
+
+	if (clear_measures) {
+		RANGING_MeasureDeleteAll();
+		cleared = true;
+	}
+	if (clear_parent) {
+		CARRY_ParentDeleteAll();
+		cleared = true;
+	}
+	if (cleared) {
+		if (clear_both) {
+			LOG_INF(INF_CLEARED_PARENTS_AND_MEASURES);
+		} else if (clear_parent) {
+			LOG_INF(INF_CLEARED_PARENTS);
+		} else if (clear_measures) {
+			LOG_INF(INF_CLEAR_MEASURES);
+		}
+	} else {
+		LOG_INF(INF_CLEAR_HELP);
+	}
+
 }
 
 static void TXT_ResetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
@@ -239,7 +259,7 @@ static void TXT_SetAnchorsCb(const txt_buf_t* buf, const prot_packet_info_t* inf
 		++i;
 		res = TXT_GetParamNum(buf, i, 16);
 	}
-	LOG_INF("setanchors set %d anchors", i - 1);
+	LOG_INF(INF_SETANCHORS_SET, i - 1);
 }
 
 static void TXT_SetTagsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
@@ -258,7 +278,7 @@ static void TXT_SetTagsCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 		res = TXT_GetParamNum(buf, i, 16);
 	}
 	int anchors = RANGING_TempAnchorsCounter();
-	LOG_INF("settags set %d tags with %d anchors", i - 1, anchors);
+	LOG_INF(INF_SETTAGS_SET, i - 1, anchors);
 }
 
 static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
@@ -268,7 +288,7 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 	int ancDid = TXT_GetParamNum(buf, i, 16);
 
 	if (tagDid < 0 || tagDid > ADDR_BROADCAST) {  // no parameters
-		LOG_INF("measure cnt:%d", RANGING_MeasureCounter());
+		LOG_INF(INF_MEASURE_CMD_CNT, RANGING_MeasureCounter());
 		return;
 	} else if (tagDid == ADDR_BROADCAST) {  // one parameter - ADDR_BROADCAST
 		readIt = readIt >= settings.ranging.measureCnt ? 0 : readIt;
@@ -279,7 +299,7 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 	RANGING_TempAnchorsReset();
 	while (ancDid > 0) {
 		if (!RANGING_TempAnchorsAdd(ancDid)) {
-			LOG_ERR("measure failed after %X", ancDid);
+			LOG_ERR(ERR_MEASURE_FAILED_DID, ancDid);
 			RANGING_TempAnchorsReset();
 			return;
 		}
@@ -287,11 +307,11 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 		ancDid = TXT_GetParamNum(buf, i, 16);
 	}
 	if (!RANGING_AddTagWithTempAnchors(tagDid, RANGING_TempAnchorsCounter())) {
-		LOG_ERR("measure failed ancCnt:%d", RANGING_TempAnchorsCounter());
+		LOG_ERR(ERR_MEASURE_FAILED_ANC_CNT, RANGING_TempAnchorsCounter());
 		RANGING_TempAnchorsReset();
 		return;
 	}
-	LOG_INF("measure set %X with %d anchors", tagDid, RANGING_TempAnchorsCounter());
+	LOG_INF(INF_MEASURE_CMD_SET, tagDid, RANGING_TempAnchorsCounter());
 	RANGING_TempAnchorsReset();
 }
 
@@ -325,9 +345,9 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf, const prot_packet_info_t* in
 	cnt = cnt > 0 ? cnt : period / delay;
 
 	if (meas_count > cnt) {
-		LOG_ERR("Too small period! Setting correct value..");
 		cnt = meas_count;
 		period = cnt * delay;
+		LOG_ERR(WRN_RANGING_TOO_SMALL_PERIOD, cnt, period);
 	}
 
 	settings.ranging.rangingDelayMs = delay;
@@ -386,7 +406,7 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	static int readIt = 0;
 
 	if (parent <= 0 && child <= 0) {  // no parametrs
-		LOG_INF("parent cnt:%d", settings.carry.targetCounter);
+		LOG_INF(INF_PARENT_CNT, settings.carry.targetCounter);
 		return;
 	} else if (child <= 0) {  // one parametr
 		child = parent;
@@ -403,12 +423,12 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 		}
 		PRINT_Parent(parent, child, level);
 	} else if ((parent & ADDR_ANCHOR_FLAG) == 0 || parent > 0xFFFF) {
-		LOG_ERR("parent must be an anchor (%X)", parent);
+		LOG_ERR(ERR_PARENT_NEED_ANCHOR, parent);
 		return;
 	} else {
 		while (child > 0) {
 			if (child == settings.mac.addr) {
-				LOG_ERR("parent can't be set for sink");
+				LOG_ERR(ERR_PARENT_FOR_SINK);
 			} else {
 				if (CARRY_ParentSet(child, parent) == 0) {
 					++fail_cnt;
@@ -417,42 +437,45 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 			++i;
 			child = TXT_GetParamNum(buf, i, 16);
 		}
-		LOG_INF("parent %X for %d devices, failed for %d", parent, i - 2 - fail_cnt, fail_cnt);
+		LOG_INF(INF_PARENT_SET, parent, i - 2 - fail_cnt, fail_cnt);
 	}
 }
 
 static void TXT_BleCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
-BLE_CODE(int power = TXT_GetParam(buf, "txpower:", 10);
-           int enable = TXT_GetParam(buf, "enable:", 10);
+	BLE_CODE(
+			int power = TXT_GetParam(buf, "txpower:", 10);
+			int enable = TXT_GetParam(buf, "enable:", 10);
 
-           FC_BLE_SET_s packet; uint8_t changes = 0; switch (power) {
-             case -40:
-             case -20:
-             case -16:
-             case -12:
-             case -8:
-             case -4:
-             case 0:
-             case 3:
-             case 4:
-               packet.tx_power = power;
-               changes++;
-               break;
-             default:
-               packet.tx_power = -1;
-           } switch (enable) {
-             case 0:
-             case 1:
-               packet.is_enabled = enable;
-               changes++;
-               break;
-             default:
-               packet.is_enabled = -1;
-           } packet.FC = changes ? FC_BLE_SET : FC_BLE_ASK;
-           packet.len = changes ? sizeof(packet) : 2;
+			FC_BLE_SET_s packet; uint8_t changes = 0; switch (power) {
+				case -40:
+				case -20:
+				case -16:
+				case -12:
+				case -8:
+				case -4:
+				case 0:
+				case 3:
+				case 4:
+				packet.tx_power = power;
+				changes++;
+				break;
+				default:
+				packet.tx_power = -1;
+			}switch (enable) {
+				case 0:
+				case 1:
+				packet.is_enabled = enable;
+				changes++;
+				break;
+				default:
+				packet.is_enabled = -1;
+			}packet.FC = changes ? FC_BLE_SET : FC_BLE_ASK;
+			packet.len = changes ? sizeof(packet) : 2;
 
-           _TXT_Finalize(&packet, info); return;)
-  		LOG_ERR("BLE is disabled");
+			_TXT_Finalize(&packet, info);
+			return;
+	)
+	LOG_ERR(ERR_BLE_INACTIVE);
 }
 
 static void TXT_ImuCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
@@ -511,7 +534,7 @@ static void TXT_Route(const txt_buf_t* buf, const prot_packet_info_t* info) {
 		settings.carry.autoRoute = en;
 	}
 
-	LOG_INF("route auto:%d", settings.carry.autoRoute);
+	LOG_INF(INF_ROUTE, settings.carry.autoRoute);
 }
 
 const txt_cb_t txt_cb_tab[] = {

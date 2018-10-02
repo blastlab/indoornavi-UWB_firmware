@@ -51,6 +51,22 @@ int TXT_AtoI(const txt_buf_t* buf, cchar* ptr, int base) {
 	return result * minus;
 }
 
+bool TXT_CheckFlag(const txt_buf_t* buf, cchar* flag) {
+	int i;
+	cchar* ptr = buf->cmd;
+
+	while (*ptr != 0) {
+		for (i = 0; *ptr == flag[i]; ++i) {
+			INCREMENT_CYCLE(ptr, buf->start, buf->end);
+		}
+		if (flag[i] == 0) {
+			return true;
+		}
+		INCREMENT_CYCLE(ptr, buf->start, buf->end);
+	}
+	return false;
+}
+
 // return pointer to
 int TXT_GetParam(const txt_buf_t* buf, cchar* cmd, int base) {
 	int i;
@@ -106,7 +122,7 @@ void TXT_Parse(const txt_buf_t* buf) {
 			return;
 		}
 	}
-	LOG_ERR("Bad command");
+	LOG_ERR(ERR_BAD_COMMAND, "Bad command");
 }
 
 // take input to data parser, ignore \r and split by \n
