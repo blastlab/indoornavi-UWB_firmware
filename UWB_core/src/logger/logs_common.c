@@ -1,0 +1,110 @@
+/**
+ * @file logs_common.c
+ * @author Karol Trzcinski
+ * @brief logger engine implementation
+ * @version 0.1
+ * @date 2018-10-02
+ * 
+ * @copyright Copyright (c) 2018
+ * 
+ */
+#include "logs.h"
+
+
+typedef struct{
+  int code;
+  const char* frm;
+} LOG_CODE_t;
+
+#define ADD_ITEM(CODE,ENUM_VALUE,MESSAGE) [ENUM_VALUE]={CODE,#ENUM_VALUE},
+#define ADD_ITEM_M(CODE,ENUM_VALUE,MESSAGE) [ENUM_VALUE]={CODE,MESSAGE},
+
+static LOG_CODE_t LOG_CodeCrit[ERR_codes_N] = {
+#include "logger/logs_crit.h"
+    };
+static LOG_CODE_t LOG_CodeErr[ERR_codes_N] = {
+#include "logger/logs_err.h"
+    };
+
+static LOG_CODE_t LOG_CodeWrn[WRN_codes_N] = {
+#include "logger/logs_wrn.h"
+    };
+
+static LOG_CODE_t LOG_CodeInf[INF_codes_N] = {
+#include "logger/logs_inf.h"
+    };
+
+static LOG_CODE_t LOG_CodeTest[TEST_codes_N] = {
+#include "logger/logs_test.h"
+    };
+
+
+const char* LOG_GetFormat(int number, LOG_CODE_t array[], int len)
+{
+  LOG_CODE_t* end = &array[len];
+  LOG_CODE_t* ptr = &array[0];
+
+  while(ptr != end)
+  {
+    if(ptr->code == number)
+    {
+      return ptr->frm;
+    }
+    ++ptr;
+  }
+
+  return 0;
+}
+
+
+void LOG_CRIT(ERR_codes code, ...) {
+	const char* frm = LOG_CodeCrit[code].frm;
+	const int code_num = LOG_CodeCrit[code].code;
+	va_list arg;
+	va_start(arg, code);
+	LOG_Text('C', (int)code_num, frm, arg);
+	va_end(arg);
+}
+
+void LOG_ERR(ERR_codes code, ...) {
+	const char* frm = LOG_CodeErr[code].frm;
+	const int code_num = LOG_CodeErr[code].code;
+	va_list arg;
+	va_start(arg, code);
+	LOG_Text('E', code_num, frm, arg);
+	va_end(arg);
+}
+
+void LOG_WRN(WRN_codes code, ...) {
+	const char* frm = LOG_CodeWrn[code].frm;
+	const int code_num = LOG_CodeWrn[code].code;
+	va_list arg;
+	va_start(arg, code);
+	LOG_Text('W', (int)code_num, frm, arg);
+	va_end(arg);
+}
+
+void LOG_INF(INF_codes code, ...) {
+	const char* frm = LOG_CodeInf[code].frm;
+	const int code_num = LOG_CodeInf[code].code;
+	va_list arg;
+	va_start(arg, code);
+	LOG_Text('I', (int)code_num, frm, arg);
+	va_end(arg);
+}
+
+void LOG_DBG(const char *frm, ...) {
+	va_list arg;
+	va_start(arg, frm);
+	LOG_Text('D', 0, frm, arg);
+	va_end(arg);
+}
+
+void LOG_TEST(TEST_codes code, ...) {
+	const char* frm = LOG_CodeTest[code].frm;
+	const int code_num = LOG_CodeTest[code].code;
+	va_list arg;
+	va_start(arg, code);
+	LOG_Text('T', (int)code_num, frm, arg);
+	va_end(arg);
+}

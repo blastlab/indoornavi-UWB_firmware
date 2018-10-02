@@ -182,7 +182,7 @@ static void TXT_RFSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 }
 
 static void TXT_TestCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
-	LOG_TEST("PASS");
+	LOG_TEST(TEST_PASS);
 }
 
 static void TXT_SaveCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
@@ -209,7 +209,7 @@ static void TXT_ClearCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 		} else if (clear_parent) {
 			LOG_INF(INF_CLEARED_PARENTS);
 		} else if (clear_measures) {
-			LOG_INF(INF_CLEAR_MEASURES);
+			LOG_INF(INF_CLEARED_MEASURES);
 		}
 	} else {
 		LOG_INF(INF_CLEAR_HELP);
@@ -230,7 +230,7 @@ static void TXT_BinCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 		const char* cmd = TXT_PointParamNumber(buf, buf->cmd, 1);
 		while (cmd[0] != 0) {
 			if (data->dPtr > data->buf + MAC_BUF_LEN) {
-				LOG_ERR("TXT_Bin too long base64 message");
+				LOG_ERR(ERR_BASE64_TOO_LONG_INPUT);
 				return;
 			}
 			data->dPtr[0] = cmd[0];
@@ -252,7 +252,7 @@ static void TXT_SetAnchorsCb(const txt_buf_t* buf, const prot_packet_info_t* inf
 	res = TXT_GetParamNum(buf, i, 16);
 	while (res > 0) {
 		if (!RANGING_TempAnchorsAdd(res) || (res & ADDR_ANCHOR_FLAG) == 0) {
-			LOG_ERR("setanchors failed (%X)", res);
+			LOG_ERR(ERR_SETANCHORS_FAILED, res);
 			RANGING_TempAnchorsReset();
 			return;
 		}
@@ -265,13 +265,13 @@ static void TXT_SetAnchorsCb(const txt_buf_t* buf, const prot_packet_info_t* inf
 static void TXT_SetTagsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int res, i = 1;
 	if (RANGING_TempAnchorsCounter() == 0) {
-		LOG_ERR("settags need setanchors");
+		LOG_ERR(ERR_SETTAGS_NEED_SETANCHORS);
 		return;
 	}
 	res = TXT_GetParamNum(buf, i, 16);
 	while (res > 0) {
 		if (!RANGING_AddTagWithTempAnchors(res, 1)) {
-			LOG_ERR("settags failed after %X", res);
+			LOG_ERR(ERR_SETTAGS_FAILED, res);
 			return;
 		}
 		++i;
@@ -325,7 +325,7 @@ static void TXT_DeleteTagsCb(const txt_buf_t* buf, const prot_packet_info_t* inf
 		++i;
 		res = TXT_GetParamNum(buf, i, 16);
 	}
-	LOG_INF("deletetags deleted %d tags", deleted);
+	LOG_INF(INF_DELETETAGS, deleted);
 }
 
 static void TXT_RangingTimeCb(const txt_buf_t* buf, const prot_packet_info_t* info) {

@@ -142,7 +142,7 @@ void Desynchronize() {
 
 void TurnOff() {
 	// log turn off to host
-	LOG_INF("turn off");
+	LOG_INF(INF_DEVICE_TURN_OFF, settings.mac.addr);
 	SendTurnOffMessage(0);
 
 	// wait for packet transmission

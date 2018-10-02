@@ -122,7 +122,7 @@ void TXT_Parse(const txt_buf_t* buf) {
 			return;
 		}
 	}
-	LOG_ERR(ERR_BAD_COMMAND, "Bad command");
+	LOG_ERR(ERR_BAD_COMMAND);
 }
 
 // take input to data parser, ignore \r and split by \n

@@ -393,7 +393,7 @@ mac_buf_t* MAC_Buffer() {
 		}
 	}
 	// else return null
-	LOG_WRN(WRN_MAC_NO_MORE_BUFFERS);
+	LOG_ERR(ERR_MAC_NO_MORE_BUFFERS);
 	return 0;
 }
 

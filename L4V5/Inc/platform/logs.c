@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "parsers/base64.h"
 #include "platform/port.h"
+#include "logs.h"
 
 #define LOG_USB_EN 1
 #define LOG_SD_EN 0
@@ -48,7 +49,7 @@ int LOG_Bin(const void* bin, int size) {
 	buf[f++] = 'B';
 	buf[f++] = ' ';
 	if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
-		LOG_Text('E', "logbin: too big binary file! FC:%xh", ((uint8_t*)bin)[0]);
+		LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t*)bin)[0]);
 		return 0;
 	} else {
 		f += BASE64_Encode((unsigned char*)(buf + f), bin, size);

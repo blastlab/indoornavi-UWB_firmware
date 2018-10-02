@@ -103,8 +103,8 @@ bool RANGING_AddTagWithTempAnchors(dev_addr_t did, int maxAncInMeasure) {
 	}
 	int meas_count = RANGING_MeasureCounter();
 	if (meas_count > settings.ranging.rangingPeriodMs / settings.ranging.rangingDelayMs) {
-		LOG_ERR("Too small period! Setting correct value..");
 		settings.ranging.rangingPeriodMs = meas_count * settings.ranging.rangingDelayMs;
+		LOG_WRN(WRN_RANGING_TOO_SMALL_PERIOD, meas_count, settings.ranging.rangingPeriodMs);
 		PRINT_RangingTime();
 	}
 	return true;
