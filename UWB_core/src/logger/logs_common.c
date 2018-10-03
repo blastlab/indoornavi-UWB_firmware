@@ -17,6 +17,7 @@ typedef struct{
 
 #define ADD_ITEM(CODE,ENUM_VALUE,MESSAGE) [ENUM_VALUE]={CODE,#ENUM_VALUE},
 #define ADD_ITEM_M(CODE,ENUM_VALUE,MESSAGE) [ENUM_VALUE]={CODE,MESSAGE},
+#define COMMENT(X)
 
 static LOG_CODE_t LOG_CodeCrit[ERR_codes_N] = {
 #include "logger/logs_crit.h"
@@ -37,6 +38,10 @@ static LOG_CODE_t LOG_CodeTest[TEST_codes_N] = {
 #include "logger/logs_test.h"
     };
 
+#undef ADD_ITEM
+#undef ADD_ITEM_M
+#undef COMMENT
+
 int LOG_CheckUniqInArray(LOG_CODE_t target[], int len)
 {
 	int repeats = 0;
@@ -44,7 +49,7 @@ int LOG_CheckUniqInArray(LOG_CODE_t target[], int len)
   {
     for(int j = 0; j < i; ++j) {
       if(target[i].code == target[j].code) {
-				LOG_CRIT(CRIT_LOG_CODES_ARENT_UNIQ, target[i].code);
+				LOG_CRIT(CRIT_LOG_CODES_ARE_NOT_UNIQ, target[i].code);
 				++repeats;
       }
     }
@@ -56,7 +61,7 @@ int LOG_CheckMonotonousInArray(LOG_CODE_t target[], int len) {
 	int unmonotonous = 0;
 	for (int i = 1; i < len; ++i) {
 		if (target[i].code < target[i - 1].code) {
-			LOG_CRIT(CRIT_LOG_CODES_ARENT_MONOTONOUS, target[i].code);
+			LOG_CRIT(CRIT_LOG_CODES_ARE_NOT_MONOTONOUS, target[i].code);
 			++unmonotonous;
 		}
 	}

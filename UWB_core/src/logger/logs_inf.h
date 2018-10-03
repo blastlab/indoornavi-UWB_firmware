@@ -3,9 +3,9 @@
  * @author Karol Trzcinski
  * @brief informational logs definition
  * @date 2018-10-02
- * 
+ *
  * @copyright Copyright (c) 2018
- * 
+ *
  */
 
 // network
@@ -31,6 +31,7 @@ ADD_ITEM_M(1303, INF_MEASURE_CMD_CNT, "measure cnt:%d")
 ADD_ITEM_M(1304, INF_MEASURE_CMD_SET, "measure set %X with %d anchors")
 ADD_ITEM_M(1305, INF_RANGING_TIME, "rangingtime T:%d t:%d (N:%d)")
 ADD_ITEM_M(1306, INF_TOA_SETTINGS, "%s gt:%d fin:%d resp1:%d resp2:%d")
+COMMENT("prefix is dependent of usage")
 ADD_ITEM_M(1307, INF_CLEARED_PARENTS, "cleared parents")
 ADD_ITEM_M(1308, INF_CLEARED_MEASURES, "cleared measures")
 ADD_ITEM_M(1309, INF_CLEARED_PARENTS_AND_MEASURES, "cleared parents and measures")

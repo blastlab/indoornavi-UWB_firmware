@@ -15,6 +15,7 @@
 #undef ADD_ITEM_M
 #define ADD_ITEM(CODE,ENUM_VALUE,MESSAGE) ENUM_VALUE,
 #define ADD_ITEM_M(CODE,ENUM_VALUE,MESSAGE) ENUM_VALUE,
+#define COMMENT(X)
 
 typedef enum {
 #include "logger/logs_crit.h"
@@ -43,10 +44,11 @@ typedef enum {
 
 #undef ADD_ITEM
 #undef ADD_ITEM_M
+#undef COMMENT
 
 /**
  * @brief logger informations code tester
- * 
+ *
  */
 void LOG_SelfTest();
 
@@ -76,7 +78,7 @@ int LOG_Bin(const void *bin, int size);
 
 /**
  * @brief log criticcal information
- * 
+ *
  * @param code of message
  * @param ... extra arguments
  */
@@ -84,7 +86,7 @@ void LOG_CRIT(ERR_codes code, ...);
 
 /**
  * @brief log error information
- * 
+ *
  * @param code of message
  * @param ... extra arguments
  */
@@ -92,7 +94,7 @@ void LOG_ERR(ERR_codes code, ...);
 
 /**
  * @brief log warning information
- * 
+ *
  * @param code of message
  * @param ... extra arguments
  */
@@ -100,7 +102,7 @@ void LOG_WRN(WRN_codes code, ...);
 
 /**
  * @brief log informations
- * 
+ *
  * @param code of message
  * @param ... extra arguments
  */
@@ -108,7 +110,7 @@ void LOG_INF(INF_codes code, ...);
 
 /**
  * @brief debug information logger
- * 
+ *
  * @param code of message
  * @param ... extra arguments
  */
@@ -116,7 +118,7 @@ void LOG_DBG(const char *frm, ...);
 
 /**
  * @brief target device integration test logger
- * 
+ *
  * @param code of message
  * @param ... extra arguments
  */
