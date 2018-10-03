@@ -205,11 +205,11 @@ static void TXT_ClearCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	}
 	if (cleared) {
 		if (clear_both) {
-			LOG_INF(INF_CLEARED_PARENTS_AND_MEASURES);
+			LOG_INF(INF_CLEARED, "-mp");
 		} else if (clear_parent) {
-			LOG_INF(INF_CLEARED_PARENTS);
+			LOG_INF(INF_CLEARED, "-p");
 		} else if (clear_measures) {
-			LOG_INF(INF_CLEARED_MEASURES);
+			LOG_INF(INF_CLEARED, "-m");
 		}
 	} else {
 		LOG_INF(INF_CLEAR_HELP);

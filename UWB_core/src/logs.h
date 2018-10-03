@@ -13,9 +13,13 @@
 
 #undef ADD_ITEM
 #undef ADD_ITEM_M
+#undef COMMENT
+#undef ARG
+
 #define ADD_ITEM(CODE,ENUM_VALUE,MESSAGE) ENUM_VALUE,
 #define ADD_ITEM_M(CODE,ENUM_VALUE,MESSAGE) ENUM_VALUE,
 #define COMMENT(X)
+#define ARG(NAME,DESCRIPTION)
 
 typedef enum {
 #include "logger/logs_crit.h"
@@ -45,6 +49,7 @@ typedef enum {
 #undef ADD_ITEM
 #undef ADD_ITEM_M
 #undef COMMENT
+#undef ARG
 
 /**
  * @brief logger informations code tester

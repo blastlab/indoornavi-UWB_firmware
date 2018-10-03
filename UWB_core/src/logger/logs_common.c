@@ -15,9 +15,16 @@ typedef struct{
   const char* frm;
 } LOG_CODE_t;
 
+
+#undef ADD_ITEM
+#undef ADD_ITEM_M
+#undef COMMENT
+#undef ARG
+
 #define ADD_ITEM(CODE,ENUM_VALUE,MESSAGE) [ENUM_VALUE]={CODE,#ENUM_VALUE},
 #define ADD_ITEM_M(CODE,ENUM_VALUE,MESSAGE) [ENUM_VALUE]={CODE,MESSAGE},
 #define COMMENT(X)
+#define ARG(NAME,DESCRIPTION)
 
 static LOG_CODE_t LOG_CodeCrit[ERR_codes_N] = {
 #include "logger/logs_crit.h"
@@ -41,6 +48,7 @@ static LOG_CODE_t LOG_CodeTest[TEST_codes_N] = {
 #undef ADD_ITEM
 #undef ADD_ITEM_M
 #undef COMMENT
+#undef ARG
 
 int LOG_CheckUniqInArray(LOG_CODE_t target[], int len)
 {

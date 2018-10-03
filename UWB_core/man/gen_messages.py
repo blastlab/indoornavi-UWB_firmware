@@ -16,13 +16,20 @@ def generate_messages_description(in_file, out_file):
       comment = ml[start+1:stop]
       out_file.write("*comment*: " + comment + "\n\n")
       continue
+    elif "ARG(" in l:
+      start, stop = ml.find("\""), ml.replace("\"", ".", 1).find("\"")
+      arg = ml[start+1:stop]
+      start, stop = ml.replace("\"", ".", 2).find("\""), ml.rfind("\"")
+      comment = ml[start+1:stop]
+      out_file.write(" arg *" + arg + "*: \n\t" + comment + "\n\n")
+      continue
     else:
       continue
     out_file.write(
-"""  .. _{1}:
+""".. _{1}:
 
-**{1}**
-
+*{1}*
+------------------------------------------------------------
 
 *code:* {0}
 
@@ -38,14 +45,14 @@ out = open("source/messages.rst", "w")
 out.write(
 """.. _messages:
 
-========
+================
 Messages
-========
+================
 
 .. _information messages:
 
 Informations
-============
+================
 
 """)
 
@@ -55,7 +62,7 @@ out.write("""
 .. _warning messages:
 
 Warnings
-============
+================
 
 """)
 
@@ -65,17 +72,17 @@ out.write("""
 .. _error messages:
 
 Errors
-============
+================
 
 """)
 
-generate_messages_description(open(input_prefix + "logs_wrn.h"), out)
+generate_messages_description(open(input_prefix + "logs_err.h"), out)
 
 out.write("""
-.. critical messages:
+.. _critical messages:
 
 Critical
-============
+================
 
 """)
 
@@ -85,7 +92,7 @@ out.write("""
 .. _test messages:
 
 Test
-============
+================
 
 """)
 
