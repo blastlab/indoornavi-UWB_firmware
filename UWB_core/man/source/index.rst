@@ -13,9 +13,8 @@ Welcome to UWB_core's documentation!
    commands.rst
    messages.rst
 
-Indices and tables
+Search
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`

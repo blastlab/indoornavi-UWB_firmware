@@ -295,18 +295,28 @@ BLE_CODE(
 void FC_BLE_SET_cb(const void* data, const prot_packet_info_t* info) {
 BLE_CODE(
 // message is copied to local struct to avoid unaligned access exception
-BIN_ASSERT(*(uint8_t*)data == FC_BLE_SET); FC_BLE_SET_s packet;
-memcpy(&packet, data, sizeof(packet)); if (packet.tx_power != -1) {
+BIN_ASSERT(*(uint8_t*)data == FC_BLE_SET);
+FC_BLE_SET_s packet;
+memcpy(&packet, data, sizeof(packet));
+if (packet.tx_power != -1) {
 	PORT_BleSetPower(packet.tx_power);
-}uint8_t ble_enabled_buf = settings.ble.is_enabled;
+}
+uint8_t ble_enabled_buf = settings.ble.is_enabled;
 if ((int8_t)packet.is_enabled != -1) {
 	settings.ble.is_enabled = packet.is_enabled;
-}SETTINGS_Save();
-uint8_t ask_data[2]; ask_data[0] = FC_BLE_ASK; ask_data[1] = 2;
-FC_BLE_ASK_cb(&ask_data, info); PORT_WatchdogRefresh();
+}
+SETTINGS_Save();
+uint8_t ask_data[2];
+ask_data[0] = FC_BLE_ASK;
+ask_data[1] = 2;
+FC_BLE_ASK_cb(&ask_data, info);
+PORT_WatchdogRefresh();
 PORT_SleepMs(50);  // to send response
 PORT_WatchdogRefresh();
-if (ble_enabled_buf != settings.ble.is_enabled) {PORT_Reboot();})
+if (ble_enabled_buf != settings.ble.is_enabled) {
+	PORT_Reboot();
+	}
+	)
 }
 
 void FC_IMU_ASK_cb(const void* data, const prot_packet_info_t* info) {

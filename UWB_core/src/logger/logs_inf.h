@@ -24,7 +24,7 @@ ARG("parent", "hex addres of parent device (in sink direction)")
 
 ADD_ITEM_M(1106, INF_PARENT_DESCRIPTION, "parent of c:%X is p:%X # n:%d")
 ARG("c", "hex child did")
-ARG("p", "hex parent did")
+ARG("p", "hex parent did, parent for sink is always 0")
 ARG("n", "number of child hops to sink")
 COMMENT("see :ref:`parent`")
 
