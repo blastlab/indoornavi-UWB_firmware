@@ -67,7 +67,7 @@ Informations
 	hex child did
 
  arg *p*: 
-	hex parent did
+	hex parent did, parent for sink is always 0
 
  arg *n*: 
 	number of child hops to sink
@@ -583,6 +583,15 @@ Errors
 
 *descriptor:* "%s bad len %d!=%d"
 
+ arg *%s*: 
+	function code name
+
+ arg *%d*: 
+	received length
+
+ arg *%d*: 
+	expected length
+
 .. _ERR_BAD_OPCODE_LEN:
 
 *ERR_BAD_OPCODE_LEN*
@@ -591,6 +600,15 @@ Errors
 *code:* 1103
 
 *descriptor:* "%s bad len %d!=%d"
+
+ arg *%s*: 
+	function code name
+
+ arg *%d*: 
+	received length
+
+ arg *%d*: 
+	expected length
 
 .. _ERR_BAD_OPCODE:
 
@@ -618,6 +636,9 @@ Errors
 *code:* 1106
 
 *descriptor:* "parent must be an anchor (%X)"
+
+ arg *address of incorrect device*: 
+	"address of incorrect device
 
 .. _ERR_RF_BAD_CHANNEL:
 
@@ -691,23 +712,31 @@ Errors
 
 *descriptor:* "BLE is disabled"
 
-.. _ERR_MEASURE_FAILED_DID:
+*comment*: BLE module is not included into this version of firmware
 
-*ERR_MEASURE_FAILED_DID*
+.. _ERR_MEASURE_ADD_ANCHOR_FAILED_DID:
+
+*ERR_MEASURE_ADD_ANCHOR_FAILED_DID*
 ------------------------------------------------------------
 
 *code:* 1301
 
-*descriptor:* "measure failed after %X"
+*descriptor:* "measure add anchor failed with %X"
 
-.. _ERR_MEASURE_FAILED_ANC_CNT:
+ arg *hex*: 
+	incorrect anchor address
 
-*ERR_MEASURE_FAILED_ANC_CNT*
+.. _ERR_MEASURE_TARGET_WITH_ANC_FAILED:
+
+*ERR_MEASURE_TARGET_WITH_ANC_FAILED*
 ------------------------------------------------------------
 
 *code:* 1302
 
-*descriptor:* "measure failed ancCnt:%d"
+*descriptor:* "measure target failed ancCnt:%d"
+
+ arg *ancCnt*: 
+	number of anchors to connect with target
 
 .. _ERR_SETANCHORS_FAILED:
 
@@ -717,6 +746,9 @@ Errors
 *code:* 1303
 
 *descriptor:* "setanchors failed (%X)"
+
+ arg *hex*: 
+	address of device which cause error
 
 .. _ERR_SETTAGS_NEED_SETANCHORS:
 
@@ -735,6 +767,9 @@ Errors
 *code:* 1305
 
 *descriptor:* "settags failed after %X"
+
+ arg *hex*: 
+	address of device which cause error
 
 .. _ERR_FLASH_ERASING:
 
@@ -790,6 +825,9 @@ Errors
 
 *descriptor:* "LOG_Bin too long base64 message, FC:%xh"
 
+ arg *FC*: 
+	hexadecimal function code which cause error
+
 
 .. _critical messages:
 
@@ -814,6 +852,11 @@ Critical
 
 *descriptor:* "logger codes aren't uniq, code:%d"
 
+ arg *code*: 
+	message code
+
+*comment*: it is logger self test error
+
 .. _CRIT_LOG_CODES_ARE_NOT_MONOTONOUS:
 
 *CRIT_LOG_CODES_ARE_NOT_MONOTONOUS*
@@ -822,6 +865,13 @@ Critical
 *code:* 1002
 
 *descriptor:* "logger codes aren't monotonous, code:%d"
+
+ arg *code*: 
+	message code
+
+*comment*: it is logger self test error
+
+*comment*: when codes aren't monotonous then probability of error is bigger
 
 
 .. _test messages:

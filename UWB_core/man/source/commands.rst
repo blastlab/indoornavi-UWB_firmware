@@ -165,7 +165,7 @@ clear
 
 * -m clear measure table
 * -p clear parent table
-* -mp combination -m and -p, response `link <measure.html/#INF_CLEARED_PARENTS_AND_MEASURES>`_
+* -mp combination -m and -p, response :ref:`INF_CLEARED`
 * did: [0..FFFE] hexadecimal address of a target device
 
 Response is in :ref:`INF_CLEARED`
@@ -268,8 +268,8 @@ Response will be :ref:`INF_MEASURE_CMD_SET`.
 
 Errors:
 
-* :ref:`ERR_MEASURE_FAILED_DID`
-* :ref:`ERR_MEASURE_FAILED_ANC_CNT`
+* :ref:`ERR_MEASURE_ADD_ANCHOR_FAILED_DID`
+* :ref:`ERR_MEASURE_TARGET_WITH_ANC_FAILED`
 
 Warnings:
 
@@ -326,7 +326,7 @@ Response is :ref:`INF_TOA_SETTINGS`
 * gt: guard time in :math:`\mu s`
 * fin: final message delay in :math:`\mu s`
   Time between transmission last reponse and final message.
-* resp?: respnse delay in :math:`\mu s`. Replace *?* with respnse number.
+* resp?: respnse delay in :math:`\mu s`. Replace *?* with response number.
   Time between receiving POLL message and sending reponse.
 
 note: Guard time change will fully affect after reset

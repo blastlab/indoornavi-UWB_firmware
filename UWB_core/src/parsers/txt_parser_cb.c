@@ -299,7 +299,7 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 	RANGING_TempAnchorsReset();
 	while (ancDid > 0) {
 		if (!RANGING_TempAnchorsAdd(ancDid)) {
-			LOG_ERR(ERR_MEASURE_FAILED_DID, ancDid);
+			LOG_ERR(ERR_MEASURE_ADD_ANCHOR_FAILED_DID, ancDid);
 			RANGING_TempAnchorsReset();
 			return;
 		}
@@ -307,7 +307,7 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 		ancDid = TXT_GetParamNum(buf, i, 16);
 	}
 	if (!RANGING_AddTagWithTempAnchors(tagDid, RANGING_TempAnchorsCounter())) {
-		LOG_ERR(ERR_MEASURE_FAILED_ANC_CNT, RANGING_TempAnchorsCounter());
+		LOG_ERR(ERR_MEASURE_TARGET_WITH_ANC_FAILED, RANGING_TempAnchorsCounter());
 		RANGING_TempAnchorsReset();
 		return;
 	}
