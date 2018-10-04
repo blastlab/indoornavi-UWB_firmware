@@ -14,7 +14,7 @@ General rules
 
 * parser is letter size independent during parsing commands and hexadecimal values
 * when parameters has names then order is not important
-* spaces between attribut name and values will be ommited
+* spaces between attribute name and values will be omitted
 
 
 
@@ -61,7 +61,7 @@ rfset
 *rfset [ch:dec] [br:dec] [plen:dec] [prf:dec] [pac:dec] [code:dec] [sfdto:dec] [pgdly:dec] [nssfd:dec] [power:hex] [did:hex]*
 
 * ch: radio channel. Change radio frequency and bandwidth. Possible values {1, 2, 3, 4, 5, 7}
-* br: radio baudrate in kbps. Possible values {110, 850, 6800}
+* br: radio baud rate in kbps. Possible values {110, 850, 6800}
 * plen: preamble length. Possible values {64, 128, 256, 512, 1024, 1546, 2048, 4096}
 * prf: pulse repetition frequency in MHz. Possible values {16, 64}
 * pac: preamble acquisition chunk. Possible values {8, 16, 32, 64}. See `recommended PAC size`_
@@ -324,10 +324,10 @@ Response is :ref:`INF_TOA_SETTINGS`
 *toatime [gt:dec] [fin:dec] [resp?:dec]*
 
 * gt: guard time in :math:`\mu s`
-* fin: final message delay in :math:`\mu s`
-  Time between transmission last reponse and final message.
-* resp?: respnse delay in :math:`\mu s`. Replace *?* with response number.
-  Time between receiving POLL message and sending reponse.
+* fin: *final* message delay in :math:`\mu s`
+  Time between transmission last *response* and *final* message.
+* resp?: *respnse* delay in :math:`\mu s`. Replace *?* with *response* number.
+  Time between receiving *poll* message and sending *reponse*.
 
 note: Guard time change will fully affect after reset
 
@@ -432,6 +432,6 @@ hang
 
 *hang*
 
-Go to inifity loop.
+Go to infinity loop.
 
 note: this command is for debug purpose only
