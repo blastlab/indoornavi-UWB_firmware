@@ -13,11 +13,10 @@
 extern toa_instance_t toa;
 extern mac_instance_t mac;
 
-const char toa_bad_len_msg[] = "%s bad len %d!=%d";
 #define PROT_CHECK_LEN(FC, len, expected)               \
   do {                                                  \
     if ((len) < (expected)) {                           \
-      LOG_ERR(toa_bad_len_msg, #FC, (len), (expected)); \
+      LOG_ERR(ERR_BAD_OPCODE_LEN, #FC, (len), (expected)); \
       return -1;                                        \
     }                                                   \
   } while (0)
@@ -197,7 +196,7 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_ASSERT(packet->FC == FC_TOA_INIT);
 	int expected_size = sizeof(*packet) + packet->num_poll_anchor * sizeof(dev_addr_t);
 	if (packet->len != expected_size) {
-		LOG_ERR(toa_bad_len_msg, "FC_TOA_INIT", packet->len, expected_size);
+		LOG_ERR(ERR_BAD_OPCODE_LEN, "FC_TOA_INIT", packet->len, expected_size);
 		return;
 	}
 
@@ -318,7 +317,7 @@ void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info) {
 	FC_TOA_RES_s* packet = (FC_TOA_RES_s*)data;
 	TOA_ASSERT(packet->FC == FC_TOA_RES);
 	if (packet->len < sizeof(*packet)) {
-		LOG_ERR(toa_bad_len_msg, FC_TOA_FIN, packet->len, sizeof(*packet));
+		LOG_ERR(ERR_BAD_OPCODE_LEN, "FC_TOA_FIN", packet->len, sizeof(*packet));
 		return;
 	}
 	TOA_MeasurePush(&packet->meas);

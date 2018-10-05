@@ -206,7 +206,6 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 	uint8_t* dataPointer;
 	uint8_t dataSize;
 	bool toSink, toMe, toServer, ackReq;
-	const char noBufMsg[] = "No tx buf for carry";
 
 	// broadcast without carry header
 	// or standard data message with carry header
@@ -232,7 +231,8 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 	dataSize = len - sizeof(FC_CARRY_s) - hops_num * sizeof(pcarry->hops[0]);
 
 	if (version != CARRY_VERSION) {
-		LOG_WRN("Rx carry with version %d (%d)", version, CARRY_VERSION);
+		LOG_WRN(WRN_CARRY_INCOMPATIBLE_VERSION, version,
+		        CARRY_VERSION);
 	}
 
 	if (toMe) {
@@ -247,8 +247,6 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 			if (tx_buf != 0) {
 				CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
 				CARRY_Send(tx_buf, ackReq);
-			} else {
-				LOG_WRN(noBufMsg);
 			}
 		}
 	} else if (toSink) {
@@ -258,8 +256,6 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 		if (tx_buf != 0) {
 			CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
 			CARRY_Send(tx_buf, ackReq);
-		} else {
-			LOG_WRN(noBufMsg);
 		}
 	} else if (hops_num > 0) {
 		dev_addr_t nextDid = pcarry->hops[hops_num - 1];
@@ -273,11 +269,9 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 			tx_carry->len -= sizeof(dev_addr_t);
 			tx_carry->verHopsNum -= 1;
 			MAC_Send(tx_buf, (pcarry->flags & CARRY_FLAG_ACK_REQ) != 0);
-		} else {
-			LOG_WRN(noBufMsg);
 		}
 	} else {
-		LOG_WRN("Rx carry to nobody");
+		LOG_WRN(WRN_CARRY_TARGET_NOBODY);
 	}
 }
 

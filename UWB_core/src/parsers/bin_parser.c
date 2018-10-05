@@ -31,7 +31,7 @@ const uint8_t* BIN_Parse(const uint8_t data[], const prot_packet_info_t* info, i
 			ret = BIN_ParseSingle(data, info);
 		}
 		if (ret == 0) {
-			LOG_ERR("unknown opcode 0x%X", data[0]);
+			LOG_ERR(ERR_BAD_OPCODE, data[0]);
 			ret = data[1];  // frame len
 			// when len is zero then break
 			if (ret == 0) {

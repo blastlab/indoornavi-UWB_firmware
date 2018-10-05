@@ -55,7 +55,7 @@ uint8_t BIN_ParseSingle(const uint8_t* buf, const prot_packet_info_t* info);
  * This function also keep buf->dPtr consistent so callback functions doesn't
  * have to manage buffer data pointer.
  *
- * @param[in] buf pointer to buffer with message
+ * @param[in] data buf pointer to buffer with message
  * @param[in] info extra informations about frame
  * @param size number of bytes to parse
  * @return uin8_t* pointer to data after processed messages

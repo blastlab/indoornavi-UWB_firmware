@@ -4,12 +4,11 @@
 sync_instance_t sync;
 extern mac_instance_t mac;
 
-const char sync_bad_len_msg[] = "%s bad len %d!=%d";
 #define PROT_CHECK_LEN(FC, len, expected)                \
                                                          \
   do {                                                   \
     if ((len) < (expected)) {                            \
-      LOG_ERR(sync_bad_len_msg, #FC, (len), (expected)); \
+      LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, #FC, (len), (expected)); \
       return -1;                                         \
     }                                                    \
                                                          \

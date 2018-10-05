@@ -67,6 +67,10 @@ void UwbMain() {
 		settings.mac.role = PORT_GetHwRole();
 	}
 
+#ifdef DBG
+	LOG_SelfTest();
+#endif
+
 	MAC_Init(BIN_Parse);
 	CARRY_Init(settings.mac.role == RTLS_SINK);
 	FU_Init(settings.mac.role == RTLS_SINK);
@@ -142,7 +146,7 @@ void Desynchronize() {
 
 void TurnOff() {
 	// log turn off to host
-	LOG_INF("turn off");
+	LOG_INF(INF_DEVICE_TURN_OFF, settings.mac.addr);
 	SendTurnOffMessage(0);
 
 	// wait for packet transmission

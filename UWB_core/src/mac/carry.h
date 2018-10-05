@@ -125,6 +125,7 @@ void CARRY_ParentDeleteAll();
  *
  * @param[in] buf address to write trace
  * @param[in] target
+ * @param[out] nextDid address of next device, where packet should be sent
  * @return int hops counter 0..#CARRY_MAX_HOPS
  */
 int CARRY_WriteTrace(uint8_t* buf, dev_addr_t target, dev_addr_t* nextDid);
@@ -133,7 +134,7 @@ int CARRY_WriteTrace(uint8_t* buf, dev_addr_t target, dev_addr_t* nextDid);
  * @brief reserve buffer, write headers and set buffer fields default values.
  *
  * @param[in] target device address
- * @param[out] resulting buffer carry pointer
+ * @param[out] out_pcarry resulting buffer carry pointer
  * @return mac_buf_t* result buffer or null
  */
 mac_buf_t* CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry);
@@ -141,7 +142,8 @@ mac_buf_t* CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry);
 /**
  * @brief send buffer via UWB or USB to correct device
  *
- * @param buf filled buffer data to send
+ * @param[in,out] buf filled buffer data to send
+ * @param[in] ack_req say that frame need ack packet after reception or not
  */
 void CARRY_Send(mac_buf_t* buf, bool ack_req);
 
@@ -156,7 +158,6 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info);
 /**
  * @brief read one byte from frame and move rw pointer
  *
- *
  * @param[in] frame to read
  * @return unsigned char
  */
@@ -165,10 +166,9 @@ unsigned char CARRY_Read8(mac_buf_t* frame);
 /**
  * @brief write one byte from frame and move rw pointer
  *
- *
- * @param[in,out] pointer to buffer carry structure
+ * @param[in,out] carry pointer to buffer carry structure
  * @param[in,out] frame to write
- * @param value
+ * @param[in] value to write
  */
 void CARRY_Write8(FC_CARRY_s* carry, mac_buf_t* frame, unsigned char value);
 
@@ -184,7 +184,7 @@ void CARRY_Read(mac_buf_t* frame, void* destination, unsigned int len);
 /**
  * @brief write chunk of bytes from frame and move rw pointer
  *
- * @param[in,out] pointer to buffer carry structure
+ * @param[in,out] carry pointer to buffer carry structure
  * @param[in,out] frame to write
  * @param[in] src address of data to write
  * @param[in] len number of bytes to write

@@ -35,7 +35,7 @@ void listener_parse(mac_buf_t *buf) {
 			descriptor = "OTHER";
 	}
 
-	LOG_INF("%X-%X %3d %8d %2X %s", buf->frame.src, buf->frame.dst, buf->frame.seq_num, dt,
+	LOG_DBG("%X-%X %3d %8d %2X %s", buf->frame.src, buf->frame.dst, buf->frame.seq_num, dt,
 	        buf->frame.data[0], descriptor);
 }
 
@@ -52,7 +52,5 @@ void listener_isr(const dwt_cb_data_t *data) {
 		listener_parse(buf);
 
 		MAC_Free(buf);
-	} else {
-		LOG_ERR("No buff for rx_cb");
 	}
 }

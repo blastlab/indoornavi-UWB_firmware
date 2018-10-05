@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "parsers/base64.h"
 #include "platform/port.h"
+#include "logs.h"
 
 #define LOG_USB_EN 1
 #define LOG_SD_EN 0
@@ -11,17 +12,18 @@
 
 static char buf[LOG_BUF_LEN + 1];
 
-int LOG_Text(char type, const char* frm, ...) {
+int LOG_Text(char type, int num, const char* frm, va_list arg) {
 	int n, f;
-	va_list arg;
-	va_start(arg, frm);
-	// itoa(type, buf, 10);
-	// f = strlen(buf);
+
+	// prefix np. "E101 "
 	f = 0;
 	buf[f++] = type;
+	itoa(num, &buf[f], 10);
+	f = strlen(buf);
 	buf[f++] = ' ';
+
+	// zawartosc
 	n = vsnprintf(buf + f, LOG_BUF_LEN - f, frm, arg) + f;
-	va_end(arg);
 
 	if (n > 0 && n < LOG_BUF_LEN) {
 		buf[n++] = '\r';
@@ -47,7 +49,7 @@ int LOG_Bin(const void* bin, int size) {
 	buf[f++] = 'B';
 	buf[f++] = ' ';
 	if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
-		LOG_Text('E', "logbin: too big binary file! FC:%xh", ((uint8_t*)bin)[0]);
+		LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t*)bin)[0]);
 		return 0;
 	} else {
 		f += BASE64_Encode((unsigned char*)(buf + f), bin, size);

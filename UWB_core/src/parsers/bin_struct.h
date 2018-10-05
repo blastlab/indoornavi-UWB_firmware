@@ -41,11 +41,11 @@ typedef struct {
  */
 typedef struct {
 	uint8_t FC, len;
-	uint8_t hop_cnt;
+	uint8_t hop_cnt;  ///< number of did in hops[] array
 	uint8_t padding;
 	uint64_t serial;  ///< device serial number from settings.version.serial
 	dev_addr_t src_did; ///< device id of beacon sender
-	dev_addr_t hops[0];
+	dev_addr_t hops[0];  ///< packet route src_neighbour..sink_neighbour
 }__packed FC_BEACON_s;
 
 /**
@@ -83,7 +83,8 @@ typedef struct {
  */
 typedef struct {
 	uint8_t FC, len;
-	dev_addr_t newParent;
+	dev_addr_t newParent;  ///< parent of device which received this packet
+	uint16_t rangingPeriod; ///< ranging period in 0.1s resolution (max 100 min)
 }__packed FC_DEV_ACCEPTED_s;
 
 /**

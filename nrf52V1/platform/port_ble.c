@@ -146,8 +146,8 @@ void PORT_BleSetPower(int8_t power) {
 		case 0: rssi_at_m = -61; break;
 		case 3: rssi_at_m = -57; break;
 		case 4:	rssi_at_m = -55; break;
-		default: LOG_ERR("Wrong ble txpower value"); return;
-	}
+		default: LOG_ERR(ERR_BLE_BAD_TXPOWER); return;
+        }
 	PORT_BleSetAdvData(0, rssi_at_m, rssi_at_m);
 	settings.ble.tx_power = power;
 	if(settings.ble.is_enabled) {

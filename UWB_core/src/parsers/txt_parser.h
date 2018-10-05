@@ -72,6 +72,16 @@ cchar* TXT_PointParamNumber(const txt_buf_t* buf, cchar* cmd, int num);
 int TXT_AtoI(const txt_buf_t* buf, cchar* ptr, int base);
 
 /**
+ * @brief check if flag exist in current command
+ * 
+ * @param[in] buf buffer data, especially buf->end and buf->start
+ * @param[in] flag string to find 
+ * @return true if flag exist
+ * @return false otherwise
+ */
+bool TXT_CheckFlag(const txt_buf_t* buf, cchar* flag);
+
+/**
  * @brief get parametr number value, form "cmd:value" from circular buffer
  *
  * @param[in] buf buffer to search in
