@@ -6,7 +6,7 @@ Messages
 
 .. _information messages:
 
-Informations
+Information
 ================
 
 .. _INF_DEVICE_TURN_ON:
@@ -52,7 +52,7 @@ Informations
 	hex address of parent sink
 
  arg *parent*: 
-	hex addres of parent device (in sink direction)
+	hex address of parent device (in sink direction)
 
 .. _INF_PARENT_DESCRIPTION:
 
@@ -118,19 +118,19 @@ Informations
 *descriptor:* "stat did:%x mV:%d Rx:%d Tx:%d Er:%d To:%d Uptime:%dd.%dh.%dm.%ds"
 
  arg *mV*: 
-	battery volatge in millivolts, correct values for devices with battery is 3100..4300, for devices without battery 4500..5200
+	battery voltage in millivolts, correct values for devices with battery is 3100..4300, for devices without battery 4500..5200
 
  arg *Rx*: 
-	12-bits counter of correctly received packets, values in range 0..4095. Aftetr overflow it will count from 0.
+	12-bits counter of correctly received packets, values in range 0..4095. After overflow it will count from 0.
 
  arg *Tx*: 
-	12-bits counter of correctly transmitted packets, values in range 0..4095. Aftetr overflow it will count from 0.
+	12-bits counter of correctly transmitted packets, values in range 0..4095. After overflow it will count from 0.
 
  arg *Er*: 
-	12-bits counter of receiving packets error, values in range 0..4095. Aftetr overflow it will count from 0.
+	12-bits counter of receiving packets error, values in range 0..4095. After overflow it will count from 0.
 
  arg *To*: 
-	12-bits counter of timeout during transmitting or receiving frames, values in range 0..4095. Aftetr overflow it will count from 0.
+	12-bits counter of timeout during transmitting or receiving frames, values in range 0..4095. After overflow it will count from 0.
 
  arg *Uptime*: 
 	device work time in format days.hours.minuts.seconds. It overflow ofter 49.7 days.
@@ -216,7 +216,7 @@ Informations
 *descriptor:* "ble txpower:%d (-40/-20/-16/-12/-8/-4/0/3/4) enable:%d (0/1) did:%X"
 
  arg *txpower*: 
-	ble transmittes power settings
+	ble transmitter power settings
 
  arg *enable*: 
 	bluetooth module status

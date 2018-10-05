@@ -51,7 +51,7 @@ Messages
 
 .. _information messages:
 
-Informations
+Information
 ================
 
 """)
