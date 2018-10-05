@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to UWB_core's documentation!
-====================================
+UWB_core documentation!
+=======================
 
 .. toctree::
    :maxdepth: 2
@@ -12,9 +12,4 @@ Welcome to UWB_core's documentation!
 
    commands.rst
    messages.rst
-
-Search
-==================
-
-* :ref:`genindex`
-* :ref:`search`
+   version.rst
