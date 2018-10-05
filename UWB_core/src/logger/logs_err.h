@@ -3,9 +3,9 @@
  * @author Karol Trzcinski
  * @brief error logs definition
  * @date 2018-10-02
- * 
+ *
  * @copyright Copyright (c) 2018
- * 
+ *
  */
 // network
 ADD_ITEM_M(1101, ERR_MAC_NO_MORE_BUFFERS, "No more buffers")
@@ -24,7 +24,7 @@ ADD_ITEM_M(1104, ERR_BAD_OPCODE, "unknown opcode %Xh")
 ADD_ITEM_M(1105, ERR_PARENT_FOR_SINK, "parent can't be set for sink")
 
 ADD_ITEM_M(1106, ERR_PARENT_NEED_ANCHOR, "parent must be an anchor (%X)")
-ARG("address of incorrect device")
+ARG("%X", "address of incorrect device")
 
 // radio 1200
 ADD_ITEM_M(1201, ERR_RF_BAD_CHANNEL, "rfset ch 1..7 (without 6)")
@@ -38,6 +38,9 @@ ADD_ITEM_M(1207, ERR_RF_BAD_NSSFD, "rfset nssfd 0/1")
 ADD_ITEM_M(1208, ERR_BLE_INACTIVE, "BLE is disabled")
 COMMENT("BLE module is not included into this version of firmware")
 
+ADD_ITEM_M(1209, ERR_BLE_BAD_TXPOWER, "Wrong ble txpower value")
+COMMENT("BLE module is not included into this version of firmware")
+
 // ranging 1300
 ADD_ITEM_M(1301, ERR_MEASURE_ADD_ANCHOR_FAILED_DID, "measure add anchor failed with %X")
 ARG("hex", "incorrect anchor address")
@@ -47,12 +50,12 @@ ARG("ancCnt", "number of anchors to connect with target")
 
 
 ADD_ITEM_M(1303, ERR_SETANCHORS_FAILED, "setanchors failed (%X)")
-ARG("hex" "address of device which cause error")
+ARG("hex", "address of device which cause error")
 
 ADD_ITEM_M(1304, ERR_SETTAGS_NEED_SETANCHORS, "settags need setanchors")
 
 ADD_ITEM_M(1305, ERR_SETTAGS_FAILED, "settags failed after %X")
-ARG("hex" "address of device which cause error")
+ARG("hex", "address of device which cause error")
 
 // settings 1400
 ADD_ITEM_M(1401, ERR_FLASH_ERASING, "flash erasing error did:%X")
