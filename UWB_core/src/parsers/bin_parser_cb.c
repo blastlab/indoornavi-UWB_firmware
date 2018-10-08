@@ -353,6 +353,20 @@ void FC_IMU_SET_cb(const void* data, const prot_packet_info_t* info) {
   FC_IMU_ASK_cb(&ask_data, info);
 }
 
+void FC_BUZZ_ASK_cb(const void* data, const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_BUZZ_ASK);
+  if(settings.mac.role == RTLS_TAG) {
+  	for(uint8_t i = 0; i < 2; i++) {
+  		PORT_BuzzOn();
+			PORT_SleepMs(50);
+			PORT_WatchdogRefresh();
+			PORT_BuzzOff();
+			PORT_SleepMs(50);
+			PORT_WatchdogRefresh();
+  	}
+  }
+}
+
 const prot_cb_t prot_cb_tab[] = {
     {FC_BEACON, FC_BEACON_cb},
     {FC_TURN_ON, FC_TURN_ON_cb},
@@ -378,5 +392,6 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_IMU_ASK, FC_IMU_ASK_cb},
     {FC_IMU_RESP, FC_IMU_RESP_cb},
     {FC_IMU_SET, FC_IMU_SET_cb},
+    {FC_BUZZ_ASK, FC_BUZZ_ASK_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

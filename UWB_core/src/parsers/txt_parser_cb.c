@@ -44,6 +44,10 @@ static void TXT_StatCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	_TXT_Ask(info, FC_STAT_ASK);
 }
 
+static void TXT_BuzzCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+	_TXT_Ask(info, FC_BUZZ_ASK);
+}
+
 static void TXT_VersionCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	_TXT_Ask(info, FC_VERSION_ASK);
 }
@@ -515,7 +519,8 @@ static void TXT_Route(const txt_buf_t* buf, const prot_packet_info_t* info) {
 }
 
 const txt_cb_t txt_cb_tab[] = {
-    { "stat", TXT_StatCb },
+		{ "stat", TXT_StatCb },
+		{ "buzz", TXT_BuzzCb },
     { "version", TXT_VersionCb },
     { "_hang", TXT_HangCb },
     { "rfset", TXT_RFSetCb },

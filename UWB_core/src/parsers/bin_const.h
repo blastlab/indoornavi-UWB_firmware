@@ -55,6 +55,8 @@ typedef enum {
 	FC_IMU_ASK = 0x30,
 	FC_IMU_RESP = (FC_IMU_ASK + 1),
 	FC_IMU_SET = (FC_IMU_ASK + 2),
+	//empty
+	FC_BUZZ_ASK =  0x34,
 } FC_t;
 
 #endif
