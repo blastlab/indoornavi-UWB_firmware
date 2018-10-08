@@ -110,6 +110,7 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 #define LED_R1 15
 #define LED_STAT LED_G1
 #define LED_ERR LED_R1
+#define BUZZER_PIN 8
 #endif
 
 #endif

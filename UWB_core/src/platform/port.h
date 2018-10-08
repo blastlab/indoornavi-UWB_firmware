@@ -91,6 +91,9 @@ void PORT_LedOn(int LED_x);
  */
 void PORT_LedOff(int LED_x);
 
+void PORT_BuzzOn();
+
+void PORT_BuzzOff();
 /**
  * \brief Hard reset DW1000 device by RST pin.
  *

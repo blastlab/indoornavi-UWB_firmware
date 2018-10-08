@@ -36,7 +36,7 @@ static void waitForVcc() {
 	nrfx_saadc_channel_uninit(2);
 }
 
-void PORT_BatteryInit() {
+void PORT_AdcInit() {
 #if HW_TYPE_PULL || BATT_ADC_TRIG_PIN
 	nrfx_saadc_config_t saadc_conf = NRFX_SAADC_DEFAULT_CONFIG;
 	nrfx_saadc_init(&saadc_conf, saadc_callback);

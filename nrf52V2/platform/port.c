@@ -6,36 +6,41 @@
 #include "FU.h"
 
 void PORT_TimeInit();
-void PORT_GpioInit();
+void PORT_GpioInit(bool);
 void PORT_SpiInit();
-void PORT_BatteryInit();
+void PORT_AdcInit();
 void PORT_CrcInit();
-void PORT_ExtiInit();
+void PORT_ExtiInit(bool);
 void PORT_UsbUartInit();
 
 void PORT_Init() {
 	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	IASSERT(NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
-	PORT_BatteryInit();
+	PORT_AdcInit();
+	rtls_role role_m = PORT_GetHwRole();
 	PORT_BleBeaconInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
 	PORT_CrcInit();
 	PORT_SpiInit();
-	PORT_GpioInit();
-	PORT_ImuInit(PORT_GetHwRole() == RTLS_TAG);
-	PORT_ExtiInit();
+	PORT_GpioInit(role_m == RTLS_TAG);
+	PORT_ImuInit(role_m == RTLS_TAG);
+	PORT_ExtiInit(role_m == RTLS_TAG);
 #if !DBG
 	PORT_WatchdogInit();
 #endif
 }
 
-void PORT_GpioInit() {
+void PORT_GpioInit(bool is_tag) {
 	nrf_gpio_cfg_output(LED_ERR);
 	nrf_gpio_cfg_output(LED_STAT);
 	PORT_LedOff(LED_STAT);
 	PORT_LedOff(LED_ERR);
 	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
+	if(is_tag) {																								// configuring the buzzer's pin
+		nrf_gpio_cfg(BUZZER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_DISCONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_D0H1, NRF_GPIO_PIN_NOSENSE);
+		nrf_gpio_pin_clear(BUZZER_PIN);
+	}
 }
 
 static nrfx_wdt_channel_id m_wdt_channel_id;
@@ -92,6 +97,14 @@ void PORT_LedOff(int LED_x) {
 	}
 }
 
+void PORT_BuzzOn() {
+	nrf_gpio_pin_set(BUZZER_PIN);
+}
+
+void PORT_BuzzOff() {
+	nrf_gpio_pin_clear(BUZZER_PIN);
+}
+
 // reset dw 1000 device by polling RST pin down for a few ms
 void PORT_ResetTransceiver() {
 	nrf_gpio_cfg_output(DW_RST_PIN);
@@ -124,7 +137,7 @@ void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
 }
 #endif
 
-void PORT_ExtiInit() {
+void PORT_ExtiInit(bool is_tag) {
     APP_ERROR_CHECK(nrfx_gpiote_init());
     nrfx_gpiote_in_config_t dw_int_config = {
     		.is_watcher = false,
@@ -136,7 +149,7 @@ void PORT_ExtiInit() {
     nrfx_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 
 #if IMU_EXTI_IRQ1
-    if (PORT_GetHwRole() != RTLS_TAG) {
+    if (!is_tag) {
   		return;
   	}
 	nrfx_gpiote_in_config_t imu_int_config = {
