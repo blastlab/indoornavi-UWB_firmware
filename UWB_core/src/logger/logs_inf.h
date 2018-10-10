@@ -60,7 +60,7 @@ COMMENT("see :ref:`route`")
 //
 // radio
 //
-ADD_ITEM_M(1201, INF_RF_SETTINGS, "rfset ch:%d-%d/%d br:%d plen:%d prf:%d pac:%d code:%d nsSfd:%d sfdTo:%d")
+ADD_ITEM_M(1201, INF_RF_SETTINGS, "rfset ch:%d-%d/%d br:%d plen:%d prf:%d pac:%d code:%d nsSfd:%d sfdTo:%d smartTx:%d")
 ARG("ch", "channel number - (frequency/bandwidth")
 ARG("br", "baudrate in kbps")
 ARG("plen", "preamble length")
@@ -69,9 +69,18 @@ ARG("pac", "preamble acquisition chunk size")
 ARG("code", "communication code")
 ARG("nsSfd", "non standard frame delimiter {0-off, 1-on}")
 ARG("sfdTo", "SFD detection timeout count")
+ARG("smartTx", "smart tx booster for short messages {0-off, 1-on}")
 COMMENT("see :ref:`rfset`")
 
-ADD_ITEM_M(1202, INF_BLE_SETTINGS,  "ble txpower:%d (-40/-20/-16/-12/-8/-4/0/3/4) enable:%d (0/1) did:%X")
+ADD_ITEM_M(1202, INF_RF_TX_SETTINGS, "txset did:%X pgdly:%d P1:%d+%d.%d P2:%d+%d.%d P3:%d+%d.%d P4:%d+%d.%d")
+ARG("pgdly", "power generator delay")
+ARG("P1", "power gain in db for shoertest messages (<0.125ms)")
+ARG("P2", "power gain in db for short messages (<0.25ms)")
+ARG("P3", "power gain in db for long messages (<0.5ms")
+ARG("P4", "power gain in db for longest mesages (>=0.5ms)")
+COMMENT("In smart tx power is disabled, then only P4 is used")
+
+ADD_ITEM_M(1203, INF_BLE_SETTINGS, "ble txpower:%d (-40/-20/-16/-12/-8/-4/0/3/4) enable:%d (0/1) did:%X")
 ARG("txpower", "ble transmitter power settings")
 ARG("enable", "bluetooth module status")
 COMMENT("see :ref:`ble`")

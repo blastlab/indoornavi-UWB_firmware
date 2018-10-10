@@ -118,7 +118,31 @@ void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did) {
 			break;
 	}
 	LOG_INF(INF_RF_SETTINGS, data->chan, _f[data->chan], _bw[data->chan], br, plen, prf, pac,
-	        data->code, data->ns_sfd, data->sfd_to);
+	        data->code, data->ns_sfd, data->sfd_to, data->smart_tx);
+}
+
+static inline int TxSetCoarseGain(int byte) {
+	return 3 * ((byte >> 5) & 0x7);
+}
+
+static inline int TxSetFineGainFull(int byte) {
+	return (byte & 0x1F) / 2;
+}
+
+static inline int TxSetFineGainHalf(int byte) {
+	return (byte & 0x1F) % 2;
+}
+
+void PRINT_RFTxSet(FC_RF_TX_SET_s* packet, dev_addr_t did) {
+	int P4 = (packet->power >> 0) & 0xFF;
+	int P3 = (packet->power >> 8) & 0xFF;
+	int P2 = (packet->power >> 16) & 0xFF;
+	int P1 = (packet->power >> 24) & 0xFF;
+	LOG_INF(INF_RF_TX_SETTINGS, did, packet->pg_dly,
+		TxSetCoarseGain(P1), TxSetFineGainFull(P1), TxSetFineGainHalf(P1),
+		TxSetCoarseGain(P2), TxSetFineGainFull(P2), TxSetFineGainHalf(P2),
+		TxSetCoarseGain(P3), TxSetFineGainFull(P3), TxSetFineGainHalf(P3),
+		TxSetCoarseGain(P4), TxSetFineGainFull(P4), TxSetFineGainHalf(P4));
 }
 
 void PRINT_BleSet(const FC_BLE_SET_s *data, dev_addr_t did) {

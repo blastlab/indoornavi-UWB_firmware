@@ -35,10 +35,20 @@ ADD_ITEM_M(1205, ERR_RF_BAD_PAC, "rfset pac 8/16/32/64")
 ADD_ITEM_M(1206, ERR_RF_BAD_CODE, "rfset code 1..24")
 ADD_ITEM_M(1207, ERR_RF_BAD_NSSFD, "rfset nssfd 0/1")
 
-ADD_ITEM_M(1208, ERR_BLE_INACTIVE, "BLE is disabled")
+ADD_ITEM_M(1208, ERR_RF_TX_NEED_COARSE_AND_FINE_P, "txset need P%dc and P%df at the same time")
+ARG("%d", "number of P argument")
+ARG("%d", "number of P argument")
+
+ADD_ITEM_M(1209, ERR_RF_TX_BAD_COARSE_P, "txset P%dc must be divisible by 3 and <=18")
+ARG("%d", "number of P argument")
+
+ADD_ITEM_M(1210, ERR_RF_TX_BAD_FINE_P, "txset P%df must be <=31")
+ARG("%d", "number of P argument")
+
+ADD_ITEM_M(1211, ERR_BLE_INACTIVE, "BLE is disabled")
 COMMENT("BLE module is not included into this version of firmware")
 
-ADD_ITEM_M(1209, ERR_BLE_BAD_TXPOWER, "Wrong ble txpower value")
+ADD_ITEM_M(1212, ERR_BLE_BAD_TXPOWER, "Wrong ble txpower value")
 COMMENT("BLE module is not included into this version of firmware")
 
 // ranging 1300

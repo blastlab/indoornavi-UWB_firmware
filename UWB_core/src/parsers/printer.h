@@ -79,6 +79,14 @@ void PRINT_SettingsSaveResult(const FC_SETTINGS_SAVE_RESULT_s *data, dev_addr_t 
 void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did);
 
 /**
+ * @brief print rf transmitter settings
+ *
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_RFTxSet(FC_RF_TX_SET_s *packet, dev_addr_t did);
+
+/**
  * @brief print ble settings
  *
  * @param data pointer to structure with data to print
