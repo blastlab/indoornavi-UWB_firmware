@@ -112,7 +112,7 @@ static bool _RFSet_ValidateAndTranslateA(int* ch, int* br, int* plen, int* prf) 
 	return some_change;
 }
 
-static bool _RFSet_ValidateAndTranslateB(int* pac, int* code, int* nssfd, int* power) {
+static bool _RFSet_ValidateAndTranslateB(int* pac, int* code, int* nssfd) {
 	bool some_change = false;
 	if (*pac >= 0) {
 		if (*pac == 8)
@@ -138,9 +138,6 @@ static bool _RFSet_ValidateAndTranslateB(int* pac, int* code, int* nssfd, int* p
 		LOG_ERR(ERR_RF_BAD_NSSFD);
 		some_change = true;
 	}
-	if (*power != -1) {
-		some_change = true;
-	}
 	return some_change;
 }
 
@@ -154,14 +151,12 @@ static void TXT_RFSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int pac = TXT_GetParam(buf, "pac:", 10);
 	int code = TXT_GetParam(buf, "code:", 10);
 	int sfdto = TXT_GetParam(buf, "sfdto:", 10);
-	int pgdly = TXT_GetParam(buf, "pgdly:", 10);
 	int nssfd = TXT_GetParam(buf, "nssfd:", 10);
-	int power = TXT_GetParam(buf, "power:", 16);
 
 	// validate values
 	bool changes = false;
 	changes |= _RFSet_ValidateAndTranslateA(&ch, &br, &plen, &prf);
-	changes |= _RFSet_ValidateAndTranslateB(&pac, &code, &nssfd, &power);
+	changes |= _RFSet_ValidateAndTranslateB(&pac, &code, &nssfd);
 
 	// fill struct with a ridden or ignored data
 	FC_RF_SET_s packet;
@@ -174,8 +169,55 @@ static void TXT_RFSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	packet.pac = pac >= 0 ? pac : 255;
 	packet.code = code >= 0 ? code : 255;
 	packet.sfd_to = sfdto >= 0 ? sfdto : 0;
-	packet.pg_dly = pgdly >= 0 ? pgdly : 0;
 	packet.ns_sfd = nssfd >= 0 ? nssfd : 255;
+
+	_TXT_Finalize(&packet, info);
+}
+
+static void TXT_TxSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+	FC_RF_TX_SET_s packet;
+	int pgdly = TXT_GetParam(buf, "pgdly:", 10);
+	int power = TXT_GetParam(buf, "power:", 16);
+	char paramPnc[] = "P?c:";
+	char paramPnf[] = "P?f:";
+	int parPnc, parPnf;
+
+	bool changes = pgdly >= 0 || power >= 0;
+
+	if (power < 0) {
+		power = 0;
+		for (int i = 0; i < 4; ++i) {
+			paramPnc[1] = paramPnf[1] = '4' - i;
+			parPnc = TXT_GetParam(buf, paramPnc, 10);
+			parPnf = TXT_GetParam(buf, paramPnf, 10);
+			// gdy ktorys z parametrow jest podany
+			if (parPnc >= 0 || parPnf >= 0) {
+				// ale nie oba jednoczesnie
+				if (parPnc < 0 || parPnc < 0) {
+					LOG_ERR(ERR_RF_TX_NEED_COARSE_AND_FINE_P, i + 1, i + 1);
+					return;
+				}
+				else if (parPnc > 18 || parPnc % 3 != 0) {
+					LOG_ERR(ERR_RF_TX_BAD_COARSE_P, i + 1);
+					return;
+				} else if (parPnf > 31) {
+					LOG_ERR(ERR_RF_TX_BAD_FINE_P, i + 1);
+					return;
+				} else {
+					changes = true;
+					parPnc /= 3;
+					power |= ((parPnc << 5) | (parPnf)) << (8 * i);
+				}
+			}
+		}
+		if (power == 0 && changes == false) {
+			power = -1;
+		}
+	}
+
+	packet.FC = changes ? FC_RFTXSET_SET : FC_RFTXSET_ASK;
+	packet.len = changes ? sizeof(packet) : 2;
+	packet.pg_dly = pgdly >= 0 ? pgdly : 0;
 	packet.power = power != -1 ? power : 0;
 
 	_TXT_Finalize(&packet, info);
@@ -546,6 +588,7 @@ const txt_cb_t txt_cb_tab[] = {
     { "save", TXT_SaveCb },
     { "clear", TXT_ClearCb },
     { "reset", TXT_ResetCb },
+    { "txset", TXT_TxSetCb },
     { "bin", TXT_BinCb },
     { "setanchors", TXT_SetAnchorsCb },
     { "settags", TXT_SetTagsCb },
