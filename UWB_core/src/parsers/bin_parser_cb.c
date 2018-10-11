@@ -210,10 +210,9 @@ void FC_RFSET_ASK_cb(const void* data, const prot_packet_info_t* info) {
 	packet.code = settings.transceiver.dwt_config.txCode;
 	packet.ns_sfd = settings.transceiver.dwt_config.nsSFD;
 	packet.pac = settings.transceiver.dwt_config.rxPAC;
-	packet.pg_dly = settings.transceiver.dwt_txconfig.PGdly;
 	packet.plen = settings.transceiver.dwt_config.txPreambLength;
 	packet.sfd_to = settings.transceiver.dwt_config.sfdTO;
-	packet.power = settings.transceiver.dwt_txconfig.power;
+	packet.smart_tx = settings.transceiver.smart_tx;
 	if (info->original_src == ADDR_BROADCAST) {
 		PRINT_RFSet(&packet, settings.mac.addr);
 	} else {
@@ -261,15 +260,62 @@ void FC_RFSET_SET_cb(const void* data, const prot_packet_info_t* info) {
 	    || packet.plen == DWT_PLEN_2048 || packet.plen == DWT_PLEN_4096) {
 		settings.transceiver.dwt_config.txPreambLength = packet.plen;
 	}
+	if (packet.smart_tx != 255) {
+		settings.transceiver.smart_tx = packet.smart_tx;
+	}
+	SETTINGS_Save();
+	uint8_t ask_data[] = { FC_RFSET_ASK, 2 };
+	FC_RFSET_ASK_cb(&ask_data, info);
+	PORT_SleepMs(100);  // to send response
+	MAC_Reinit();       // to load new settings into transceiver
+}
+
+void FC_RFTXSET_ASK_cb(const void* data, const prot_packet_info_t* info) {
+	BIN_ASSERT(*(uint8_t* )data == FC_RFTXSET_ASK);
+	FC_RF_TX_SET_s packet;
+	packet.FC = FC_RFTXSET_RESP;
+	packet.len = sizeof(packet);
+	packet.power = settings.transceiver.dwt_txconfig.power;
+	packet.pg_dly = settings.transceiver.dwt_txconfig.PGdly;
+	if (info->original_src == ADDR_BROADCAST) {
+		PRINT_RFTxSet(&packet, settings.mac.addr);
+	} else {
+		BIN_SEND_RESP(FC_RFTXSET_RESP, &packet, packet.len, info);
+	}
+}
+
+void FC_RFTXSET_RESP_cb(const void* data, const prot_packet_info_t* info) {
+	// message is copied to local struct to avoid unaligned access exception
+	BIN_ASSERT(*(uint8_t* )data == FC_RFTXSET_RESP);
+	FC_RF_TX_SET_s packet;
+	memcpy(&packet, data, sizeof(packet));
+	PRINT_RFTxSet(&packet, info->original_src);
+}
+
+int rftx_set_get_power(uint32_t my_power, uint32_t rec_power, int offset) {
+	int P = (rec_power >> offset) & 0xFF;
+	P = P == 0 ? ((my_power >> offset) & 0xFF) : P;
+	return P << offset;
+}
+
+void FC_RFTXSET_SET_cb(const void* data, const prot_packet_info_t* info) {
+	BIN_ASSERT(*(uint8_t* )data == FC_RFTXSET_SET);
+	FC_RF_TX_SET_s packet;
+	memcpy(&packet, data, sizeof(packet));
 	if (packet.power != 0) {
-		settings.transceiver.dwt_txconfig.power = packet.power;
+		int my_power = settings.transceiver.dwt_txconfig.power;
+		int new_power = rftx_set_get_power(my_power, packet.power, 0);
+		new_power |= rftx_set_get_power(my_power, packet.power, 8);
+		new_power |= rftx_set_get_power(my_power, packet.power, 16);
+		new_power |= rftx_set_get_power(my_power, packet.power, 24);
+		settings.transceiver.dwt_txconfig.power = new_power;
 	}
 	if (packet.pg_dly != 0) {
 		settings.transceiver.dwt_txconfig.PGdly = packet.pg_dly;
 	}
 	SETTINGS_Save();
-	uint8_t ask_data[] = { FC_RFSET_ASK, 2 };
-	FC_RFSET_ASK_cb(&ask_data, info);
+	uint8_t ask_data[] = { FC_RFTXSET_ASK, 2 };
+	FC_RFTXSET_ASK_cb(&ask_data, info);
 	PORT_SleepMs(100);  // to send response
 	MAC_Reinit();       // to load new settings into transceiver
 }
@@ -376,6 +422,9 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_STAT_RESP, FC_STAT_RESP_cb},
     {FC_RFSET_ASK, FC_RFSET_ASK_cb},
     {FC_RFSET_RESP, FC_RFSET_RESP_cb},
+    {FC_RFTXSET_SET, FC_RFTXSET_SET_cb},
+    {FC_RFTXSET_ASK, FC_RFTXSET_ASK_cb},
+    {FC_RFTXSET_RESP, FC_RFTXSET_RESP_cb},
     {FC_RFSET_SET, FC_RFSET_SET_cb},
     {FC_TOA_INIT, FC_TOA_INIT_cb},
     {FC_TOA_RES, FC_TOA_RES_cb},

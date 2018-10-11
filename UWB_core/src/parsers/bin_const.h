@@ -47,12 +47,16 @@ typedef enum {
 	FC_RFSET_SET = (FC_RFSET_ASK + 2),   ///< device should change
 	                                     ///< transceiver settings to new one
 	// empty
-	FC_BLE_ASK = 0x2B,
+	FC_RFTXSET_ASK = 0x2B, ///< device is asked about transceiver tx settings
+	FC_RFTXSET_RESP = (FC_RFTXSET_ASK + 1), ///< device response his transceiver tx settings
+	FC_RFTXSET_SET = (FC_RFTXSET_ASK + 2), ///< device should change his transceiver tx settings
+	// empty
+	// empty
+	FC_BLE_ASK = 0x30,
 	FC_BLE_RESP = (FC_BLE_ASK + 1),
 	FC_BLE_SET = (FC_BLE_ASK + 2),
 	// empty
-	// empty
-	FC_IMU_ASK = 0x30,
+	FC_IMU_ASK = 0x34,
 	FC_IMU_RESP = (FC_IMU_ASK + 1),
 	FC_IMU_SET = (FC_IMU_ASK + 2),
 } FC_t;

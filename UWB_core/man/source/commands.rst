@@ -67,11 +67,7 @@ rfset
 * pac: preamble acquisition chunk. Possible values {8, 16, 32, 64}. See `recommended PAC size`_
 * code: communication code. Possible values {1..24}
 * sfdto: SFD detection timeout count. Should be bigger than plen+1 and lower than 65536.
-* pgdly: pulse generator delay. It is used to adjust RF bandwidth. Possible values {1..255}. . See `recommended PG delay`_
 * nssfd: non standard frame delimiter. Possible values {0, 1}
-* power: transmitter power. This value consist of four 8-bits value.
-  Each byte lowest 5 bits is in a 0.5dB gain resolution and highest 3 bits are in 3 dB resolution.
-  Highest byte says about power of frame below 125 us duration, then below 250 us, 500 us and lowest byte is for longer frames.
 * did: [0..FFFE] hexadecimal address of device to check
 
 For more detailed description see `transceiver user manual <https://www.decawave.com/wp-content/uploads/2018/09/dw100020user20manual_0.pdf>`_
@@ -112,6 +108,31 @@ recommended PAC size:
 | 4096 |     64          |
 +------+-----------------+
 
+note: Each value should be same in each device during communication.
+It it possible to loose radio connection after changing radio settings.
+Values in each device should be same.
+
+note: This command is only for advanced users
+
+
+.. _txset:
+
+txset
+===============
+
+*txset [pgdly:dec] [power:hex] [P1c:dec P1f:dec] [P2c:dec P2f:dec] [P3c:dec P3f:dec] [P4c:dec P4f:dec] [did:hex]*
+
+* pgdly: pulse generator delay. It is used to adjust RF bandwidth. Possible values {1..255}. . See `recommended PG delay`_
+* power: transmitter power. This value consist of four 8-bits value.
+  Each byte lowest 5 bits is in a 0.5dB gain resolution and highest 3 bits are in 3 dB resolution.
+  Highest byte says about power of frame below 125 us duration, then below 250 us, 500 us and lowest byte is for longer frames.
+  for more information see `transceiver user manual`_ 7.2.31.3
+* Pnc: transmitter coarse gain in dB, must be divisible by 3 and be lower or equal to 18
+* Pnf: transmitter fine gain in 0.5dB units, must be lower or equal to 31 (15.5dB)
+
+note: when smart tx power is disabled then always P4 is used
+
+note: This command is only for advanced users
 
 .. _recommended PG delay:
 
@@ -128,11 +149,7 @@ Channel  pgdly
 7        93h
 =======  =======
 
-note: Each value should be same in each device during communication.
-It it possible to loose radio connection after changing radio settings.
-Values in each device should be same.
 
-note: This command is only for advanced users
 
 .. _save:
 

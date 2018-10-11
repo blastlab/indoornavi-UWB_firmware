@@ -109,14 +109,22 @@ typedef struct {
 	uint8_t br;      ///< Baund Rate {DWT_BR_110K, DWT_BR_850K or DWT_BR_6M8}
 	uint8_t code;    ///< TX and RX preamble code 1..24
 	uint8_t ns_sfd; ///< * Boolean should we use non-standard SFD for better performance
+	uint16_t sfd_to; ///< SFD timeout value (in symbols)
+	uint8_t prf;     ///< change rf pulse repetition frequency DWT_PRF_
+	uint8_t smart_tx; ///< smart tx power module, for more see transceiver user manual
+}__packed FC_RF_SET_s;
+
+/**
+ * @brief see #FC_t descriptor
+ */
+typedef struct {
+	uint8_t FC, len;
 	uint32_t power;  ///< *31:24     BOOST_0.125ms_PWR
 	                 ///< 23:16     BOOST_0.25ms_PWR-TX_SHR_PWR
 	                 ///< 15:8      BOOST_0.5ms_PWR-TX_PHR_PWR
 	                 ///< 7:0       DEFAULT_PWR-TX_DATA_PWR
-	uint16_t sfd_to; ///< SFD timeout value (in symbols)
 	uint8_t pg_dly;  ///< rf Pulse Generator delay, adjust rf bandwidth
-	uint8_t prf;     ///< change rf pulse repetition frequency DWT_PRF_
-}__packed FC_RF_SET_s;
+}__packed FC_RF_TX_SET_s;
 
 typedef struct {
 	uint8_t FC, len;

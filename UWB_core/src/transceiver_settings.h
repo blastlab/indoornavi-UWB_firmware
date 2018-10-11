@@ -58,7 +58,7 @@ typedef struct {
 	char set_pac_from_settings;
 	dwt_config_t dwt_config;
 	dwt_txconfig_t dwt_txconfig;
-
+	bool smart_tx;
 } transceiver_settings_t;
 
 /**
@@ -74,13 +74,14 @@ typedef struct {
     .dwt_config.prf = DWT_PRF_64M,             \
     .dwt_config.txPreambLength = DWT_PLEN_128, \
     .dwt_config.rxPAC = DWT_PAC8,              \
-    .dwt_config.txCode = 10,                    \
-    .dwt_config.rxCode = 10,                    \
+    .dwt_config.txCode = 10,                   \
+    .dwt_config.rxCode = 10,                   \
     .dwt_config.nsSFD = 1,                     \
-    .dwt_config.dataRate = DWT_BR_6M8,         \
     .dwt_config.phrMode = DWT_PHRMODE_STD,     \
     .dwt_config.sfdTO = 0,                     \
     .dwt_txconfig.PGdly = 0,                   \
+    .dwt_config.dataRate = DWT_BR_6M8,         \
+    .smart_tx = 1,                             \
   \
 }
 #endif

@@ -64,7 +64,7 @@ void TRANSCEIVER_Init() {
 	dwt_configure(&settings.transceiver.dwt_config);
 
 	// set output power
-	dwt_setsmarttxpower(settings.transceiver.dwt_config.dataRate == DWT_BR_6M8);
+	dwt_setsmarttxpower(settings.transceiver.smart_tx);
 	dwt_configuretxrf(&settings.transceiver.dwt_txconfig);
 
 	// preable == 64 has different Operational Parameter Set
@@ -292,7 +292,7 @@ static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t* ts) {
 	//
 	//  // when data rate == 6M8 then smart power en should be enabled
 	//  const bool prf_is_16M = ts->dwt_config.prf == DWT_PRF_16M;
-	//  if (ts->dwt_config.dataRate == DWT_BR_6M8) {
+	//  if (!ts->smart_tx) {
 	//    ts->dwt_txconfig.power = prf_is_16M ? TXpower16d[ch] : TXpower64d[ch];
 	//  } else {
 	//    ts->dwt_txconfig.power = prf_is_16M ? TXpower16e[ch] : TXpower64e[ch];
