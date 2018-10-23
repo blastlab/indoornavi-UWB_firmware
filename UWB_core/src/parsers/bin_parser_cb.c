@@ -296,7 +296,7 @@ void FC_RFTXSET_RESP_cb(const void* data, const prot_packet_info_t* info) {
 int rftx_set_get_power(uint32_t my_power, uint32_t rec_power, uint8_t mask, int offset) {
 	int P = (rec_power >> offset) & 0xFF;
 	uint8_t your_mask = 1 << (offset / 8);
-	P = mask & your_mask == 0 ? ((my_power >> offset) & 0xFF) : P;
+	P = ((mask & your_mask) == 0) ? ((my_power >> offset) & 0xFF) : P;
 	return P << offset;
 }
 

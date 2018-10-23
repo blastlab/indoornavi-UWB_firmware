@@ -115,6 +115,11 @@ void TXT_Parse(const txt_buf_t* buf) {
 	int did = TXT_GetParam(buf, "did:", 16);
 	info.original_src = did > 0 ? did : CARRY_ADDR_SERVER;
 
+	// pusta komenda -> ignoruj
+	if (buf->cmd[0] == 0) {
+		return;
+	}
+
 	for (int i = 0; i < txt_cb_len; ++i) {
 		if (TXT_StartsWith(buf, txt_cb_tab[i].cmd)) {
 			IASSERT(txt_cb_tab[i].cb != 0);
@@ -128,19 +133,21 @@ void TXT_Parse(const txt_buf_t* buf) {
 // take input to data parser, ignore \r and split by \n
 void TXT_Input(const char* str, int len) {
 	while (len-- > 0) {
-		txt_buf_wptr[0] = str[0];
+		// ignore
+		if (str[0] == '\r') {
+			++str;
+			continue;
+		}
+
+		// zapisz znak lub '\0'
+		txt_buf_wptr[0] = str[0] == '\n' ? 0 : str[0];
+		INCREMENT_CYCLE(txt_buf_wptr, txt_buf.start, txt_buf.end);
+
 		// new command
 		if (str[0] == '\n') {
-			txt_buf_wptr[0] = 0;
 			++txt_buf.cnt;
 		}
-		// not ignored char
-		if (str[0] != '\r') {
-			++txt_buf_wptr;
-			if (txt_buf_wptr >= txt_buf.end) {
-				txt_buf_wptr = (char*)txt_buf.start;
-			}
-		}
+
 		++str;
 	}
 }

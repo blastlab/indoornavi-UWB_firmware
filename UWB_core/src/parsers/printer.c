@@ -22,8 +22,9 @@ void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did) {
 		default:
 			str_role = "OTHER";
 	}
-	LOG_INF(INF_VERSION, did, data->serial, str_role, data->hMajor, data->hMinor, data->fMajor,
-	        data->fMinor, data->hash);
+	LOG_INF(INF_VERSION, did, (uint32_t)(data->serial >> 32), (uint32_t)data->serial, str_role,
+	        data->hMajor, data->hMinor, data->fMajor, data->fMinor, (uint32_t)(data->hash >> 32),
+		(uint32_t)(data->hash));
 }
 
 void PRINT_Stat(const FC_STAT_s *data, dev_addr_t did) {
