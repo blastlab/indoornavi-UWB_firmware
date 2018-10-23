@@ -146,6 +146,7 @@ void FC_VERSION_ASK_cb(const void* data, const prot_packet_info_t* info) {
 	packet.fMinor = settings.version.f_minor;
 	packet.hash = settings.version.f_hash;
 	packet.role = settings.mac.role;
+	packet.serial = settings_otp->serial;
 	if (info->original_src == ADDR_BROADCAST) {
 		PRINT_Version(&packet, settings.mac.addr);
 	} else {
@@ -292,9 +293,10 @@ void FC_RFTXSET_RESP_cb(const void* data, const prot_packet_info_t* info) {
 	PRINT_RFTxSet(&packet, info->original_src);
 }
 
-int rftx_set_get_power(uint32_t my_power, uint32_t rec_power, int offset) {
+int rftx_set_get_power(uint32_t my_power, uint32_t rec_power, uint8_t mask, int offset) {
 	int P = (rec_power >> offset) & 0xFF;
-	P = P == 0 ? ((my_power >> offset) & 0xFF) : P;
+	uint8_t your_mask = 1 << (offset / 8);
+	P = mask & your_mask == 0 ? ((my_power >> offset) & 0xFF) : P;
 	return P << offset;
 }
 
@@ -302,12 +304,13 @@ void FC_RFTXSET_SET_cb(const void* data, const prot_packet_info_t* info) {
 	BIN_ASSERT(*(uint8_t* )data == FC_RFTXSET_SET);
 	FC_RF_TX_SET_s packet;
 	memcpy(&packet, data, sizeof(packet));
-	if (packet.power != 0) {
+	if (packet.power_mask != 0) {
 		int my_power = settings.transceiver.dwt_txconfig.power;
-		int new_power = rftx_set_get_power(my_power, packet.power, 0);
-		new_power |= rftx_set_get_power(my_power, packet.power, 8);
-		new_power |= rftx_set_get_power(my_power, packet.power, 16);
-		new_power |= rftx_set_get_power(my_power, packet.power, 24);
+		int new_power = 0;
+		new_power |= rftx_set_get_power(my_power, packet.power, packet.power_mask, 0);
+		new_power |= rftx_set_get_power(my_power, packet.power, packet.power_mask, 8);
+		new_power |= rftx_set_get_power(my_power, packet.power, packet.power_mask, 16);
+		new_power |= rftx_set_get_power(my_power, packet.power, packet.power_mask, 24);
 		settings.transceiver.dwt_txconfig.power = new_power;
 	}
 	if (packet.pg_dly != 0) {

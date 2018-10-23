@@ -119,11 +119,12 @@ typedef struct {
  */
 typedef struct {
 	uint8_t FC, len;
+	uint8_t pg_dly;  ///< rf Pulse Generator delay, adjust rf bandwidth
+	uint8_t power_mask; ///< bit mask of power part to change
 	uint32_t power;  ///< *31:24     BOOST_0.125ms_PWR
 	                 ///< 23:16     BOOST_0.25ms_PWR-TX_SHR_PWR
 	                 ///< 15:8      BOOST_0.5ms_PWR-TX_PHR_PWR
 	                 ///< 7:0       DEFAULT_PWR-TX_DATA_PWR
-	uint8_t pg_dly;  ///< rf Pulse Generator delay, adjust rf bandwidth
 }__packed FC_RF_TX_SET_s;
 
 typedef struct {

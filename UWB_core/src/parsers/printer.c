@@ -22,8 +22,8 @@ void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did) {
 		default:
 			str_role = "OTHER";
 	}
-	LOG_INF(INF_VERSION, did, str_role, data->hMajor, data->hMinor,
-	        data->fMajor, data->fMinor, data->hash);
+	LOG_INF(INF_VERSION, did, data->serial, str_role, data->hMajor, data->hMinor, data->fMajor,
+	        data->fMinor, data->hash);
 }
 
 void PRINT_Stat(const FC_STAT_s *data, dev_addr_t did) {
@@ -122,7 +122,7 @@ void PRINT_RFSet(const FC_RF_SET_s *data, dev_addr_t did) {
 }
 
 static inline int TxSetCoarseGain(int byte) {
-	return 3 * ((byte >> 5) & 0x7);
+	return 18 - 3 * ((byte >> 5) & 0x7);
 }
 
 static inline int TxSetFineGainFull(int byte) {

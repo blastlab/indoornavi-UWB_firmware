@@ -181,7 +181,7 @@ static void TXT_TxSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	char paramPnc[] = "P?c:";
 	char paramPnf[] = "P?f:";
 	int parPnc, parPnf;
-
+	int mask = 0;
 	bool changes = pgdly >= 0 || power >= 0;
 
 	if (power < 0) {
@@ -204,21 +204,26 @@ static void TXT_TxSetCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 					LOG_ERR(ERR_RF_TX_BAD_FINE_P, i + 1);
 					return;
 				} else {
+					mask |= 1 << i;
 					changes = true;
-					parPnc /= 3;
+					parPnc = (18 - parPnc) / 3; // ten rejestr liczy na odwrót
 					power |= ((parPnc << 5) | (parPnf)) << (8 * i);
 				}
 			}
 		}
 		if (power == 0 && changes == false) {
 			power = -1;
+			mask = 0;
 		}
+	} else {
+		mask = 0x0F; // set 4 powers new values
 	}
 
 	packet.FC = changes ? FC_RFTXSET_SET : FC_RFTXSET_ASK;
 	packet.len = changes ? sizeof(packet) : 2;
 	packet.pg_dly = pgdly >= 0 ? pgdly : 0;
 	packet.power = power != -1 ? power : 0;
+	packet.power_mask = mask;
 
 	_TXT_Finalize(&packet, info);
 }
