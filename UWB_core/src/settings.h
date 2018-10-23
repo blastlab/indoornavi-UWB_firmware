@@ -54,9 +54,9 @@
 typedef struct
 	__packed
 	{
+		uint64_t serial; ///< hardware serial number
 		uint8_t h_major; ///< hardware major version number
 		uint8_t h_minor; ///< hardware minor version number
-		uint64_t serial; ///< hardware serial number
 	} settings_otp_t;
 
 	/**

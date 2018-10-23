@@ -21,14 +21,12 @@ bool settings_is_otp_erased() {
 	// return true if otp is erased, false otherwise
 	return i >= sizeof(settings_otp_t);
 #endif
-	return false;
+	return true;
 }
 
 void SETTINGS_Init() {
 	// variable settings
 	memcpy(&settings, &_startup_settings, sizeof(settings));
-	settings_otp = &_settings_otp;
-#ifdef HARDWARE_OTP_ADDR
 	// otp settings - from flash or otp
 	if (settings_is_otp_erased()) {
 		if (_settings_otp.serial == 0) {
@@ -36,9 +34,10 @@ void SETTINGS_Init() {
 		}
 		settings_otp = &_settings_otp;
 	} else {
+#ifdef HARDWARE_OTP_ADDR
 		settings_otp = (const settings_otp_t*)HARDWARE_OTP_ADDR;
-	}
 #endif
+	}
 }
 
 int SETTINGS_Save() {
