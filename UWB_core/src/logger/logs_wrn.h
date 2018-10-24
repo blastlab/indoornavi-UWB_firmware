@@ -3,9 +3,9 @@
  * @author Karol Trzcinski
  * @brief warning logs definition
  * @date 2018-10-02
- * 
+ *
  * @copyright Copyright (c) 2018
- * 
+ *
  */
 // network work time events
 ADD_ITEM_M(1101, WRN_CARRY_INCOMPATIBLE_VERSION, "CARRY incompatible version %d (%d)")
@@ -15,6 +15,7 @@ ADD_ITEM_M(1104, WRN_MAC_UNSUPPORTED_MAC_FRAME, "MAC unsupported frame type %X")
 ADD_ITEM_M(1105, WRN_MAC_UNSUPPORTED_ACK_FRAME, "MAC ack frame is not supported yet")
 ADD_ITEM_M(1108, WRN_FIRWARE_NOT_ACCEPTED_YET, "new firmware not accepted yet! did:%X")
 ADD_ITEM_M(1109, WRN_SINK_ACCEPT_SINK, "sink can't have any parent")
+ADD_ITEM_M(1110, WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK, "there is too much tags to track (max:%d)")
 
 // radio 1200
 ADD_ITEM_M(1201, WRN_MAC_TX_ERROR, "Tx err")

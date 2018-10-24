@@ -37,7 +37,7 @@ void BatteryControl() {
 }
 
 void BeaconSender() {
-	if (MAC_BeaconTimerGetMs() > 5000) {
+	if (MAC_BeaconTimerGetMs() > settings.mac.beacon_period_ms) {
 		if (settings.mac.role != RTLS_LISTENER) {
 			SendBeaconMessage();
 			MAC_BeaconTimerReset();
@@ -46,11 +46,17 @@ void BeaconSender() {
 }
 
 void RangingReader() {
+	// urzyj peek, a dopiero potem pop aby nie nadpisac pomiaru podczas przetwarzania
 	const measure_t* meas = TOA_MeasurePeek();
 	if (meas != 0) {
 		if (settings.mac.role != RTLS_SINK) {
 			TOA_SendRes(meas);
 		} else {
+			// gdy pomiar jest z tagiem to go sledz
+			if ((MIN(meas->did1, meas->did2) & ADDR_ANCHOR_FLAG) == 0) {
+				CARRY_TrackTag(MIN(meas->did1, meas->did2), MAX(meas->did1, meas->did2));
+			}
+			// a wypisz kazdy pomiar
 			PRINT_Measure(meas);
 		}
 		TOA_MeasurePop();

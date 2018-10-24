@@ -77,11 +77,11 @@ BLE_CODE(
 #endif
 }
 
-void PORT_SleepMs(unsigned int time_ms) {
+void PORT_SleepMs(time_ms_t time_ms) {
 	nrf_delay_ms(time_ms);
 }
 
-unsigned int PORT_TickMs() { return RTC.p_reg->COUNTER; }
+time_ms_t PORT_TickMs() { return RTC.p_reg->COUNTER; }
 
 // get high resosolution clock tick
 unsigned int PORT_TickHr() { return DWT->CYCCNT; }

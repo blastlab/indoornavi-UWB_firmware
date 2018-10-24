@@ -16,6 +16,27 @@ void CARRY_SetYourParent(dev_addr_t did) {
 	}
 }
 
+/// return pointer to target or zero
+carry_tag_t* CARRY_GetTag(dev_addr_t tag_did) {
+	// when you know tag
+	for(carry_tag_t* tag = &carry.tags[0]; tag != &carry.tags[CARRY_MAX_TAGS]; ++tag) {
+		if(tag->did == tag_did) {
+			return tag;
+		}
+	}
+	// find free slot
+	time_ms_t now = PORT_TickMs();
+	for(carry_tag_t* tag = &carry.tags[0]; tag != &carry.tags[CARRY_MAX_TAGS]; ++tag) {
+		if(now - tag->updateTime > settings.carry.tagMaxInactiveTime) {
+			memset(tag, 0, sizeof(*tag));
+			tag->updateTime = now;
+			tag->did = tag_did;
+			return tag;
+		}
+	}
+	return 0;
+}
+
 // return pointer to target or zero
 carry_target_t* CARRY_GetTarget(dev_addr_t target) {
 	for (int i = 0; i < settings.carry.targetCounter; ++i) {
@@ -44,6 +65,23 @@ carry_target_t* CARRY_NewTarget(dev_addr_t target) {
 	}
 }
 
+int CARRY_TrackTag(dev_addr_t tag_did, dev_addr_t parent) {
+	int ret = 0; // when there is no place for a new tag
+	carry_tag_t* tag = CARRY_GetTag(tag_did);
+	if (tag == 0) {
+		LOG_WRN(WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK, CARRY_MAX_TAGS);
+	} else {
+		ret = tag->anchor == parent ? 2 : 1; // 1 when parent will change, 2 otherwise
+		tag->anchor = parent;
+	}
+#ifdef DBG
+	if (ret == 1) {
+		LOG_DBG("trace tag %X parent %X", tag_did, parent);
+	}
+#endif
+	return ret;
+}
+
 int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent) {
 	int ret = 0;
 	carry_target_t* ptarget;
@@ -62,7 +100,7 @@ int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent) {
 		ret = ptarget->parents[0] == parent ? 1 : 3;  // identical or changed
 	}
 	if (target != 0) {
-		unsigned int dt = PORT_TickMs() - ptarget->lastUpdateTime;
+		time_ms_t dt = PORT_TickMs() - ptarget->lastUpdateTime;
 		int acceptNew = pparent->level < ptarget->level;
 		acceptNew |= dt > settings.carry.minParentLiveTimeMs;
 		if (!acceptNew) {
@@ -112,7 +150,8 @@ static inline void CARRY_SetVersion(FC_CARRY_s* pcarry) {
 int CARRY_WriteTrace(uint8_t* buf, dev_addr_t target, dev_addr_t* nextDid) {
 	CARRY_ASSERT(buf != 0);
 	int hopCnt = 0;
-	dev_addr_t parent = CARRY_ParentGet(target);
+	bool targetIsAnchor = (target & ADDR_ANCHOR_FLAG) != 0;
+	dev_addr_t parent = targetIsAnchor ? CARRY_ParentGet(target) : CARRY_GetTag(target)->anchor;
 
 	while (parent != ADDR_BROADCAST && parent != settings.mac.addr) {
 		hopCnt += 1;

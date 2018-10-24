@@ -78,6 +78,7 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   FC_BEACON_s packet;
   BIN_ASSERT(*(uint8_t*)data == FC_BEACON);
   memcpy(&packet, data, sizeof(packet));
+	// when it's a BEACON from anchor from your neighborhood
   if ((info->last_src & ADDR_ANCHOR_FLAG) && packet.hop_cnt == 0) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
@@ -100,6 +101,8 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
         int level = CARRY_GetTargetLevel(packet.src_did);
         PRINT_Parent(parent, packet.src_did, level);
       }
+		} else if ((packet.src_did & ADDR_ANCHOR_FLAG) == 0) {
+			CARRY_TrackTag(packet.src_did, parent);
     }
     // send accept message
     SendDevAccepted(packet.src_did, parent);

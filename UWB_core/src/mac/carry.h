@@ -50,6 +50,13 @@ typedef struct {
  */
 #define CARRY_ADDR_SERVER ADDR_BROADCAST
 
+typedef struct
+{
+	time_ms_t updateTime;
+	dev_addr_t did;
+	dev_addr_t anchor;
+} carry_tag_t;
+
 /**
  * @brief global singleton
  *
@@ -57,6 +64,7 @@ typedef struct {
 typedef struct {
 	bool isConnectedToServer;
 	dev_addr_t toSinkId;
+	carry_tag_t tags[CARRY_MAX_TAGS];
 } carry_instance_t;
 
 /**
@@ -66,6 +74,17 @@ typedef struct {
  *   remote server
  */
 void CARRY_Init(bool isConnectedToServer);
+
+/**
+ * @brief track tag positions - connect tag address with anchor did
+ *
+ * @param[in] tag_did tag address
+ * @param[in] parent currently connected anchor address
+ * @return 0 when it is new tag and there is no place for him
+ * @return 1 when new connection has been established
+ * @return 2 when new connection is same as an old one
+ */
+int CARRY_TrackTag(dev_addr_t tag_did, dev_addr_t parent);
 
 /**
  * @brief return address of parent anchor
