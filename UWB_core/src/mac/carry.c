@@ -273,8 +273,11 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 	dataSize = len - sizeof(FC_CARRY_s) - hops_num * sizeof(pcarry->hops[0]);
 
 	if (version != CARRY_VERSION) {
-		LOG_WRN(WRN_CARRY_INCOMPATIBLE_VERSION, version,
-		        CARRY_VERSION);
+		LOG_WRN(WRN_CARRY_INCOMPATIBLE_VERSION, version, CARRY_VERSION);
+	}
+
+	if ((pcarry->flags & CARRY_FLAG_REFRESH_PARENT) && target == CARRY_FLAG_TARGET_DEV) {
+		CARRY_SetYourParent(new_info.last_src);
 	}
 
 	if (toMe) {

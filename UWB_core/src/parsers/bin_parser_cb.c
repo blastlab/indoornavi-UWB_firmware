@@ -15,6 +15,7 @@ static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
 	acc.rangingPeriod = settings.ranging.rangingPeriodMs / 100;
   buf = CARRY_PrepareBufTo(target, &carry);
   if (buf != 0) {
+		carry->flags |= CARRY_FLAG_REFRESH_PARENT;
     CARRY_Write(carry, buf, &acc, acc.len);
     CARRY_Send(buf, true);
   }
@@ -174,7 +175,6 @@ void FC_DEV_ACCEPTED_cb(const void* data, const prot_packet_info_t* info) {
   }
   FC_DEV_ACCEPTED_s packet;
   memcpy(&packet, data, sizeof(packet));
-  CARRY_SetYourParent(packet.newParent);
   PRINT_DeviceAccepted(&packet, info->original_src);
 }
 

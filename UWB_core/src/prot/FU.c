@@ -203,6 +203,7 @@ static void FU_SendResponse(FU_prot* fup, const prot_packet_info_t* info) {
 	FC_CARRY_s* carry;
 	mac_buf_t* buf = CARRY_PrepareBufTo(info->original_src, &carry);
 	if (buf != 0) {
+		carry->flags |= CARRY_FLAG_REFRESH_PARENT;
 		CARRY_Write(carry, buf, fup, fup->frameLen);
 		CARRY_Send(buf, true);
 	}
@@ -365,7 +366,6 @@ void FU_HandleAsDevice(const void* data, const prot_packet_info_t* info) {
 		FU_Data(fup, info);
 	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_SOT)) {
 		// rozpoczyna transmisje nowej paczki
-		CARRY_SetYourParent(info->last_src);
 		FU_SOT(fup, info);
 	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_EOT)) {
 		FU_EOT(fup, info);
