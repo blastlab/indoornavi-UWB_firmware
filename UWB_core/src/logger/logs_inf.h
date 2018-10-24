@@ -47,7 +47,7 @@ ARG("To", "12-bits counter of timeout during transmitting or receiving frames, v
 ARG("Uptime", "device work time in format days.hours.minuts.seconds. It overflow ofter 49.7 days.")
 COMMENT("see :ref:`status`")
 
-ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%X r:%s hV::%d.%d fV:%d.%d.%X%X")
+ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%X r:%s hV:%d.%d fV:%d.%d.%X%X")
 ARG("serial", "device unique identificator number")
 ARG("r", "device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}")
 ARG("hV", "hardware version, major.minor")
@@ -57,6 +57,15 @@ COMMENT("see :ref:`version`")
 ADD_ITEM_M(1113, INF_ROUTE, "route auto:%d")
 ARG("auto", "automaticaly route module status {0-off, 1-on}")
 COMMENT("see :ref:`route`")
+
+ADD_ITEM_M(1114, INF_MAC, "mac did%X pan:%X beacon:%d sp:%d st:%d gt:%d raad:%d role:%s")
+ARG("pan", "personal area network identifier")
+ARG("beacon", "interval in :math:`ms`")
+ARG("sp", "slot period in :math:`\mu s`")
+ARG("st", "one slot time in :math:`\mu s`")
+ARG("gt", "slot guard time in :math:`\mu s`")
+ARG("raad", "raport anchor to anchor distances boolean")
+ARG("role", "device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}")
 
 //
 // radio

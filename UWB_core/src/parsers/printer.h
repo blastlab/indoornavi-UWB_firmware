@@ -138,4 +138,12 @@ void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_
  */
 void PRINT_Parent(dev_addr_t parent, dev_addr_t child, int level);
 
+/**
+ * @brief print mac settings
+ *
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_MacSet(const FC_MAC_SET_s *data, dev_addr_t did);
+
 #endif

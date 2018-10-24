@@ -67,6 +67,11 @@ ADD_ITEM_M(1304, ERR_SETTAGS_NEED_SETANCHORS, "settags need setanchors")
 ADD_ITEM_M(1305, ERR_SETTAGS_FAILED, "settags failed after %X")
 ARG("hex", "address of device which cause error")
 
+ADD_ITEM_M(1306, ERR_MAC_RAAD_BAD_VALUE, "mac raad value must be 0 or 1 (enable)")
+ADD_ITEM_M(1307, ERR_MAC_ADDR_BAD_VALUE, "mac addr bad value")
+ADD_ITEM_M(1308, ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT, "mac beacon period must be greater than %d")
+ARG("%d", "minumum beacon period value")
+
 // settings 1400
 ADD_ITEM_M(1401, ERR_FLASH_ERASING, "flash erasing error did:%X")
 ADD_ITEM_M(1402, ERR_FLASH_WRITING, "flash writing error did:%X")

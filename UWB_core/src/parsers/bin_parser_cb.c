@@ -412,6 +412,95 @@ void FC_IMU_SET_cb(const void* data, const prot_packet_info_t* info) {
   FC_IMU_ASK_cb(&ask_data, info);
 }
 
+void FC_MAC_ASK_cb(const void* data, const prot_packet_info_t* info) {
+  BIN_ASSERT(*(uint8_t*)data == FC_MAC_ASK);
+  FC_MAC_SET_s packet;
+  packet.FC = FC_MAC_RESP;
+  packet.len = sizeof(packet);
+  packet.pan = settings.mac.pan;
+  packet.addr = settings.mac.addr;
+  packet.raport_anchor_to_anchor_distances =
+      settings.mac.raport_anchor_anchor_distance;
+  packet.role = settings.mac.role;
+  packet.beacon_period_ms = settings.mac.beacon_period_ms;
+  packet.guard_time_us = settings.mac.slot_guard_time_us;
+packet.slot_period_us = settings.mac.slots_sum_time_us;
+  packet.slot_time_us = settings.mac.slot_time_us;
+  if (info->original_src == ADDR_BROADCAST) {
+    PRINT_MacSet(&packet, settings.mac.addr);
+  } else {
+    BIN_SEND_RESP(FC_MAC_RESP, &packet, packet.len, info);
+  }
+}
+
+void FC_MAC_RESP_cb(const void* data, const prot_packet_info_t* info) {
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_MAC_RESP);
+  FC_MAC_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  PRINT_MacSet(data, info->original_src);
+}
+
+static bool MAC_CheckRoleAndAddressMatch(rtls_role role, dev_addr_t addr) {
+  if (role == RTLS_DEFAULT || role == RTLS_LISTENER) {
+    return true;
+  }
+  if (role == RTLS_TAG && (addr & ADDR_ANCHOR_FLAG) == 0) {
+    return true;
+  }
+  if ((role == RTLS_SINK || role == RTLS_ANCHOR) && (addr & ADDR_ANCHOR_FLAG != 0)) {
+    return true;
+  }
+  return false;
+}
+
+void FC_MAC_SET_cb(const void* data, const prot_packet_info_t* info) {
+  // message is copied to local struct to avoid unaligned access exception
+  BIN_ASSERT(*(uint8_t*)data == FC_MAC_SET);
+  FC_MAC_SET_s packet;
+  memcpy(&packet, data, sizeof(packet));
+  if (packet.raport_anchor_to_anchor_distances < 2) {
+    settings.mac.raport_anchor_anchor_distance =
+        packet.raport_anchor_to_anchor_distances;
+  }
+  if (packet.beacon_period_ms != UINT32_MAX) {
+    settings.mac.beacon_period_ms = packet.beacon_period_ms;
+  }
+  if (packet.slot_period_us != UINT32_MAX) {
+    settings.mac.slots_sum_time_us = packet.slot_period_us;
+  }
+  if (packet.slot_time_us != UINT32_MAX) {
+    settings.mac.slot_time_us = packet.slot_time_us;
+  }
+  if (packet.guard_time_us != UINT16_MAX) {
+    settings.mac.slot_guard_time_us = packet.guard_time_us;
+  }
+  // sprawdz czy adres jest zgodny z rola
+  if (packet.addr != ADDR_BROADCAST && packet.addr != 0) {
+    if (packet.role == UINT8_MAX &&
+        (packet.addr & ADDR_ANCHOR_FLAG) == (settings.mac.addr & ADDR_ANCHOR_FLAG)) {
+      settings.mac.role = packet.role;
+    } else if (MAC_CheckRoleAndAddressMatch(packet.role, packet.addr)) {
+      settings.mac.role = packet.role;
+      settings.mac.addr = packet.addr;
+    }
+  }
+  if (packet.role != UINT8_MAX) {
+    if (MAC_CheckRoleAndAddressMatch(packet.role, settings.mac.addr)) {
+      settings.mac.role = packet.role;
+    }
+  }
+  if (packet.pan != UINT16_MAX && packet.pan != 0) {
+    settings.mac.pan = packet.pan;
+  }
+  uint8_t ask_data[2];
+  ask_data[0] = FC_MAC_ASK;
+  ask_data[1] = 2;
+  FC_MAC_ASK_cb(&ask_data, info);
+  //todo: przydalby sie tutaj opoznony reset
+  MAC_Reinit();
+}
+
 const prot_cb_t prot_cb_tab[] = {
     {FC_BEACON, FC_BEACON_cb},
     {FC_TURN_ON, FC_TURN_ON_cb},
@@ -440,5 +529,8 @@ const prot_cb_t prot_cb_tab[] = {
     {FC_IMU_ASK, FC_IMU_ASK_cb},
     {FC_IMU_RESP, FC_IMU_RESP_cb},
     {FC_IMU_SET, FC_IMU_SET_cb},
+    {FC_MAC_ASK, FC_MAC_ASK_cb},
+    {FC_MAC_RESP, FC_MAC_RESP_cb},
+    {FC_MAC_SET, FC_MAC_SET_cb},
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);
