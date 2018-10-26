@@ -21,7 +21,7 @@ static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
   }
 }
 
-static void TransferBeacon(FC_BEACON_s* packet) {
+static void TransferBeacon(FC_BEACON_s* packet, dev_addr_t hop_cnt[]) {
 	mac_buf_t* buf;
 	FC_CARRY_s* carry;
 	buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
@@ -29,9 +29,8 @@ static void TransferBeacon(FC_BEACON_s* packet) {
 		packet->len += sizeof(dev_addr_t);
 		packet->hop_cnt += 1;
 		CARRY_Write(carry, buf, &packet, sizeof(packet));
-		CARRY_Write(carry, buf, (uint8_t*)packet + sizeof(FC_BEACON_s),
-		            sizeof(dev_addr_t) * (packet->hop_cnt - 1));
 		CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
+		CARRY_Write(carry, buf, hop_cnt, sizeof(dev_addr_t) * (packet->hop_cnt - 1));
 		CARRY_Send(buf, false);
 	}
 }
@@ -77,10 +76,16 @@ void FC_TURN_OFF_cb(const void* data, const prot_packet_info_t* info) {
 
 void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   FC_BEACON_s packet;
+	FC_BEACON_s* rec_packet = (FC_BEACON_s*)data;
   BIN_ASSERT(*(uint8_t*)data == FC_BEACON);
+	int expected_len = sizeof(packet) + sizeof(dev_addr_t) * rec_packet->hop_cnt;
+	if (rec_packet->len != expected_len) {
+		LOG_ERR(ERR_BAD_OPCODE_LEN, "FC_BEACON", rec_packet->len, expected_len);
+		return;
+	}
   memcpy(&packet, data, sizeof(packet));
 	// when it's a BEACON from anchor from your neighborhood
-  if ((info->last_src & ADDR_ANCHOR_FLAG) && packet.hop_cnt == 0) {
+	if (ADDR_ANCHOR(info->last_src) && packet.hop_cnt == 0) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
   }
@@ -90,25 +95,24 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   dev_addr_t yourParent = CARRY_ParentAddres();
   bool good_parent = yourParent != 0 && yourParent != info->last_src;
   if (settings.mac.role == RTLS_ANCHOR && good_parent) {
-    TransferBeacon(&packet);
+		TransferBeacon(&packet, &rec_packet->hops[0]);
   }
   // accept new device and make autoRoute
   else if (settings.mac.role == RTLS_SINK) {
-    dev_addr_t hooped_parent = packet.hops[packet.hop_cnt - 1];
-    dev_addr_t parent = packet.hop_cnt > 0 ? hooped_parent : settings.mac.addr;
-    if (settings.carry.autoRoute && (packet.src_did & ADDR_ANCHOR_FLAG) != 0) {
+		dev_addr_t parent = packet.hop_cnt > 0 ? packet.hops[0] : settings.mac.addr;
+		if (settings.carry.autoRoute && ADDR_ANCHOR(packet.src_did)) {
       // when parent changed, then log this event
       if (CARRY_ParentSet(packet.src_did, parent) >= 3) {
         int level = CARRY_GetTargetLevel(packet.src_did);
         PRINT_Parent(parent, packet.src_did, level);
       }
-		} else if ((packet.src_did & ADDR_ANCHOR_FLAG) == 0) {
+		} else if (ADDR_TAG(packet.src_did)) {
 			CARRY_TrackTag(packet.src_did, parent);
     }
     // send accept message
     SendDevAccepted(packet.src_did, parent);
   }
-  PRINT_Beacon(data, packet.src_did);
+	PRINT_Beacon(data, packet.src_did, &rec_packet->hops[0]);
 }
 
 void FC_STAT_ASK_cb(const void* data, const prot_packet_info_t* info) {
@@ -424,7 +428,7 @@ void FC_MAC_ASK_cb(const void* data, const prot_packet_info_t* info) {
   packet.role = settings.mac.role;
   packet.beacon_period_ms = settings.mac.beacon_period_ms;
   packet.guard_time_us = settings.mac.slot_guard_time_us;
-packet.slot_period_us = settings.mac.slots_sum_time_us;
+  packet.slot_period_us = settings.mac.slots_sum_time_us;
   packet.slot_time_us = settings.mac.slot_time_us;
   if (info->original_src == ADDR_BROADCAST) {
     PRINT_MacSet(&packet, settings.mac.addr);
@@ -445,10 +449,10 @@ static bool MAC_CheckRoleAndAddressMatch(rtls_role role, dev_addr_t addr) {
   if (role == RTLS_DEFAULT || role == RTLS_LISTENER) {
     return true;
   }
-  if (role == RTLS_TAG && (addr & ADDR_ANCHOR_FLAG) == 0) {
+if (role == RTLS_TAG && ADDR_TAG(addr)) {
     return true;
   }
-  if ((role == RTLS_SINK || role == RTLS_ANCHOR) && (addr & ADDR_ANCHOR_FLAG != 0)) {
+if ((role == RTLS_SINK || role == RTLS_ANCHOR) && ADDR_ANCHOR(addr)) {
     return true;
   }
   return false;
@@ -459,10 +463,6 @@ void FC_MAC_SET_cb(const void* data, const prot_packet_info_t* info) {
   BIN_ASSERT(*(uint8_t*)data == FC_MAC_SET);
   FC_MAC_SET_s packet;
   memcpy(&packet, data, sizeof(packet));
-  if (packet.raport_anchor_to_anchor_distances < 2) {
-    settings.mac.raport_anchor_anchor_distance =
-        packet.raport_anchor_to_anchor_distances;
-  }
   if (packet.beacon_period_ms != UINT32_MAX) {
     settings.mac.beacon_period_ms = packet.beacon_period_ms;
   }
@@ -474,6 +474,9 @@ void FC_MAC_SET_cb(const void* data, const prot_packet_info_t* info) {
   }
   if (packet.guard_time_us != UINT16_MAX) {
     settings.mac.slot_guard_time_us = packet.guard_time_us;
+  }
+if (packet.raport_anchor_to_anchor_distances < 2 && ADDR_ANCHOR(settings.mac.addr)) {
+    settings.mac.raport_anchor_anchor_distance = packet.raport_anchor_to_anchor_distances;
   }
   // sprawdz czy adres jest zgodny z rola
   if (packet.addr != ADDR_BROADCAST && packet.addr != 0) {

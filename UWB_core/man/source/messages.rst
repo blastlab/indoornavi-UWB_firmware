@@ -37,7 +37,10 @@ Information
 
 *code:* 1103
 
-*descriptor:* "Beacon from did:%X"
+*descriptor:* "Beacon from did:%X route:[%s]"
+
+ arg *route*: 
+	message route in format
 
 .. _INF_DEV_ACCEPTED:
 
@@ -144,7 +147,10 @@ Information
 
 *code:* 1112
 
-*descriptor:* "version did:%X r:%s hV::%d.%d fV:%d.%d.%X"
+*descriptor:* "version did:%X serial:%X%X r:%s hV:%d.%d fV:%d.%d.%X%X"
+
+ arg *serial*: 
+	64-bit device unique identificator number
 
  arg *r*: 
 	device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}
@@ -171,6 +177,36 @@ Information
 
 *comment*: see :ref:`route`
 
+.. _INF_MAC:
+
+*INF_MAC*
+------------------------------------------------------------
+
+*code:* 1114
+
+*descriptor:* "mac did:%X pan:%X beacon:%d sp:%d st:%d gt:%d raad:%d role:%s"
+
+ arg *pan*: 
+	personal area network identifier
+
+ arg *beacon*: 
+	interval in :math:`ms`
+
+ arg *sp*: 
+	slot period in :math:`\mu s`
+
+ arg *st*: 
+	one slot time in :math:`\mu s`
+
+ arg *gt*: 
+	slot guard time in :math:`\mu s`
+
+ arg *raad*: 
+	raport anchor to anchor distances boolean
+
+ arg *role*: 
+	device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}
+
 .. _INF_RF_SETTINGS:
 
 *INF_RF_SETTINGS*
@@ -178,7 +214,7 @@ Information
 
 *code:* 1201
 
-*descriptor:* "rfset ch:%d-%d/%d br:%d plen:%d prf:%d pac:%d code:%d nsSfd:%d sfdTo:%d"
+*descriptor:* "rfset ch:%d-%d/%d br:%d plen:%d prf:%d pac:%d code:%d nsSfd:%d sfdTo:%d smartTx:%d"
 
  arg *ch*: 
 	channel number - (frequency/bandwidth
@@ -204,14 +240,43 @@ Information
  arg *sfdTo*: 
 	SFD detection timeout count
 
+ arg *smartTx*: 
+	smart tx booster for short messages {0-off, 1-on}
+
 *comment*: see :ref:`rfset`
+
+.. _INF_RF_TX_SETTINGS:
+
+*INF_RF_TX_SETTINGS*
+------------------------------------------------------------
+
+*code:* 1202
+
+*descriptor:* "txset did:%X pgdly:%d P1:%d+%d.%d P2:%d+%d.%d P3:%d+%d.%d P4:%d+%d.%d"
+
+ arg *pgdly*: 
+	power generator delay
+
+ arg *P1*: 
+	power gain in db for shoertest messages (<0.125ms)
+
+ arg *P2*: 
+	power gain in db for short messages (<0.25ms)
+
+ arg *P3*: 
+	power gain in db for long messages (<0.5ms
+
+ arg *P4*: 
+	power gain in db for longest mesages (>=0.5ms)
+
+*comment*: In smart tx power is disabled, then only P4 is used
 
 .. _INF_BLE_SETTINGS:
 
 *INF_BLE_SETTINGS*
 ------------------------------------------------------------
 
-*code:* 1202
+*code:* 1203
 
 *descriptor:* "ble txpower:%d (-40/-20/-16/-12/-8/-4/0/3/4) enable:%d (0/1) did:%X"
 
@@ -532,6 +597,15 @@ Warnings
 
 *descriptor:* "sink can't have any parent"
 
+.. _WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK:
+
+*WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK*
+------------------------------------------------------------
+
+*code:* 1110
+
+*descriptor:* "there is too much tags to track (max:%d)"
+
 .. _WRN_MAC_TX_ERROR:
 
 *WRN_MAC_TX_ERROR*
@@ -637,8 +711,8 @@ Errors
 
 *descriptor:* "parent must be an anchor (%X)"
 
- arg *address of incorrect device*: 
-	"address of incorrect device
+ arg *%X*: 
+	address of incorrect device
 
 .. _ERR_RF_BAD_CHANNEL:
 
@@ -703,14 +777,64 @@ Errors
 
 *descriptor:* "rfset nssfd 0/1"
 
+.. _ERR_RF_TX_NEED_COARSE_AND_FINE_P:
+
+*ERR_RF_TX_NEED_COARSE_AND_FINE_P*
+------------------------------------------------------------
+
+*code:* 1208
+
+*descriptor:* "txset need P%dc and P%df at the same time"
+
+ arg *%d*: 
+	number of P argument
+
+ arg *%d*: 
+	number of P argument
+
+.. _ERR_RF_TX_BAD_COARSE_P:
+
+*ERR_RF_TX_BAD_COARSE_P*
+------------------------------------------------------------
+
+*code:* 1209
+
+*descriptor:* "txset P%dc must be divisible by 3 and <=18"
+
+ arg *%d*: 
+	number of P argument
+
+.. _ERR_RF_TX_BAD_FINE_P:
+
+*ERR_RF_TX_BAD_FINE_P*
+------------------------------------------------------------
+
+*code:* 1210
+
+*descriptor:* "txset P%df must be <=31"
+
+ arg *%d*: 
+	number of P argument
+
 .. _ERR_BLE_INACTIVE:
 
 *ERR_BLE_INACTIVE*
 ------------------------------------------------------------
 
-*code:* 1208
+*code:* 1211
 
 *descriptor:* "BLE is disabled"
+
+*comment*: BLE module is not included into this version of firmware
+
+.. _ERR_BLE_BAD_TXPOWER:
+
+*ERR_BLE_BAD_TXPOWER*
+------------------------------------------------------------
+
+*code:* 1212
+
+*descriptor:* "Wrong ble txpower value"
 
 *comment*: BLE module is not included into this version of firmware
 
@@ -770,6 +894,36 @@ Errors
 
  arg *hex*: 
 	address of device which cause error
+
+.. _ERR_MAC_RAAD_BAD_VALUE:
+
+*ERR_MAC_RAAD_BAD_VALUE*
+------------------------------------------------------------
+
+*code:* 1306
+
+*descriptor:* "mac raad value must be 0 or 1 (enable)"
+
+.. _ERR_MAC_ADDR_BAD_VALUE:
+
+*ERR_MAC_ADDR_BAD_VALUE*
+------------------------------------------------------------
+
+*code:* 1307
+
+*descriptor:* "mac addr bad value"
+
+.. _ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT:
+
+*ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT*
+------------------------------------------------------------
+
+*code:* 1308
+
+*descriptor:* "mac beacon period must be greater than %d"
+
+ arg *%d*: 
+	minumum beacon period value
 
 .. _ERR_FLASH_ERASING:
 

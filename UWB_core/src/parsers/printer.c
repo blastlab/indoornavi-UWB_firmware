@@ -54,8 +54,20 @@ void PRINT_TurnOff(const FC_TURN_OFF_s *data, dev_addr_t did) {
 	LOG_INF(INF_DEVICE_TURN_OFF, did);
 }
 
-void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did) {
-	LOG_INF(INF_BEACON, did);
+void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
+	mac_buf_t* mbuf = MAC_Buffer();
+	char* buf;
+	if (mbuf == 0) {
+		buf = "";
+	} else {
+		buf = (char*)mbuf->buf;
+		for (int i = 0; i < data->hop_cnt; ++i) {
+			snprintf(buf + strlen(buf), MAC_BUF_LEN, "%X>", hops[i]);
+		}
+		snprintf(buf, MAC_BUF_LEN, "%X", did);
+	}
+	LOG_INF(INF_BEACON, did, buf);
+	MAC_Free(mbuf);
 }
 
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did) {

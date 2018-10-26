@@ -589,7 +589,7 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int slot_period = TXT_GetParam(buf, "sp:", 10);
 	int slot_time = TXT_GetParam(buf, "st:", 10);
 	int guard_time = TXT_GetParam(buf, "gt:", 10);
-	int pan = TXT_GetParam(buf, "pan:", 16);
+	int pan = TXT_GetParam(buf, "_pan:", 16);
 	int addr = TXT_GetParam(buf, "_addr:", 16);
 	int raad = TXT_GetParam(buf, "raad:", 10);  // raport anchor to anchor distance, bool
 	int role = -1;
@@ -605,7 +605,7 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	else if (TXT_CheckFlag(buf, "-listener"))
 		role = RTLS_LISTENER;
 
-	if (beacon_period < 100) {
+	if (beacon_period >= 0 && beacon_period < 100) {
 		LOG_ERR(ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT, 100);
 		return;
 	}
@@ -618,12 +618,12 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 		return;
 	}
 	if (addr > 0 && info->original_src != ADDR_BROADCAST
-	    && (info->original_src & ADDR_ANCHOR_FLAG != addr & ADDR_ANCHOR_FLAG)) {
+	    && ((info->original_src & ADDR_ANCHOR_FLAG) != (addr & ADDR_ANCHOR_FLAG))) {
 		LOG_ERR(ERR_MAC_ADDR_BAD_VALUE);
 		return;
 	}
 	if (addr > 0 && info->original_src == ADDR_BROADCAST
-	    && (settings.mac.addr & ADDR_ANCHOR_FLAG != addr & ADDR_ANCHOR_FLAG)) {
+	    && ((settings.mac.addr & ADDR_ANCHOR_FLAG) != (addr & ADDR_ANCHOR_FLAG))) {
 		LOG_ERR(ERR_MAC_ADDR_BAD_VALUE);
 		return;
 	}
@@ -635,8 +635,8 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	packet.FC = only_ask ? FC_MAC_ASK : FC_MAC_SET;
 	packet.len = only_ask ? 2 : sizeof(packet);
 	packet.beacon_period_ms = beacon_period < 0 ? UINT32_MAX : beacon_period;
-	packet.guard_time_us = guard_time < 0 ? INT16_MAX : guard_time;
-	packet.pan = pan < 0 ? INT16_MAX : pan;
+	packet.guard_time_us = guard_time < 0 ? UINT16_MAX : guard_time;
+	packet.pan = pan < 0 ? UINT16_MAX : pan;
 	packet.raport_anchor_to_anchor_distances = raad < 0 ? UINT8_MAX : raad;
 	packet.role = role < 0 ? UINT8_MAX : role;
 	packet.slot_period_us = slot_period < 0 ? UINT32_MAX : slot_period;

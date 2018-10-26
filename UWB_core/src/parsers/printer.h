@@ -52,7 +52,7 @@ void PRINT_TurnOff(const FC_TURN_OFF_s *data, dev_addr_t did);
  * @param data pointer to structure with data to print
  * @param did identifier of device connected with this data
  */
-void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did);
+void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t route[]);
 
 /**
  * @brief print device accepted info
