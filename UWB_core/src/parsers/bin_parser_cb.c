@@ -21,16 +21,20 @@ static void SendDevAccepted(dev_addr_t target, dev_addr_t parent) {
   }
 }
 
-static void TransferBeacon(FC_BEACON_s* packet, dev_addr_t hop_cnt[]) {
+static void TransferBeacon(FC_BEACON_s* packet, dev_addr_t hop_cnt_tab[]) {
 	mac_buf_t* buf;
 	FC_CARRY_s* carry;
+	if ((packet->hop_cnt_batt & 0xF0) == 0xF0) {
+		LOG_ERR(ERR_BEACON_TOO_MANY_HOPS, packet->hop_cnt_batt >> 4);
+		return;
+	}
 	buf = CARRY_PrepareBufTo(CARRY_ParentAddres(), &carry);
 	if (buf != 0) {
 		packet->len += sizeof(dev_addr_t);
-		packet->hop_cnt += 1;
+		packet->hop_cnt_batt += 1 << 4; // (upper nibble)
 		CARRY_Write(carry, buf, &packet, sizeof(packet));
 		CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
-		CARRY_Write(carry, buf, hop_cnt, sizeof(dev_addr_t) * (packet->hop_cnt - 1));
+		CARRY_Write(carry, buf, hop_cnt_tab, sizeof(dev_addr_t) * ((packet->hop_cnt_batt >> 4) - 1));
 		CARRY_Send(buf, false);
 	}
 }
@@ -78,14 +82,15 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   FC_BEACON_s packet;
 	FC_BEACON_s* rec_packet = (FC_BEACON_s*)data;
   BIN_ASSERT(*(uint8_t*)data == FC_BEACON);
-	int expected_len = sizeof(packet) + sizeof(dev_addr_t) * rec_packet->hop_cnt;
+	int hop_cnt = rec_packet->hop_cnt_batt >> 4;
+	int expected_len = sizeof(packet) + sizeof(dev_addr_t) * hop_cnt;
 	if (rec_packet->len != expected_len) {
 		LOG_ERR(ERR_BAD_OPCODE_LEN, "FC_BEACON", rec_packet->len, expected_len);
 		return;
 	}
   memcpy(&packet, data, sizeof(packet));
 	// when it's a BEACON from anchor from your neighborhood
-	if (ADDR_ANCHOR(info->last_src) && packet.hop_cnt == 0) {
+	if (ADDR_ANCHOR(info->last_src) && hop_cnt == 0) {
     uint8_t default_tree_level = 255;
     SYNC_FindOrCreateNeighbour(info->original_src, default_tree_level);
   }
@@ -99,7 +104,7 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   }
   // accept new device and make autoRoute
   else if (settings.mac.role == RTLS_SINK) {
-		dev_addr_t parent = packet.hop_cnt > 0 ? packet.hops[0] : settings.mac.addr;
+		dev_addr_t parent = hop_cnt > 0 ? packet.hops[0] : settings.mac.addr;
 		if (settings.carry.autoRoute && ADDR_ANCHOR(packet.src_did)) {
       // when parent changed, then log this event
       if (CARRY_ParentSet(packet.src_did, parent) >= 3) {

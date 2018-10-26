@@ -61,12 +61,14 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
 		buf = "";
 	} else {
 		buf = (char*)mbuf->buf;
-		for (int i = 0; i < data->hop_cnt; ++i) {
+		for (int i = 0; i < (data->hop_cnt_batt >> 4); ++i) {
 			snprintf(buf + strlen(buf), MAC_BUF_LEN, "%X>", hops[i]);
 		}
 		snprintf(buf, MAC_BUF_LEN, "%X", did);
 	}
-	LOG_INF(INF_BEACON, did, buf);
+	int mV = data->hop_cnt_batt & 0x0F;
+	mV = (mV << 8) + data->voltage + 2000; // 2000 is battery offset level
+	LOG_INF(INF_BEACON, did, mV, buf);
 	MAC_Free(mbuf);
 }
 

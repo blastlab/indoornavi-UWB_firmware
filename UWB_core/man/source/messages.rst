@@ -37,10 +37,10 @@ Information
 
 *code:* 1103
 
-*descriptor:* "Beacon from did:%X route:[%s]"
+*descriptor:* "Beacon from did:%X mV:%d route:[%s]"
 
  arg *route*: 
-	message route in format
+	message route in format '[%X>%X>%X...] where last position is target address
 
 .. _INF_DEV_ACCEPTED:
 
@@ -713,6 +713,18 @@ Errors
 
  arg *%X*: 
 	address of incorrect device
+
+.. _ERR_BEACON_TOO_MANY_HOPS:
+
+*ERR_BEACON_TOO_MANY_HOPS*
+------------------------------------------------------------
+
+*code:* 1107
+
+*descriptor:* "beacon make too many hops (%d)"
+
+ arg *%d*: 
+	maximum number of beaacon hops
 
 .. _ERR_RF_BAD_CHANNEL:
 

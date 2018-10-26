@@ -130,11 +130,14 @@ void SendTurnOffMessage(uint8_t reason) {
 }
 
 void SendBeaconMessage() {
+	int voltage = PORT_BatteryVoltage();
+	voltage -= voltage > 2000 ? 2000 : voltage; // 2000 is voltage offset
 	FC_BEACON_s packet;
 	packet.FC = FC_BEACON;
 	packet.len = sizeof(packet);
 	packet.serial = settings_otp->serial;
-	packet.hop_cnt = 0;
+	packet.hop_cnt_batt = (0 << 4) | ((voltage >> 8) & 0x0F);
+	packet.voltage = voltage & 0xFF;
 	packet.src_did = settings.mac.addr;
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {

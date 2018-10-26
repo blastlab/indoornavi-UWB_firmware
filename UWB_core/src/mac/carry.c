@@ -21,6 +21,7 @@ carry_tag_t* CARRY_GetTag(dev_addr_t tag_did) {
 	// when you know tag
 	for(carry_tag_t* tag = &carry.tags[0]; tag != &carry.tags[CARRY_MAX_TAGS]; ++tag) {
 		if(tag->did == tag_did) {
+			tag->updateTime = PORT_TickMs();
 			return tag;
 		}
 	}
