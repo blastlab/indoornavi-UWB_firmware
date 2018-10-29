@@ -52,7 +52,7 @@ void PRINT_TurnOff(const FC_TURN_OFF_s *data, dev_addr_t did);
  * @param data pointer to structure with data to print
  * @param did identifier of device connected with this data
  */
-void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did);
+void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t route[]);
 
 /**
  * @brief print device accepted info
@@ -137,5 +137,13 @@ void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_
  * @param level number of hops between sink and device
  */
 void PRINT_Parent(dev_addr_t parent, dev_addr_t child, int level);
+
+/**
+ * @brief print mac settings
+ *
+ * @param data pointer to structure with data to print
+ * @param did identifier of device connected with this data
+ */
+void PRINT_MacSet(const FC_MAC_SET_s *data, dev_addr_t did);
 
 #endif

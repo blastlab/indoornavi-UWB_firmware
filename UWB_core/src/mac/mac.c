@@ -53,8 +53,8 @@ void MAC_Init(MAC_DataParserCb_t callback) {
 	// especially after connecting callbacks
 	TRANSCEIVER_DefaultRx();
 
-	// prevent beacon sending at startup
-	MAC_BeaconTimerReset();
+	// hurry send beacon after reset
+	mac.beacon_timer_timestamp = -settings.mac.beacon_period_ms + 100;
 }
 
 void MAC_Reinit() {

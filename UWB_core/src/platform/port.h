@@ -200,7 +200,7 @@ void PORT_SleepMs(unsigned int time_ms);
  *
  * \return current time in milliseconds
  */
-unsigned int PORT_TickMs();
+time_ms_t PORT_TickMs();
 
 /**
  * \brief Get high resolution clock counter value.

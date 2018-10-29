@@ -34,6 +34,7 @@ typedef enum {
 	                                         ///< message in sync procedure
 	FC_SYNC_FIN = (FC_SYNC_POLL + 2),        ///< third and last
 	                                         ///< message in sync procedure
+	// empty 0x1A..0x1F
 	FC_VERSION_ASK = 0x20,                   ///< device is asked about version
 	FC_VERSION_RESP = (FC_VERSION_ASK + 1),  ///< device response version message
 	// empty
@@ -59,6 +60,12 @@ typedef enum {
 	FC_IMU_ASK = 0x34,
 	FC_IMU_RESP = (FC_IMU_ASK + 1),
 	FC_IMU_SET = (FC_IMU_ASK + 2),
+	// empty
+	FC_MAC_ASK = 0x38,
+	FC_MAC_RESP = (FC_MAC_ASK + 1),
+	FC_MAC_SET = (FC_MAC_ASK + 2),
+	// other
+	FC_MAX
 } FC_t;
 
 #endif

@@ -31,8 +31,8 @@ typedef const char cchar;
  */
 typedef struct {
 	cchar* cmd;          ///< pointer to start of current message to parse
-	cchar* const start;  ///< pointer to start of buffer
-	cchar* const end;    ///< pointer to start of buffer + buffer length
+	char* const start;   ///< pointer to start of buffer
+	char* const end;     ///< pointer to start of buffer + buffer length
 	int cnt;             ///< numer of messages ready to parse
 } txt_buf_t;
 
@@ -73,9 +73,9 @@ int TXT_AtoI(const txt_buf_t* buf, cchar* ptr, int base);
 
 /**
  * @brief check if flag exist in current command
- * 
+ *
  * @param[in] buf buffer data, especially buf->end and buf->start
- * @param[in] flag string to find 
+ * @param[in] flag string to find
  * @return true if flag exist
  * @return false otherwise
  */

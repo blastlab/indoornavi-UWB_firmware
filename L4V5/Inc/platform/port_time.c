@@ -54,14 +54,14 @@ void PORT_TimeStartTimers() {
 	LL_TIM_EnableCounter(PTIM_SLOT);
 }
 
-void PORT_SleepMs(unsigned int time_ms) {
+void PORT_SleepMs(time_ms_t time_ms) {
 	int end = time_ms + PORT_TickMs();
 	while (end - (int)PORT_TickMs() > 0) {
 		PORT_WatchdogRefresh();
 	}
 }
 
-unsigned int PORT_TickMs() {
+time_ms_t PORT_TickMs() {
 	return HAL_GetTick();
 }
 

@@ -33,6 +33,8 @@
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
+typedef unsigned int time_ms_t;
+
 #define DW_EXTI_IRQn EXTI0_IRQn
 #define DW_SLOT_TIM_IRQn TIM2_IRQn
 

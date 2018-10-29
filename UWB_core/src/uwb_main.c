@@ -37,7 +37,7 @@ void BatteryControl() {
 }
 
 void BeaconSender() {
-	if (MAC_BeaconTimerGetMs() > 5000) {
+	if (MAC_BeaconTimerGetMs() > settings.mac.beacon_period_ms) {
 		if (settings.mac.role != RTLS_LISTENER) {
 			SendBeaconMessage();
 			MAC_BeaconTimerReset();
@@ -46,11 +46,17 @@ void BeaconSender() {
 }
 
 void RangingReader() {
+	// urzyj peek, a dopiero potem pop aby nie nadpisac pomiaru podczas przetwarzania
 	const measure_t* meas = TOA_MeasurePeek();
 	if (meas != 0) {
 		if (settings.mac.role != RTLS_SINK) {
 			TOA_SendRes(meas);
 		} else {
+			// gdy pomiar jest z tagiem to go sledz
+			if ((MIN(meas->did1, meas->did2) & ADDR_ANCHOR_FLAG) == 0) {
+				CARRY_TrackTag(MIN(meas->did1, meas->did2), MAX(meas->did1, meas->did2));
+			}
+			// a wypisz kazdy pomiar
 			PRINT_Measure(meas);
 		}
 		TOA_MeasurePop();
@@ -124,11 +130,14 @@ void SendTurnOffMessage(uint8_t reason) {
 }
 
 void SendBeaconMessage() {
+	int voltage = PORT_BatteryVoltage();
+	voltage -= voltage > 2000 ? 2000 : voltage; // 2000 is voltage offset
 	FC_BEACON_s packet;
 	packet.FC = FC_BEACON;
 	packet.len = sizeof(packet);
 	packet.serial = settings_otp->serial;
-	packet.hop_cnt = 0;
+	packet.hop_cnt_batt = (0 << 4) | ((voltage >> 8) & 0x0F);
+	packet.voltage = voltage & 0xFF;
 	packet.src_did = settings.mac.addr;
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {

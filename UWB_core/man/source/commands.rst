@@ -49,7 +49,7 @@ version
 Get device version and role description. Response is in :ref:`INF_VERSION` format.::
 
     > version
-    > version did:8012 r:SINK hV:1.2 fV:0.2.cb016c11
+    > version did:8012 serial:ABC132456DE r:SINK hV:1.2 fV:0.2.cb016c11
 
 
 
@@ -452,3 +452,23 @@ hang
 Go to infinity loop.
 
 note: this command is for debug purpose only
+
+
+.. _mac:
+
+mac
+===============
+
+*mac [beacon:dec] [sp:dec] [st:dec] [gt:dec] [pan:hex] [addr:hex] [raad:dec] [-sink|-anchor|-tag|-default|-listener]*
+
+* beacon timer interval in :math:`ms`
+* sp is *slot period* time in :math:`\mu s`, must be greater than *st*
+* st is one *slot time* in :math:`\mu s`, must be lower than *sp*
+* gt is slot *guard time* in :math:`\mu s`
+* pan is new device *personal area network* identifier, after change there might be a trouble with communication
+* addr is new device address
+* raad is *report anchor to anchor distances* boolean {0-off, 1-on}
+
+Response is :ref:`INF_MAC`.
+
+note: *beacon* and *raad* are allowed for each user, but other parameters must be changes carefully - only for advanced users
