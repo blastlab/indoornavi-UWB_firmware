@@ -32,7 +32,7 @@ static void TransferBeacon(FC_BEACON_s* packet, dev_addr_t hop_cnt_tab[]) {
 	if (buf != 0) {
 		packet->len += sizeof(dev_addr_t);
 		packet->hop_cnt_batt += 1 << 4; // (upper nibble)
-		CARRY_Write(carry, buf, &packet, sizeof(packet));
+		CARRY_Write(carry, buf, packet, sizeof(*packet));
 		CARRY_Write(carry, buf, &settings.mac.addr, sizeof(dev_addr_t));
 		CARRY_Write(carry, buf, hop_cnt_tab, sizeof(dev_addr_t) * ((packet->hop_cnt_batt >> 4) - 1));
 		CARRY_Send(buf, false);
@@ -104,7 +104,7 @@ void FC_BEACON_cb(const void* data, const prot_packet_info_t* info) {
   }
   // accept new device and make autoRoute
   else if (settings.mac.role == RTLS_SINK) {
-		dev_addr_t parent = hop_cnt > 0 ? packet.hops[0] : settings.mac.addr;
+		dev_addr_t parent = hop_cnt > 0 ? rec_packet->hops[0] : settings.mac.addr;
 		if (settings.carry.autoRoute && ADDR_ANCHOR(packet.src_did)) {
       // when parent changed, then log this event
       if (CARRY_ParentSet(packet.src_did, parent) >= 3) {

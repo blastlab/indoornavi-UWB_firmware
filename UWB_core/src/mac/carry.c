@@ -31,6 +31,7 @@ carry_tag_t* CARRY_GetTag(dev_addr_t tag_did) {
 		if(now - tag->updateTime > settings.carry.tagMaxInactiveTime) {
 			memset(tag, 0, sizeof(*tag));
 			tag->updateTime = now;
+			tag->anchor = ADDR_BROADCAST;
 			tag->did = tag_did;
 			return tag;
 		}
@@ -154,8 +155,7 @@ static inline void CARRY_SetVersion(FC_CARRY_s* pcarry) {
 int CARRY_WriteTrace(uint8_t* buf, dev_addr_t target, dev_addr_t* nextDid) {
 	CARRY_ASSERT(buf != 0);
 	int hopCnt = 0;
-	bool targetIsAnchor = (target & ADDR_ANCHOR_FLAG) != 0;
-	dev_addr_t parent = targetIsAnchor ? CARRY_ParentGet(target) : CARRY_GetTag(target)->anchor;
+	dev_addr_t parent = ADDR_ANCHOR(target) ? CARRY_ParentGet(target) : CARRY_GetTag(target)->anchor;
 
 	while (parent != ADDR_BROADCAST && parent != settings.mac.addr) {
 		hopCnt += 1;
