@@ -37,7 +37,7 @@ Information
 
 *code:* 1103
 
-*descriptor:* "Beacon from did:%X mV:%d route:[%s]"
+*descriptor:* "Beacon from did:%X serial:%X%X mV:%d route:[%s]"
 
  arg *route*: 
 	message route in format '[%X>%X>%X...] where last position is target address

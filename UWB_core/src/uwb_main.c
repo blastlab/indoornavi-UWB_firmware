@@ -135,7 +135,8 @@ void SendBeaconMessage() {
 	FC_BEACON_s packet;
 	packet.FC = FC_BEACON;
 	packet.len = sizeof(packet);
-	packet.serial = settings_otp->serial;
+	packet.serial_hi = settings_otp->serial >> 32;
+	packet.serial_lo = settings_otp->serial & UINT32_MAX;
 	packet.hop_cnt_batt = (0 << 4) | ((voltage >> 8) & 0x0F);
 	packet.voltage = voltage & 0xFF;
 	packet.src_did = settings.mac.addr;

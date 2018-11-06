@@ -34,7 +34,9 @@ typedef enum {
 	                                         ///< message in sync procedure
 	FC_SYNC_FIN = (FC_SYNC_POLL + 2),        ///< third and last
 	                                         ///< message in sync procedure
-	// empty 0x1A..0x1F
+	FC_TDOA_BEACON = 0x1A,                   ///< tdoa measure beacon
+	FC_TDOA_BEACON_INFO = 0x1B,              ///< tdoa measure beacon received raport
+	// empty 0x1C..0x1F
 	FC_VERSION_ASK = 0x20,                   ///< device is asked about version
 	FC_VERSION_RESP = (FC_VERSION_ASK + 1),  ///< device response version message
 	// empty

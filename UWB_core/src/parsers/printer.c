@@ -68,7 +68,7 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
 	}
 	int mV = data->hop_cnt_batt & 0x0F;
 	mV = (mV << 8) + data->voltage + 2000; // 2000 is battery offset level
-	LOG_INF(INF_BEACON, did, mV, buf);
+	LOG_INF(INF_BEACON, did, data->serial_hi, data->serial_lo, mV, buf);
 	MAC_Free(mbuf);
 }
 

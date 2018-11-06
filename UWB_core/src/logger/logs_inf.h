@@ -16,7 +16,7 @@ ARG("fV", "firmware major version")
 
 ADD_ITEM_M(1102, INF_DEVICE_TURN_OFF, "Device turn off did:%X")
 
-ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X mV:%d route:[%s]")
+ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X serial:%X%X mV:%d route:[%s]")
 ARG("route", "message route in format '[%X>%X>%X...] where last position is target address")
 
 ADD_ITEM_M(1104, INF_DEV_ACCEPTED, "Device accepted, sink:%X parent:%X")
