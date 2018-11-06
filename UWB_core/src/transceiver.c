@@ -132,6 +132,7 @@ void TRANSCEIVER_DefaultRx() {
 
 void TRANSCEIVER_EnterDeepSleep()  // TODO
 {
+	TRANSCEIVER_EnterSleep();
 }
 
 void TRANSCEIVER_EnterSleep() {
@@ -148,7 +149,7 @@ void TRANSCEIVER_WakeUp(uint8_t* buf, int len) {
 	// Need to keep chip select line low for at least 500us
 	int ret = dwt_spicswakeup(buf, len);
 	TRANSCEIVER_ASSERT(ret == DWT_SUCCESS);
-	PORT_SpiSpeedSlow(true);
+	PORT_SpiSpeedSlow(false);
 
 	// wt_configuretxrf(&settings.transceiver.dwt_txconfig);
 	dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);

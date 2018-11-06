@@ -116,7 +116,7 @@ CRITICAL(
 		PORT_ExitSleepMode();
 		PORT_WakeupTransceiver();
 		IASSERT(dwt_readdevid() == DWT_DEVICE_ID);
-		MAC_Init(BIN_Parse);
+		MAC_Reinit();
 	}
 }
 

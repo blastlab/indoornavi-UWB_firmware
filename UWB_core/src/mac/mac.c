@@ -8,6 +8,7 @@
 mac_instance_t mac;
 
 static MAC_DataParserCb_t _dataParser;
+static MAC_SendToSink_t _dataSender;
 static mac_buf_t* _MAC_BufGetOldestToTx();
 static void _MAC_BufferReset(mac_buf_t* buf);
 int MAC_TryTransmitFrameInSlot(int64_t glob_time);
@@ -17,9 +18,10 @@ static void MAC_RxCb(const dwt_cb_data_t* data);
 static void MAC_RxToCb(const dwt_cb_data_t* data);
 static void MAC_RxErrCb(const dwt_cb_data_t* data);
 
-void MAC_Init(MAC_DataParserCb_t callback) {
+void MAC_Init(MAC_DataParserCb_t callback, MAC_SendToSink_t sender) {
 	MAC_ASSERT(callback != 0);
 	_dataParser = callback;
+	_dataSender = sender;
 	// init transceiver
 	TRANSCEIVER_Init();
 
@@ -43,7 +45,7 @@ void MAC_Init(MAC_DataParserCb_t callback) {
 	}
 
 	// initialize synchronization and ranging engine
-	SYNC_Init();
+	SYNC_Init(sender);
 	TOA_InitDly();
 
 	// slot timers
@@ -58,7 +60,7 @@ void MAC_Init(MAC_DataParserCb_t callback) {
 }
 
 void MAC_Reinit() {
-	MAC_Init(_dataParser);
+	MAC_Init(_dataParser, _dataSender);
 }
 
 static void MAC_TxCb(const dwt_cb_data_t* data) {
@@ -193,6 +195,26 @@ unsigned int MAC_BeaconTimerGetMs() {
 // reset beacon timer after sending a beacon message
 void MAC_BeaconTimerReset() {
 	mac.beacon_timer_timestamp = PORT_TickMs();
+}
+
+void MAC_BeaconSend() {
+	MAC_BeaconTimerReset();
+	int voltage = PORT_BatteryVoltage();
+	voltage -= voltage > 2000 ? 2000 : voltage; // 2000 is voltage offset
+	FC_BEACON_s packet;
+	packet.FC = FC_BEACON;
+	packet.len = sizeof(packet);
+	packet.serial_hi = settings_otp->serial >> 32;
+	packet.serial_lo = settings_otp->serial & UINT32_MAX;
+	packet.hop_cnt_batt = (0 << 4) | ((voltage >> 8) & 0x0F);
+	packet.voltage = voltage & 0xFF;
+	packet.src_did = settings.mac.addr;
+	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+	if (buf != 0) {
+		MAC_Write(buf, &packet, packet.len);
+		MAC_Send(buf, false);
+		LOG_DBG("I send beacon - %X role:%c", settings.mac.addr, (char)settings.mac.role);
+	}
 }
 
 // get time from start of super frame in mac_get_port_sync_time units

@@ -39,8 +39,7 @@ void BatteryControl() {
 void BeaconSender() {
 	if (MAC_BeaconTimerGetMs() > settings.mac.beacon_period_ms) {
 		if (settings.mac.role != RTLS_LISTENER) {
-			SendBeaconMessage();
-			MAC_BeaconTimerReset();
+			MAC_BeaconSend();
 		}
 	}
 }
@@ -63,6 +62,18 @@ void RangingReader() {
 	}
 }
 
+void SendToSink(const void *data, uint8_t len) {
+	uint8_t* pdata = (uint8_t*)data;
+	uint8_t packet_len = pdata[1];
+	IASSERT(len == packet_len);
+	FC_CARRY_s* carry;
+	mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
+	if (buf != 0) {
+		CARRY_Write(carry, buf, data, len);
+		CARRY_Send(buf, false);
+	}
+}
+
 void UwbMain() {
 	// CheckSleepMode();
 	SETTINGS_Init();
@@ -77,7 +88,7 @@ void UwbMain() {
 	LOG_SelfTest();
 #endif
 
-	MAC_Init(BIN_Parse);
+	MAC_Init(BIN_Parse, SendToSink);
 	CARRY_Init(settings.mac.role == RTLS_SINK);
 	FU_Init(settings.mac.role == RTLS_SINK);
 
@@ -126,25 +137,6 @@ void SendTurnOffMessage(uint8_t reason) {
 	if (buf != 0) {
 		MAC_Write(buf, &packet, packet.len);
 		MAC_Send(buf, false);
-	}
-}
-
-void SendBeaconMessage() {
-	int voltage = PORT_BatteryVoltage();
-	voltage -= voltage > 2000 ? 2000 : voltage; // 2000 is voltage offset
-	FC_BEACON_s packet;
-	packet.FC = FC_BEACON;
-	packet.len = sizeof(packet);
-	packet.serial_hi = settings_otp->serial >> 32;
-	packet.serial_lo = settings_otp->serial & UINT32_MAX;
-	packet.hop_cnt_batt = (0 << 4) | ((voltage >> 8) & 0x0F);
-	packet.voltage = voltage & 0xFF;
-	packet.src_did = settings.mac.addr;
-	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
-	if (buf != 0) {
-		MAC_Write(buf, &packet, packet.len);
-		MAC_Send(buf, false);
-		LOG_DBG("I send beacon - %X role:%c", settings.mac.addr, (char )settings.mac.role);
 	}
 }
 
