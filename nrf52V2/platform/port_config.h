@@ -47,6 +47,8 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 // define how many high resolution clock tick is in one us
 #define PORT_TICKS_HR_PER_US 1000
 
+typedef unsigned int time_ms_t;
+
 #define USE_BLE 0
 
 #if USE_BLE

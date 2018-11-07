@@ -27,6 +27,7 @@ typedef struct {
 	                             ///< your slot time
 	int slots_sum_time_us;       ///< slots sum time in us
 	int max_frame_fail_cnt;      ///< frame retransmit/delete threshold
+	int beacon_period_ms;        ///< minimum time delay between beacon messages
 	mac_buff_time_t max_buf_inactive_time;  ///< maximal buf inactive time
 	toa_settings_t sync_dly;                ///< SYNC TOA delay settings
 	toa_settings_t toa_dly;                 ///< TOA delay settings
@@ -48,7 +49,7 @@ typedef struct {
     .slot_guard_time_us = 50, .slot_tolerance_time_us = 25,                \
     .slots_sum_time_us = _DEF_SLOT_SUM_TIME, .max_frame_fail_cnt = 3,      \
     .max_buf_inactive_time = 2 * _DEF_SLOT_SUM_TIME, .role = RTLS_DEFAULT, \
-    .raport_anchor_anchor_distance = false,                                \
+    .beacon_period_ms = 5000, .raport_anchor_anchor_distance = false,      \
   }
 
 #endif

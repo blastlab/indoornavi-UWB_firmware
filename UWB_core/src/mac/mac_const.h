@@ -40,6 +40,9 @@ typedef unsigned short pan_dev_addr_t;
 #define ADDR_BROADCAST 0xffff
 #define ADDR_ANCHOR_FLAG 0x8000
 
+#define ADDR_TAG(X) ((X&ADDR_ANCHOR_FLAG)==0)
+#define ADDR_ANCHOR(X) ((X&ADDR_ANCHOR_FLAG)==ADDR_ANCHOR_FLAG)
+
 #ifndef CORTEX_M
 #ifndef __packed
 #define __packed

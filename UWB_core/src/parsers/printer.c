@@ -1,9 +1,9 @@
 #include "printer.h"
 #include "mac/carry.h"
 
-void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did) {
+const char* RoleToString(rtls_role role) {
 	const char *str_role;
-	switch (data->role) {
+	switch (role) {
 		case RTLS_SINK:
 			str_role = "SINK";
 			break;
@@ -22,6 +22,11 @@ void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did) {
 		default:
 			str_role = "OTHER";
 	}
+	return str_role;
+}
+
+void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did) {
+	const char *str_role = RoleToString(data->role);
 	LOG_INF(INF_VERSION, did, (uint32_t)(data->serial >> 32), (uint32_t)data->serial, str_role,
 	        data->hMajor, data->hMinor, data->fMajor, data->fMinor, (uint32_t)(data->hash >> 32),
 		(uint32_t)(data->hash));
@@ -49,8 +54,22 @@ void PRINT_TurnOff(const FC_TURN_OFF_s *data, dev_addr_t did) {
 	LOG_INF(INF_DEVICE_TURN_OFF, did);
 }
 
-void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did) {
-	LOG_INF(INF_BEACON, did);
+void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
+	mac_buf_t* mbuf = MAC_Buffer();
+	char* buf;
+	if (mbuf == 0) {
+		buf = "";
+	} else {
+		buf = (char*)mbuf->buf;
+		for (int i = 0; i < (data->hop_cnt_batt >> 4); ++i) {
+			snprintf(buf + strlen(buf), MAC_BUF_LEN, "%X>", hops[i]);
+		}
+		snprintf(buf, MAC_BUF_LEN, "%X", did);
+	}
+	int mV = data->hop_cnt_batt & 0x0F;
+	mV = (mV << 8) + data->voltage + 2000; // 2000 is battery offset level
+	LOG_INF(INF_BEACON, did, mV, buf);
+	MAC_Free(mbuf);
 }
 
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did) {
@@ -187,4 +206,10 @@ void PRINT_ToaSettings(const char* prefix, const toa_settings_t *data, dev_addr_
 
 void PRINT_Parent(dev_addr_t parent, dev_addr_t child, int level) {
 	LOG_INF(INF_PARENT_DESCRIPTION, child, parent, level);
+}
+
+void PRINT_MacSet(const FC_MAC_SET_s *data, dev_addr_t did) {
+	const char* str_role = RoleToString(data->role);
+	LOG_INF(INF_MAC, did, data->pan, data->beacon_period_ms, data->slot_period_us, data->slot_time_us,
+	        data->guard_time_us, data->raport_anchor_to_anchor_distances, str_role);
 }

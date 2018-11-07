@@ -16,5 +16,6 @@
 #define CARRY_FLAG_ACK_REQ (1 << 4)
 #define CARRY_FLAG_REROUTE (2 << 4)
 // bit 3
+#define CARRY_FLAG_REFRESH_PARENT (1 << 3)
 
 #endif

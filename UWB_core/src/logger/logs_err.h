@@ -26,6 +26,9 @@ ADD_ITEM_M(1105, ERR_PARENT_FOR_SINK, "parent can't be set for sink")
 ADD_ITEM_M(1106, ERR_PARENT_NEED_ANCHOR, "parent must be an anchor (%X)")
 ARG("%X", "address of incorrect device")
 
+ADD_ITEM_M(1107, ERR_BEACON_TOO_MANY_HOPS, "beacon make too many hops (%d)")
+ARG("%d", "maximum number of beaacon hops")
+
 // radio 1200
 ADD_ITEM_M(1201, ERR_RF_BAD_CHANNEL, "rfset ch 1..7 (without 6)")
 ADD_ITEM_M(1202, ERR_RF_BAD_BAUDRATE, "rfset br 110/850/6800")
@@ -66,6 +69,11 @@ ADD_ITEM_M(1304, ERR_SETTAGS_NEED_SETANCHORS, "settags need setanchors")
 
 ADD_ITEM_M(1305, ERR_SETTAGS_FAILED, "settags failed after %X")
 ARG("hex", "address of device which cause error")
+
+ADD_ITEM_M(1306, ERR_MAC_RAAD_BAD_VALUE, "mac raad value must be 0 or 1 (enable)")
+ADD_ITEM_M(1307, ERR_MAC_ADDR_BAD_VALUE, "mac addr bad value")
+ADD_ITEM_M(1308, ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT, "mac beacon period must be greater than %d")
+ARG("%d", "minumum beacon period value")
 
 // settings 1400
 ADD_ITEM_M(1401, ERR_FLASH_ERASING, "flash erasing error did:%X")
