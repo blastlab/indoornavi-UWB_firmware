@@ -272,5 +272,7 @@ void PORT_WakeupTransceiver(void) {
 	PORT_SleepMs(1);
 	DW_CS_GPIO_Port->BSRR = DW_CS_Pin;
 	PORT_SleepMs(7);  // wait 7ms for DW1000 XTAL to stabilise
+	int i = dwt_readdevid();
+	PORT_ASSERT(i == 0xDECA0130);
 }
 #endif

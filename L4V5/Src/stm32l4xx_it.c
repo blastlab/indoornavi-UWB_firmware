@@ -196,6 +196,23 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+* @brief This function handles RTC wake-up interrupt through EXTI line 20.
+*/
+void RTC_WKUP_IRQHandler(void)
+{
+  /* USER CODE BEGIN RTC_WKUP_IRQn 0 */
+	LL_RTC_ClearFlag_WUT(RTC);
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
+  /* USER CODE END RTC_WKUP_IRQn 0 */
+  /* USER CODE BEGIN RTC_WKUP_IRQn 1 */
+	PORT_LedOn(LED_ERR);
+	TRANSCEIVER_WakeUp();
+	PORT_ExitSleepMode();
+	SYNC_SendBeacon();
+  /* USER CODE END RTC_WKUP_IRQn 1 */
+}
+
+/**
 * @brief This function handles EXTI line0 interrupt.
 */
 void EXTI0_IRQHandler(void)

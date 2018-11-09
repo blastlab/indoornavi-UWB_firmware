@@ -64,8 +64,6 @@ __ALIGN_BEGIN static const uint8_t pKeyAES[16] __ALIGN_END = {
                             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                             0x00,0x00,0x00,0x00,0x00,0x00};
 
-RTC_HandleTypeDef hrtc;
-
 SPI_HandleTypeDef hspi3;
 
 UART_HandleTypeDef huart1;
@@ -118,7 +116,7 @@ int main(void)
 	UNUSED(MX_RTC_Init);
 
 	__HAL_DBGMCU_FREEZE_WWDG();
-  
+
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -202,6 +200,7 @@ void SystemClock_Config(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
+
     /**Initializes the CPU, AHB and APB busses clocks 
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -261,12 +260,21 @@ void SystemClock_Config(void)
   */
 static void MX_NVIC_Init(void)
 {
+  /* EXTI9_5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
   /* USART1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(USART1_IRQn, 9, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* LPTIM1_IRQn interrupt configuration */
   NVIC_SetPriority(LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(LPTIM1_IRQn);
+  /* USB_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(USB_IRQn, 10, 0);
+  HAL_NVIC_EnableIRQ(USB_IRQn);
+  /* RTC_WKUP_IRQn interrupt configuration */
+  NVIC_SetPriority(RTC_WKUP_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),7, 0));
+  NVIC_EnableIRQ(RTC_WKUP_IRQn);
 }
 
 /* ADC1 init function */
@@ -342,7 +350,7 @@ static void MX_LPTIM1_Init(void)
 
   LL_LPTIM_SetClockSource(LPTIM1, LL_LPTIM_CLK_SOURCE_INTERNAL);
 
-  LL_LPTIM_SetPrescaler(LPTIM1, LL_LPTIM_PRESCALER_DIV32);
+  LL_LPTIM_SetPrescaler(LPTIM1, LL_LPTIM_PRESCALER_DIV128);
 
   LL_LPTIM_SetPolarity(LPTIM1, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
 
@@ -362,19 +370,44 @@ static void MX_LPTIM1_Init(void)
 static void MX_RTC_Init(void)
 {
 
-    /**Initialize RTC Only 
+  LL_RTC_InitTypeDef RTC_InitStruct;
+  LL_RTC_TimeTypeDef RTC_TimeStruct;
+  LL_RTC_DateTypeDef RTC_DateStruct;
+
+  /* Peripheral clock enable */
+  LL_RCC_EnableRTC();
+
+    /**Initialize RTC and set the Time and Date 
     */
-  hrtc.Instance = RTC;
-  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
-  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
-  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-  if (HAL_RTC_Init(&hrtc) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
+  RTC_InitStruct.HourFormat = LL_RTC_HOURFORMAT_24HOUR;
+  RTC_InitStruct.AsynchPrescaler = 127;
+  RTC_InitStruct.SynchPrescaler = 24;
+  LL_RTC_Init(RTC, &RTC_InitStruct);
+
+    /**Initialize RTC and set the Time and Date 
+    */
+
+  if(LL_RTC_BAK_GetRegister(RTC, LL_RTC_BKP_DR0) != 0x32F2){
+  
+  RTC_TimeStruct.Hours = 0;
+  RTC_TimeStruct.Minutes = 0;
+  RTC_TimeStruct.Seconds = 0;
+  LL_RTC_TIME_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_TimeStruct);
+
+  RTC_DateStruct.WeekDay = LL_RTC_WEEKDAY_MONDAY;
+  RTC_DateStruct.Month = LL_RTC_MONTH_JANUARY;
+  RTC_DateStruct.Year = 0;
+  LL_RTC_DATE_Init(RTC, LL_RTC_FORMAT_BCD, &RTC_DateStruct);
+
+    LL_RTC_BAK_SetRegister(RTC,LL_RTC_BKP_DR0,0x32F2);
+  }
+    /**Initialize RTC and set the Time and Date 
+    */
+
+  if(LL_RTC_BAK_GetRegister(RTC, LL_RTC_BKP_DR0) != 0x32F2){
+  
+
+    LL_RTC_BAK_SetRegister(RTC,LL_RTC_BKP_DR0,0x32F2);
   }
 
 }
@@ -710,9 +743,7 @@ static void MX_GPIO_Init(void)
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
-
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 }
 
@@ -730,7 +761,7 @@ void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  while(1) 
+  while(1)
   {
   }
   /* USER CODE END Error_Handler_Debug */
