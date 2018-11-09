@@ -45,24 +45,30 @@ void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr);
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb, dwt_cb_t rxerr_cb);
 
 /**
+ * @brief set rx/tx leds on or off and update settings value
+ *
+ * @param[in] enable tx and rx led boolean
+ */
+void TRANSCEIVER_SetLeds(bool enable);
+
+/**
  * @brief move transmitter to low power mode
  *
  */
 void TRANSCEIVER_EnterDeepSleep();
 
-// turn off transmitter, wake up on chip select
+/**
+ * @brief enter transceiver into sleep mode
+ * 
+ */
 void TRANSCEIVER_EnterSleep();
-
-// waking up the device
-void TRANSCEIVER_WakeUp(uint8_t *buf, int len);
-
-// immediately send data via transceiver
 
 /**
  * @brief move transmitter back to normal mode
  *
  */
-void TRANSCEIVER_WakeUp(uint8_t *buf, int len);
+void TRANSCEIVER_WakeUp();
+
 /**
  * @brief immediately send data via transceiver
  *
