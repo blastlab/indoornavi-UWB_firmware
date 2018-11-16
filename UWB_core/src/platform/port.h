@@ -28,7 +28,7 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 0
+#define DBG 1
 #define USE_SLOT_TIMER 0
 
 /**
@@ -129,6 +129,13 @@ void PORT_Reboot();
  * \return void
  */
 void PORT_EnterStopMode();
+
+/**
+ * \brief enter low power run mode
+ *
+ * Used especially with tag.
+ */
+void PORT_LowPowerRun();
 
 /**
  * \brief Start watchdog work
@@ -266,6 +273,14 @@ void PORT_SlotTimerSetUsOffset(int32 delta_us);
  * \param[in] us new period duration in microseconds
  */
 void PORT_SetSlotTimerPeriodUs(uint32 us);
+
+/**
+ * \brief Set beacon timer for example as a 
+ * low power timer or RTC alarm with a given period
+ * 
+ * \param time_ms interval
+ */
+void PORT_SetBeaconTimerPeriodMs(int time_ms);
 
 // ========  CRC  ==========
 

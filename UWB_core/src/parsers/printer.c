@@ -67,8 +67,9 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
 		snprintf(buf, MAC_BUF_LEN, "%X", did);
 	}
 	int mV = data->hop_cnt_batt & 0x0F;
-	mV = (mV << 8) + data->voltage + 2000; // 2000 is battery offset level
-	LOG_INF(INF_BEACON, did, data->serial_hi, data->serial_lo, mV, buf);
+	mV = (mV << 8) + data->voltage; 
+	mV = mV < 100 ? 0 : mV + 2000; // 2000 is battery offset level to compress value into 12B field
+	LOG_INF(INF_BEACON, did, mV, buf, data->serial_hi, data->serial_lo);
 	MAC_Free(mbuf);
 }
 

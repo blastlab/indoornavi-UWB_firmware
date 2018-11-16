@@ -1,0 +1,42 @@
+.. _constants:
+
+================
+Constants
+================
+
+
+
+.. _MAX_MEASURE_TRACES:
+
+MAX_MEASURE_TRACES = 256
+
+
+
+
+.. _TOA_MAX_DEV_IN_POLL:
+
+TOA_MAX_DEV_IN_POLL = 4
+
+
+
+
+.. _SETANCHORS_MAX_NUMBER:
+
+SETANCHORS_MAX_NUMBER = 16
+
+
+
+
+.. _MAX_ANCHORS_PER_SINK:
+
+MAX_ANCHORS_PER_SINK = 64
+
+
+
+
+.. _MAX_TAGS_PER_SINK:
+
+MAX_TAGS_PER_SINK = 128
+
+
+

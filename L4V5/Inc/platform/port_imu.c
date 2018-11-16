@@ -123,3 +123,7 @@ CRITICAL(
 void PORT_ImuIrqHandler() {
 	ImuResetTimer();
 }
+
+void PORT_ImuSleep() {
+	ImuWriteRegister(PWR_MGMT_1, (1 << 6) | CLKSEL);
+}
