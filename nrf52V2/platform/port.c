@@ -10,12 +10,14 @@ void PORT_GpioInit();
 void PORT_SpiInit();
 void PORT_BatteryInit();
 void PORT_CrcInit();
-void PORT_ExtiInit();
+void PORT_ExtiInit(bool imu_available);
 void PORT_UsbUartInit();
+void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 void PORT_Init() {
 	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	IASSERT(NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
+	rtls_role role = PORT_GetHwRole();
 	PORT_BatteryInit();
 	PORT_BleBeaconInit();
 	PORT_TimeInit();
@@ -23,8 +25,8 @@ void PORT_Init() {
 	PORT_CrcInit();
 	PORT_SpiInit();
 	PORT_GpioInit();
-	PORT_ImuInit(PORT_GetHwRole() == RTLS_TAG);
-	PORT_ExtiInit();
+	PORT_ImuInit(role == RTLS_TAG);
+	PORT_ExtiInit(role == RTLS_TAG);
 #if !DBG
 	PORT_WatchdogInit();
 #endif
@@ -111,41 +113,34 @@ void PORT_Reboot() {
 }
 
 void DW_EXTI_IRQ_Handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
-	do
-	{
-		nrf_gpio_pin_set(DW_SPI_SS_PIN);
-		dwt_isr();
-	} while(nrf_gpio_pin_read(DW_EXTI_IRQn) == 1);
+	if(pin == DW_EXTI_IRQn) {
+		do {
+			nrf_gpio_pin_set(DW_SPI_SS_PIN);
+			dwt_isr();
+		} while(nrf_gpio_pin_read(DW_EXTI_IRQn) == 1);
+	}
 }
 
-#if IMU_EXTI_IRQ1
-void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
-  PORT_ImuIrqHandler();
-}
-#endif
-
-void PORT_ExtiInit() {
+void PORT_ExtiInit(bool imu_available) {
     APP_ERROR_CHECK(nrfx_gpiote_init());
     nrfx_gpiote_in_config_t dw_int_config = {
     		.is_watcher = false,
-    		.hi_accuracy = false,
+    		.hi_accuracy = true,
     		.pull = NRF_GPIO_PIN_NOPULL,
     		.sense = NRF_GPIOTE_POLARITY_LOTOHI,
     };
     APP_ERROR_CHECK(nrfx_gpiote_in_init(DW_EXTI_IRQn, &dw_int_config, DW_EXTI_IRQ_Handler));
-    nrfx_gpiote_in_event_enable(DW_EXTI_IRQn, true);
-
+		nrfx_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 #if IMU_EXTI_IRQ1
-    if (PORT_GetHwRole() != RTLS_TAG) {
-  		return;
-  	}
-	nrfx_gpiote_in_config_t imu_int_config = {
-			.is_watcher = false,
-			.hi_accuracy = false,
-			.pull = NRF_GPIO_PIN_PULLDOWN,
-			.sense = NRF_GPIOTE_POLARITY_LOTOHI,
-	};
-	APP_ERROR_CHECK(nrfx_gpiote_in_init(IMU_EXTI_IRQ1, &imu_int_config, ImuIrqHandler));
-	nrfx_gpiote_in_event_enable(IMU_EXTI_IRQ1, true);
+    if(imu_available) {
+    	nrfx_gpiote_in_config_t imu_int_config = {
+					.is_watcher = false,
+					.hi_accuracy = true,
+					.pull = NRF_GPIO_PIN_PULLDOWN,
+					.sense = NRF_GPIOTE_POLARITY_LOTOHI,
+			};
+			APP_ERROR_CHECK(nrfx_gpiote_in_init(IMU_EXTI_IRQ1, &imu_int_config, ImuIrqHandler));
+			nrfx_gpiote_in_event_enable(IMU_EXTI_IRQ1, true);
+    }
 #endif
 }
