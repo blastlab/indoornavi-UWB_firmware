@@ -35,6 +35,8 @@ typedef enum {
 static volatile uint32_t motion_tick;
 static volatile uint8_t imu_sleep_mode;
 
+void PORT_ExtiInit(bool imu_available);
+
 static void ImuWriteRegister(lsm6dsm_register_t addr, uint8_t val) {
 	uint8_t data[] = { addr & 0b0111111, val };					// adding 'write' bit
 	nrf_gpio_pin_clear(IMU_SPI_SS_PIN);
@@ -65,6 +67,25 @@ static inline void ImuResetTimer() {
 	imu_sleep_mode = 0;
 }
 
+void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
+  PORT_ImuIrqHandler();
+}
+
+static void ImuSetInterrupt() {
+#if IMU_EXTI_IRQ1
+	nrfx_gpiote_uninit();
+	nrfx_gpiote_init();
+	nrfx_gpiote_in_config_t imu_int_config = {
+			.is_watcher = false,
+			.hi_accuracy = false,
+			.pull = NRF_GPIO_PIN_PULLDOWN,
+			.sense = NRF_GPIOTE_POLARITY_LOTOHI,
+	};
+	APP_ERROR_CHECK(nrfx_gpiote_in_init(IMU_EXTI_IRQ1, &imu_int_config, ImuIrqHandler));
+	nrfx_gpiote_in_event_enable(IMU_EXTI_IRQ1, true);
+#endif
+}
+
 void PORT_ImuInit(bool imu_available) {
 #if IMU_EXTI_IRQ1
 	if (!imu_available) {
@@ -87,7 +108,6 @@ void PORT_ImuInit(bool imu_available) {
 }
 
 void PORT_ImuMotionControl(bool sleep_enabled) {
-#if !USE_DECA_DEVKIT
 	if (!sleep_enabled || !settings.imu.is_enabled) {
 		return;
 	}
@@ -100,18 +120,22 @@ void PORT_ImuMotionControl(bool sleep_enabled) {
 				imu_sleep_mode = 1;
 				PORT_LedOff(LED_G1);
 				PORT_LedOff(LED_R1);
-				TRANSCEIVER_EnterSleep();// don't need to suspend SDH - tags aren't using it
+				TRANSCEIVER_EnterSleep();
+				// turning off GPIOTE and turning on PORT gpio interrupts
+				ImuSetInterrupt();
 		)
-// prepare to sleep
+		// prepare to sleep
+		// there is no need to suspend SDH - tags are not using it
 		while (imu_sleep_mode) {
 			__WFI();
 		}
-// exit from sleep
+		// exit from sleep
+		// reinit GPIOTE and gpio interrupts
+		PORT_ExtiInit(true);
 		PORT_WakeupTransceiver();
 		IASSERT(dwt_readdevid() == DWT_DEVICE_ID);
 		MAC_Init(BIN_Parse);
 	}
-#endif
 }
 
 void PORT_ImuIrqHandler(void) {
