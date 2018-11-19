@@ -7,24 +7,25 @@
 #include "port.h"
 
 #define LOG_BUF_LEN 1024
-#define HEADER_SIZE 2
+#define FRAME_HEADER_SIZE 4
 
 static char buf[LOG_BUF_LEN + 1];
 uint8_t PORT_UsbUartTransmit(uint8_t* buf, uint16_t len);
 
-typedef enum {				// the four of more significant bits
-	LOG_PC_Bin = 0x10,
-	LOG_PC_Txt = 0x20,
-	LOG_PC_Ack = 0x30,
-	LOG_PC_Other = 0x40,
-} LOG_PacketCode_t;
+typedef struct {
+		uint8_t len;
+		uint8_t packetCode;
+		uint16_t messageCode;
+		uint8_t *data;
+		uint16_t CRC;
+}	LOG_Frame_s;
 
-typedef enum {				// the four of less significant bits
-	LOG_MC_Inf = 0x01,
-	LOG_MC_Wrn = 0x02,
-	LOG_MC_Err = 0x03,
-	LOG_MC_Meas = 0x04,
-} LOG_MessageCode_t;
+typedef enum {
+	LOG_PC_Bin = 0x01,
+	LOG_PC_Txt = 0x02,
+	LOG_PC_Base64 = 0x03,
+	LOG_PC_Ack = 0x04
+} LOG_PacketCode_t;
 
 struct {
 	const int len;
@@ -49,8 +50,8 @@ static int BUF_GetHeadPacketLen() {
 	}
 	// the packet's length may not fit into left space of the buffer, so the conditions must be checked separately
 	// when a header of the buffer fits into the end of memory block
-	if(circBuf.head + HEADER_SIZE < circBuf.len) {
-		if(circBuf.len < circBuf.head + circBuf.data[circBuf.head + 1]) {		// when the packet does not fit into left space,
+	if(circBuf.head + FRAME_HEADER_SIZE < circBuf.len) {
+		if(circBuf.len < circBuf.head + circBuf.data[circBuf.head]) {				// when the packet does not fit into left space,
 			circBuf.head = 0;																									// the header is also at the beginning,
 		}																																		// else, start reading from current "head"
 	}
@@ -58,30 +59,30 @@ static int BUF_GetHeadPacketLen() {
 	else {
 		circBuf.head = 0;
 	}
-	return circBuf.data[circBuf.head + 1];
+	return circBuf.data[circBuf.head];
 }
 
-// Add CRITICAL SECTION here!
-void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, LOG_MessageCode_t messageCode, uint8_t len) {
+static void BUF_WriteHeader(LOG_Frame_s *frame) {
+	// when the buffer is empty, the first byte is written to a current head == tail position
+	circBuf.tail = (circBuf.tail == circBuf.head || circBuf.tail == 0) ? circBuf.tail : circBuf.tail + 1;
+	memcpy(&circBuf.data[circBuf.tail], frame, FRAME_HEADER_SIZE);
+	circBuf.tail += FRAME_HEADER_SIZE - 1;
+}
+
+void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint16_t messageCode, uint8_t len) {
 	// when the buffer is full - { . . Tail Head . . .} || { Head . . . . Tail }
 	if(((circBuf.tail + 1) == circBuf.head) || ((circBuf.head == 0) && (circBuf.tail == (circBuf.len - 1)))) {
 		goto buffer_full;
 	}
-	struct {
-		uint8_t opcode;
-		uint8_t len;
-		uint8_t *data;
-		uint16_t CRC;
-
-	} frame = {
-		.opcode = (uint8_t)(packetCode | messageCode),
-		.len = (uint8_t)(len + HEADER_SIZE + 2),			// added header and crc length
+	LOG_Frame_s frame = {
+		.len = (uint8_t)(len + FRAME_HEADER_SIZE + 2),			// added header and crc length
+		.packetCode = (uint8_t)(packetCode),
+		.messageCode = (uint16_t)(messageCode),
 		.data = data,
 	};
-	// when opcode is TXT, encode data to BASE64 before CRC (or do not because it is done when Usb transmit comes)
 	PORT_CrcReset();
 	// feed CRC with opcode and packet length
-	PORT_CrcFeed((uint8_t *)&frame, HEADER_SIZE);
+	PORT_CrcFeed((uint8_t *)&frame, FRAME_HEADER_SIZE);
 	frame.CRC = PORT_CrcFeed(frame.data, len);				// feed CRC with data and write value to the packet's end
 
 	// frame is ready to write to buffer here
@@ -95,10 +96,8 @@ void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, LOG_MessageCode
 		else if(frame.len <= circBuf.head) {
 			// when the packet's header will fit into space at the end of the buffer, we will inform the reader about next frame
 			// when no header fit into the end of buffer, the reader will know this and starts reading from head = 0
-			if(circBuf.tail + HEADER_SIZE < circBuf.len) {
-				circBuf.tail = (circBuf.tail == circBuf.head || circBuf.tail == 0) ? circBuf.tail : circBuf.tail + 1;
-				circBuf.data[circBuf.tail] = frame.opcode;
-				circBuf.data[++circBuf.tail] = frame.len;
+			if(circBuf.tail + FRAME_HEADER_SIZE < circBuf.len) {
+				BUF_WriteHeader(&frame);
 			}
 			circBuf.tail = 0;
 			goto write_packet;
@@ -118,10 +117,7 @@ void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, LOG_MessageCode
 	}
 
 write_packet:
-	// when the buffer is empty, the first byte is written to a current head == tail position
-	circBuf.tail = (circBuf.tail == circBuf.head || circBuf.tail == 0) ? circBuf.tail : circBuf.tail + 1;
-	circBuf.data[circBuf.tail] = frame.opcode;
-	circBuf.data[++circBuf.tail] = frame.len;
+	BUF_WriteHeader(&frame);
 	memcpy(&circBuf.data[++circBuf.tail], frame.data, len);
 	circBuf.tail += len;
 	circBuf.data[circBuf.tail] = (uint8_t)(frame.CRC >> 8);
@@ -160,7 +156,7 @@ int LOG_Text(char type, int num, const char* frm, va_list arg) {
     buf[n++] = '\n';
     buf[n] = 0;
     CRITICAL(
-    BUF_WritePacket((uint8_t*)buf, LOG_PC_Txt, LOG_MC_Inf, n);
+    BUF_WritePacket((uint8_t*)buf, LOG_PC_Txt, num, n);
     )
   }
   return n;
@@ -177,7 +173,9 @@ int LOG_Bin(const void* bin, int size) {
   } else {
     f += BASE64_Encode((unsigned char*)(buf + f), bin, size);
     buf[f++] = '\n';
-    PORT_UsbUartTransmit((uint8_t*)buf, f);
+    CRITICAL(
+    BUF_WritePacket((uint8_t*)buf, LOG_PC_Base64, 0, f);
+    )
     return f;
   }
 }
@@ -190,7 +188,7 @@ void LOG_Control() {
 	}
 	// wyslij dane na SD i do USB
 	#if LOG_USB_EN
-			PORT_UsbUartTransmit((uint8_t *)(&circBuf.data[circBuf.head] + HEADER_SIZE), packet_len - HEADER_SIZE - 2);
+			PORT_UsbUartTransmit((uint8_t *)(&circBuf.data[circBuf.head] + FRAME_HEADER_SIZE), packet_len - FRAME_HEADER_SIZE - 2);
 	#endif
 	#if LOG_LCD_EN
 			if (type == LOG_ERR)
