@@ -52,6 +52,12 @@ typedef enum {
 #undef ARG
 
 /**
+ * @brief sending messages from circled buffer for logs
+ *
+ */
+void LOG_Control();
+
+/**
  * @brief logger informations code tester
  *
  */

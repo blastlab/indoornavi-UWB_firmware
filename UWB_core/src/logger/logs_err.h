@@ -86,3 +86,5 @@ ADD_ITEM_M(1502, ERR_BASE64_TOO_LONG_INPUT, "TXT_Bin too long base64 message")
 
 ADD_ITEM_M(1503, ERR_BASE64_TOO_LONG_OUTPUT, "LOG_Bin too long base64 message, FC:%xh")
 ARG("FC", "hexadecimal function code which cause error")
+
+ADD_ITEM_M(1504, ERR_LOG_BUF_OVERFLOW, "Logger's buffer overflowed")
