@@ -6,6 +6,7 @@
 #include "parsers/base64.h"
 #include "port.h"
 
+#define CIRC_BUF_LEN 1024
 #define LOG_BUF_LEN 1024
 
 static char buf[LOG_BUF_LEN + 1];
@@ -21,25 +22,27 @@ typedef struct {
 typedef struct {
 		LOG_FrameHeader_s header;
 		uint8_t *data;
-		uint16_t CRC;
+		uint16_t crc;
 }	LOG_Frame_s;
 
 typedef enum {
 	LOG_PC_Bin = 0x01,
 	LOG_PC_Txt = 0x02,
-	LOG_PC_Base64 = 0x03,
-	LOG_PC_Ack = 0x04
+	LOG_PC_Ack = 0x03,
+	LOG_PC_NAck = 0x04
 } LOG_PacketCode_t;
 
 struct {
 	const int len;
 	int head;
 	int tail;
-	uint8_t data[LOG_BUF_LEN];
+	uint8_t data[CIRC_BUF_LEN];
+	bool overflow;
 } circBuf = {
-		.len = LOG_BUF_LEN,
+		.len = CIRC_BUF_LEN,
 		.head = 0,
-		.tail = 0
+		.tail = 0,
+		.overflow = false
 };
 
 void LOG_BufClear() {
@@ -66,6 +69,18 @@ static int BUF_GetHeadPacketLen() {
 	return circBuf.data[circBuf.head + 1];
 }
 
+static inline int BUF_GetHeadPacketTextLen() {
+	return BUF_GetHeadPacketLen() - FRAME_HEADER_SIZE - 2;
+}
+
+static inline uint8_t BUF_GetHeadPacketOpcode() {
+	return circBuf.data[circBuf.head];
+}
+
+static inline uint8_t * BUF_GetHeadPacketDataPtr() {
+	return (uint8_t *)(&circBuf.data[circBuf.head] + FRAME_HEADER_SIZE);
+}
+
 static void BUF_WriteHeader(LOG_Frame_s *frame) {
 	// when the buffer is empty, the first byte is written to a current head == tail position
 	circBuf.tail = (circBuf.tail == circBuf.head || circBuf.tail == 0) ? circBuf.tail : circBuf.tail + 1;
@@ -73,20 +88,20 @@ static void BUF_WriteHeader(LOG_Frame_s *frame) {
 	circBuf.tail += FRAME_HEADER_SIZE - 1;
 }
 
-void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint8_t len) {
+int BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint8_t len) {
 	// when the buffer is full - { . . Tail Head . . .} || { Head . . . . Tail }
 	if((((circBuf.tail + 1) % circBuf.len) == circBuf.head)) {
 		goto buffer_full;
 	}
 	LOG_Frame_s frame = {
 		.header.packetCode = (uint8_t)(packetCode),
-		.header.len = (uint8_t)(len + FRAME_HEADER_SIZE + sizeof(frame.CRC)),			// added header and crc length
+		.header.len = (uint8_t)(len + FRAME_HEADER_SIZE + sizeof(frame.crc)),			// added header and crc length
 		.data = data,
 	};
 	PORT_CrcReset();
 	// feed CRC with opcode and packet length
 	PORT_CrcFeed((uint8_t *)&frame, FRAME_HEADER_SIZE);
-	frame.CRC = PORT_CrcFeed(frame.data, len);				// feed CRC with data and write value to the packet's end
+	frame.crc = PORT_CrcFeed(frame.data, len);				// feed CRC with data and write value to the packet's end
 
 	// frame is ready to write to buffer here
 	// when the Head is before the Tail - { . . . Head . . . Tail . HERE . . . .  }
@@ -123,14 +138,12 @@ write_packet:
 	BUF_WriteHeader(&frame);
 	memcpy(&circBuf.data[++circBuf.tail], frame.data, len);
 	circBuf.tail += len;
-	circBuf.data[circBuf.tail] = (uint8_t)(frame.CRC >> 8);
-	circBuf.data[++circBuf.tail] = (uint8_t)(frame.CRC & 0xFF);
-	return;
+	circBuf.data[circBuf.tail] = (uint8_t)(frame.crc >> 8);
+	circBuf.data[++circBuf.tail] = (uint8_t)(frame.crc & 0xFF);
+	return frame.header.len;
 buffer_full:
-//	TODO handle buffer overflow!
-//	Set flag of overflow
-// 	pop message in CONTROL and LOG overflow
-	return;
+	circBuf.overflow = true;
+	return 0;
 }
 
 void BUF_Pop() {
@@ -166,19 +179,11 @@ int LOG_Text(char type, int num, const char* frm, va_list arg) {
 }
 
 int LOG_Bin(const void* bin, int size) {
-  strcpy(buf, "B1000 ");
-  int f = strlen(buf);
-  if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
-    LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t*)bin)[0]);
-    return 0;
-  } else {
-    f += BASE64_Encode((unsigned char*)(buf + f), bin, size);
-    buf[f++] = '\n';
-    CRITICAL(
-    BUF_WritePacket((uint8_t*)buf, LOG_PC_Bin, f);
-    )
-    return f;
-  }
+  int n;
+	CRITICAL(
+	n = BUF_WritePacket((uint8_t*)bin, LOG_PC_Bin, size);
+	)
+  return n;
 }
 
 void LOG_Control() {
@@ -187,9 +192,22 @@ void LOG_Control() {
 	if(packet_len == 0) {
 		return;
 	}
+	int data_len = BUF_GetHeadPacketTextLen();
 	// wyslij dane na SD i do USB
 	#if LOG_USB_EN
-			PORT_UsbUartTransmit((uint8_t *)(&circBuf.data[circBuf.head] + FRAME_HEADER_SIZE), packet_len - FRAME_HEADER_SIZE - 2);
+	if(BUF_GetHeadPacketOpcode() == LOG_PC_Bin) {
+		strcpy(buf, "B1000 ");
+		int f = strlen(buf);
+		if (BASE64_TextSize(data_len) + f >= LOG_BUF_LEN) {
+			LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t *)BUF_GetHeadPacketDataPtr())[0]);
+		} else {
+			f += BASE64_Encode((unsigned char*)(buf + f), BUF_GetHeadPacketDataPtr(), data_len);
+			buf[f++] = '\n';
+			PORT_UsbUartTransmit((uint8_t*)buf, f);
+		}
+	} else if(BUF_GetHeadPacketOpcode() == LOG_PC_Txt) {
+		PORT_UsbUartTransmit(BUF_GetHeadPacketDataPtr(), data_len);
+	}
 	#endif
 	#if LOG_LCD_EN
 			if (type == LOG_ERR)
@@ -198,4 +216,8 @@ void LOG_Control() {
 	#if LOG_SD_EN
 	#endif
 	BUF_Pop();
+	if(circBuf.overflow) {
+		circBuf.overflow = false;
+		LOG_ERR(ERR_LOG_BUF_OVERFLOW);
+	}
 }
