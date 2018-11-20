@@ -7,15 +7,19 @@
 #include "port.h"
 
 #define LOG_BUF_LEN 1024
-#define FRAME_HEADER_SIZE 4
 
 static char buf[LOG_BUF_LEN + 1];
 uint8_t PORT_UsbUartTransmit(uint8_t* buf, uint16_t len);
 
 typedef struct {
-		uint8_t len;
 		uint8_t packetCode;
-		uint16_t messageCode;
+		uint8_t len;
+} LOG_FrameHeader_s;
+
+#define FRAME_HEADER_SIZE sizeof(LOG_FrameHeader_s)
+
+typedef struct {
+		LOG_FrameHeader_s header;
 		uint8_t *data;
 		uint16_t CRC;
 }	LOG_Frame_s;
@@ -51,7 +55,7 @@ static int BUF_GetHeadPacketLen() {
 	// the packet's length may not fit into left space of the buffer, so the conditions must be checked separately
 	// when a header of the buffer fits into the end of memory block
 	if(circBuf.head + FRAME_HEADER_SIZE < circBuf.len) {
-		if(circBuf.len < circBuf.head + circBuf.data[circBuf.head]) {				// when the packet does not fit into left space,
+		if(circBuf.len < circBuf.head + circBuf.data[circBuf.head + 1]) {				// when the packet does not fit into left space,
 			circBuf.head = 0;																									// the header is also at the beginning,
 		}																																		// else, start reading from current "head"
 	}
@@ -59,25 +63,24 @@ static int BUF_GetHeadPacketLen() {
 	else {
 		circBuf.head = 0;
 	}
-	return circBuf.data[circBuf.head];
+	return circBuf.data[circBuf.head + 1];
 }
 
 static void BUF_WriteHeader(LOG_Frame_s *frame) {
 	// when the buffer is empty, the first byte is written to a current head == tail position
 	circBuf.tail = (circBuf.tail == circBuf.head || circBuf.tail == 0) ? circBuf.tail : circBuf.tail + 1;
-	memcpy(&circBuf.data[circBuf.tail], frame, FRAME_HEADER_SIZE);
+	memcpy(&circBuf.data[circBuf.tail], &frame->header, FRAME_HEADER_SIZE);
 	circBuf.tail += FRAME_HEADER_SIZE - 1;
 }
 
-void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint16_t messageCode, uint8_t len) {
+void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint8_t len) {
 	// when the buffer is full - { . . Tail Head . . .} || { Head . . . . Tail }
-	if(((circBuf.tail + 1) == circBuf.head) || ((circBuf.head == 0) && (circBuf.tail == (circBuf.len - 1)))) {
+	if((((circBuf.tail + 1) % circBuf.len) == circBuf.head)) {
 		goto buffer_full;
 	}
 	LOG_Frame_s frame = {
-		.len = (uint8_t)(len + FRAME_HEADER_SIZE + 2),			// added header and crc length
-		.packetCode = (uint8_t)(packetCode),
-		.messageCode = (uint16_t)(messageCode),
+		.header.packetCode = (uint8_t)(packetCode),
+		.header.len = (uint8_t)(len + FRAME_HEADER_SIZE + sizeof(frame.CRC)),			// added header and crc length
 		.data = data,
 	};
 	PORT_CrcReset();
@@ -89,11 +92,11 @@ void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint16_t messag
 	// when the Head is before the Tail - { . . . Head . . . Tail . HERE . . . .  }
 	if(circBuf.head <= circBuf.tail) {
 		// when the packet will fit into space at the end of the buffer
-		if(circBuf.tail + frame.len < circBuf.len) {
+		if(circBuf.tail + frame.header.len < circBuf.len) {
 			goto write_packet;
 		}
 		// else, when the packet will fit on the beginning of the buffer
-		else if(frame.len <= circBuf.head) {
+		else if(frame.header.len <= circBuf.head) {
 			// when the packet's header will fit into space at the end of the buffer, we will inform the reader about next frame
 			// when no header fit into the end of buffer, the reader will know this and starts reading from head = 0
 			if(circBuf.tail + FRAME_HEADER_SIZE < circBuf.len) {
@@ -108,7 +111,7 @@ void BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint16_t messag
 		}
 	}
 	// else, when the Tail is before the Head and a packet will fit before actual Head - { . Tail . HERE . . . . Head . . . . . .  }
-	else if(circBuf.tail < circBuf.head && circBuf.tail + frame.len < circBuf.head) {
+	else if(circBuf.tail < circBuf.head && circBuf.tail + frame.header.len < circBuf.head) {
 		goto write_packet;
 	}
 	// else, when the buffer is full
@@ -125,8 +128,8 @@ write_packet:
 	return;
 buffer_full:
 //	TODO handle buffer overflow!
-//	BUF_Pop();
-//	LOG_CRIT();
+//	Set flag of overflow
+// 	pop message in CONTROL and LOG overflow
 	return;
 }
 
@@ -156,17 +159,15 @@ int LOG_Text(char type, int num, const char* frm, va_list arg) {
     buf[n++] = '\n';
     buf[n] = 0;
     CRITICAL(
-    BUF_WritePacket((uint8_t*)buf, LOG_PC_Txt, num, n);
+    BUF_WritePacket((uint8_t*)buf, LOG_PC_Txt, n);
     )
   }
   return n;
 }
 
 int LOG_Bin(const void* bin, int size) {
-  int f;
-  f = 0;
-  buf[f++] = 'B';
-  buf[f++] = ' ';
+  strcpy(buf, "B1000 ");
+  int f = strlen(buf);
   if (BASE64_TextSize(size) + f >= LOG_BUF_LEN) {
     LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t*)bin)[0]);
     return 0;
@@ -174,7 +175,7 @@ int LOG_Bin(const void* bin, int size) {
     f += BASE64_Encode((unsigned char*)(buf + f), bin, size);
     buf[f++] = '\n';
     CRITICAL(
-    BUF_WritePacket((uint8_t*)buf, LOG_PC_Base64, 0, f);
+    BUF_WritePacket((uint8_t*)buf, LOG_PC_Bin, f);
     )
     return f;
   }
