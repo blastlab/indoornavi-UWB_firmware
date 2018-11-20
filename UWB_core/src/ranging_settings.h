@@ -27,9 +27,10 @@ typedef struct {
 	int measureCnt;                                           ///< measure counter
 	int rangingPeriodMs;  ///< time for whole ranging cycle
 	int rangingDelayMs;   ///< time from one ranging to another
+	bool TDOA;
 } ranging_settings_t;
 
 #define RANGING_SETTINGS_DEF \
-  { .measureCnt = 0, .rangingPeriodMs = 150, .rangingDelayMs = 5 }
+  { .measureCnt = 0, .rangingPeriodMs = 150, .rangingDelayMs = 5, .TDOA = false, }
 
 #endif

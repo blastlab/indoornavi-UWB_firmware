@@ -306,10 +306,10 @@ void SYNC_SendBeacon() {
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {
 		sync.sending_beacon = true;
+		buf->isRangingFrame = true;
 		MAC_Write(buf, &packet, packet.len);
 		MAC_SendRanging(buf, DWT_START_TX_IMMEDIATE);
 	}
-	__WFI();
 }
 
 int FC_SYNC_POLL_cb(const void* data, const prot_packet_info_t* info) {
@@ -519,6 +519,10 @@ int SYNC_TxCb(int64_t TsDwTx) {
 		sync.sending_beacon = false;
 		SYNC_TRACE("SYNC BEACON send, go sleep");
 		TRANSCEIVER_EnterDeepSleep();
+		PORT_LedOn(LED_STAT);
+		for (volatile int i = 99999; i > 0; --i) {
+				asm("nop");
+		}
 		PORT_EnterStopMode();
 	}
 	return ret;

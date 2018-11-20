@@ -18,6 +18,16 @@ static void MAC_RxCb(const dwt_cb_data_t* data);
 static void MAC_RxToCb(const dwt_cb_data_t* data);
 static void MAC_RxErrCb(const dwt_cb_data_t* data);
 
+void MAC_EnableReceiver(bool en) {
+	dwt_cb_t rx_cb = settings.mac.role == RTLS_LISTENER ? listener_isr : MAC_RxCb;
+	dwt_cb_t tx_cb = settings.mac.role == RTLS_LISTENER ? 0 : MAC_TxCb;
+
+	if (en) {
+		TRANSCEIVER_SetCb(tx_cb, rx_cb, MAC_RxToCb, MAC_RxErrCb);
+	} else {
+		TRANSCEIVER_SetCb(tx_cb, 0, MAC_RxToCb, MAC_RxErrCb);
+	}
+}
 void MAC_Init(MAC_DataParserCb_t callback, MAC_SendToSink_t sender) {
 	MAC_ASSERT(callback != 0);
 	_dataParser = callback;

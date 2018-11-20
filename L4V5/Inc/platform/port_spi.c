@@ -154,22 +154,24 @@ void PORT_WakeupTransceiver(void) {
 #else
 
 void PORT_SpiInit() {
-	const uint32_t conf = LL_DMA_MODE_NORMAL | LL_DMA_PRIORITY_VERYHIGH |
+	const uint32_t conf =
+	LL_DMA_MODE_NORMAL | LL_DMA_PRIORITY_VERYHIGH |
 	LL_DMA_PERIPH_NOINCREMENT | LL_DMA_MEMORY_INCREMENT |
 	LL_DMA_PDATAALIGN_BYTE |  // peripherial data size
 	    LL_DMA_MDATAALIGN_BYTE;   // memory data size
+	const uint32_t mask =
+	DMA_CCR_DIR | DMA_CCR_MEM2MEM |
+	DMA_CCR_CIRC | DMA_CCR_PINC |
+	DMA_CCR_MINC | DMA_CCR_PSIZE |
+	DMA_CCR_MSIZE | DMA_CCR_PL;
 
 	// LL_DMA_ConfigTransfer(DW_DMA, DW_DMACH_TX,
 	// LL_DMA_DIRECTION_MEMORY_TO_PERIPH|conf);
 	MODIFY_REG(
-	    DW_DMACH_TX->CCR,
-	    DMA_CCR_DIR | DMA_CCR_MEM2MEM | DMA_CCR_CIRC | DMA_CCR_PINC | DMA_CCR_MINC | DMA_CCR_PSIZE | DMA_CCR_MSIZE | DMA_CCR_PL,
-	    LL_DMA_DIRECTION_MEMORY_TO_PERIPH | conf);
+	    DW_DMACH_TX->CCR, mask, LL_DMA_DIRECTION_MEMORY_TO_PERIPH | conf);
 
 	MODIFY_REG(
-	    DW_DMACH_RX->CCR,
-	    DMA_CCR_DIR | DMA_CCR_MEM2MEM | DMA_CCR_CIRC | DMA_CCR_PINC | DMA_CCR_MINC | DMA_CCR_PSIZE | DMA_CCR_MSIZE | DMA_CCR_PL,
-	    LL_DMA_DIRECTION_PERIPH_TO_MEMORY | conf);
+	    DW_DMACH_RX->CCR, mask, LL_DMA_DIRECTION_PERIPH_TO_MEMORY | conf);
 
 	// set SPI address
 	DW_DMACH_TX->CPAR = DW_DMACH_RX->CPAR = (uint32_t)&DW_SPI->DR;
@@ -269,10 +271,8 @@ int writetospi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t body
 
 void PORT_WakeupTransceiver(void) {
 	DW_CS_GPIO_Port->BRR = DW_CS_Pin;
-	PORT_SleepMs(1);
+	PORT_SleepMs(2);
 	DW_CS_GPIO_Port->BSRR = DW_CS_Pin;
 	PORT_SleepMs(7);  // wait 7ms for DW1000 XTAL to stabilise
-	int i = dwt_readdevid();
-	PORT_ASSERT(i == 0xDECA0130);
 }
 #endif
