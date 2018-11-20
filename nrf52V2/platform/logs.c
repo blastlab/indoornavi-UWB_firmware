@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mac.h"
 #include "logs.h"
 #include "parsers/base64.h"
 #include "port.h"
@@ -75,6 +76,10 @@ static inline int BUF_GetHeadPacketTextLen() {
 
 static inline uint8_t BUF_GetHeadPacketOpcode() {
 	return circBuf.data[circBuf.head];
+}
+
+static inline uint8_t * BUF_GetHeadPacketPtr() {
+	return (uint8_t *)(&circBuf.data[circBuf.head]);
 }
 
 static inline uint8_t * BUF_GetHeadPacketDataPtr() {
@@ -193,7 +198,12 @@ void LOG_Control() {
 		return;
 	}
 	int data_len = BUF_GetHeadPacketTextLen();
-	// wyslij dane na SD i do USB
+	// wyslij dane na SD, po SPI i do USB
+	#if LOG_SPI_EN && ETH_SPI_SS_PIN
+	if(settings.mac.role == RTLS_SINK) {
+		PORT_SpiTx(BUF_GetHeadPacketPtr(), BUF_GetHeadPacketLen(), ETH_SPI_SS_PIN);
+	}
+	#endif
 	#if LOG_USB_EN
 	if(BUF_GetHeadPacketOpcode() == LOG_PC_Bin) {
 		strcpy(buf, "B1000 ");

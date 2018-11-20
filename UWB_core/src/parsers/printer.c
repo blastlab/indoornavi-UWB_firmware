@@ -1,5 +1,6 @@
 #include "printer.h"
 #include "mac/carry.h"
+#include "mac/toa_routine.h"
 
 const char* RoleToString(rtls_role role) {
 	const char *str_role;
@@ -175,8 +176,18 @@ void PRINT_ImuSet(const FC_IMU_SET_s* data, dev_addr_t did) {
 
 void PRINT_Measure(const measure_t *data)
 {
+#if LOG_USB_EN
 	LOG_INF(INF_MEASURE_DATA, data->did1, data->did2, data->dist_cm, data->rssi_cdbm, data->fpp_cdbm,
 	        data->snr_cdbm);
+#endif
+#if LOG_SPI_EN
+	FC_TOA_RES_s packet = {
+			.FC = FC_TOA_RES,
+			.len = sizeof(FC_TOA_RES_s)
+	};
+	memcpy(&packet.meas, data, sizeof(measure_t));
+	LOG_Bin((uint8_t *)&packet, sizeof(measure_t));
+#endif
 }
 
 void PRINT_MeasureInitInfo(const measure_init_info_t *data) {

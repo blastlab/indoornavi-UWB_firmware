@@ -373,9 +373,31 @@ int readfromspi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t rea
 int writetospi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t bodylength,
                const uint8_t* bodyBuffer);
 
-void PORT_SpiTx(uint32_t length, const uint8_t* buf);
+/**
+ * \brief send data over general-use spi instance
+ *
+ * \note this function is used with different devices
+ *
+ * \param[in] buf pointer to data buffer
+ * \param[in] length length of data in bytes
+ * \param[in] cs_pin to assert when transmitting
+ *
+ */
+void PORT_SpiTx(uint8_t* buf, int length, int cs_pin);
 
-void PORT_SpiRx(uint32_t length, uint8_t* buf);
+/**
+ * \brief send and then receive data over general-use spi instance
+ *
+ * \note this function is used with different devices
+ *
+ * \param[in] buf pointer to tx data buffer
+ * \param[in] length of tx data in bytes
+ * \param[in] buf pointer to rx data buffer
+ * \param[in] length of rx data in bytes
+ * \param[in] cs_pin to assert when transmitting
+ *
+ */
+void PORT_SpiTxRx(uint8_t* tx_buf, int tx_length, uint8_t* rx_buf, int rx_length, int cs_pin);
 
 // ========  FLASH  ==========
 

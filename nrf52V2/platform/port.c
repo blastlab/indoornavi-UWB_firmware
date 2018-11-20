@@ -33,10 +33,12 @@ void PORT_Init() {
 }
 
 void PORT_GpioInit() {
+#if LED_G1 && LED_R1
 	nrf_gpio_cfg_output(LED_ERR);
 	nrf_gpio_cfg_output(LED_STAT);
 	PORT_LedOff(LED_STAT);
 	PORT_LedOff(LED_ERR);
+#endif
 	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
 }
 
@@ -62,6 +64,7 @@ void PORT_WatchdogRefresh() {
 
 // turn led on
 void PORT_LedOn(int LED_x) {
+#if LED_G1 && LED_R1
 	switch(LED_x){
 		case LED_G1:
 		case LED_R1:
@@ -75,10 +78,12 @@ void PORT_LedOn(int LED_x) {
 			IASSERT(0);
 			break;
 	}
+#endif
 }
 
 // turrn led off
 void PORT_LedOff(int LED_x) {
+#if LED_G1 && LED_R1
 	switch(LED_x){
 		case LED_G1:
 		case LED_R1:
@@ -92,6 +97,7 @@ void PORT_LedOff(int LED_x) {
 			IASSERT(0);
 			break;
 	}
+#endif
 }
 
 // reset dw 1000 device by polling RST pin down for a few ms
