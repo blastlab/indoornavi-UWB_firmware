@@ -6,41 +6,41 @@
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether 
+  * USER CODE END. Other portions of this file, whether
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2018 STMicroelectronics International N.V. 
+  * Copyright (c) 2018 STMicroelectronics International N.V.
   * All rights reserved.
   *
-  * Redistribution and use in source and binary forms, with or without 
+  * Redistribution and use in source and binary forms, with or without
   * modification, are permitted, provided that the following conditions are met:
   *
-  * 1. Redistribution of source code must retain the above copyright notice, 
+  * 1. Redistribution of source code must retain the above copyright notice,
   *    this list of conditions and the following disclaimer.
   * 2. Redistributions in binary form must reproduce the above copyright notice,
   *    this list of conditions and the following disclaimer in the documentation
   *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
+  * 3. Neither the name of STMicroelectronics nor the names of other
+  *    contributors to this software may be used to endorse or promote products
   *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
+  * 4. This software, including modifications and/or derivative works of this
   *    software, must execute solely and exclusively on microcontroller or
   *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
+  * 5. Redistribution and use of this software other than as permitted under
+  *    this license is void and will automatically terminate your rights under
+  *    this license.
   *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
   * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT
   * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
   * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
   * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
@@ -81,13 +81,13 @@ static void MX_DMA_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_CRC_Init(void);
-static void MX_USART1_UART_Init(void);
-static void MX_LPTIM1_Init(void);
+void MX_USART1_UART_Init(void);
+void MX_LPTIM1_Init(void);
 static void MX_WWDG_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_AES_Init(void);
-static void MX_SPI2_Init(void);
-static void MX_SPI3_Init(void);
+void MX_SPI2_Init(void);
+void MX_SPI3_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_NVIC_Init(void);
 
@@ -97,8 +97,6 @@ static void MX_NVIC_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-static void MX_WWDG_Init(void);
-static void MX_RTC_Init(void);
 
 /* USER CODE END 0 */
 
@@ -114,8 +112,11 @@ int main(void)
 
 	UNUSED(MX_WWDG_Init);
 	UNUSED(MX_RTC_Init);
+	UNUSED(MX_SPI2_Init);
+	UNUSED(MX_LPTIM1_Init);
 
 	__HAL_DBGMCU_FREEZE_WWDG();
+	DBGMCU->CR |= DBGMCU_CR_DBG_STOP | DBGMCU_CR_DBG_SLEEP | DBGMCU_CR_DBG_STANDBY; // 0.3mA
 
   /* USER CODE END 1 */
 
@@ -132,6 +133,27 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+	//
+	// POWER CONSUMPTION
+	// =================
+	// DBG ACT 4 mA
+	// DBG SLP 0.3 mA
+	// SPI     0.2 mA
+	// USART   0.3 mA
+	// CRC     0.0 mA
+	// LPTIM   0.0 mA
+	// USB     0.0 mA
+	// FatFS   0 mA
+	// AES     0 mA
+	//
+	// FUNTIONAL DESCRIPTION
+	// =====================
+	// SPI1  - transceiver
+	// SPI2  - SD card
+	// SPI3  - IMU
+	// TIM2  - slot timer
+	// USART - external devices
+	// RTC   - periodic wake up, LPTIM1 may be used instead
 
   /* USER CODE END SysInit */
 
@@ -140,19 +162,25 @@ int main(void)
   MX_DMA_Init();
   MX_SPI1_Init();
   MX_CRC_Init();
-  MX_USART1_UART_Init();
-  MX_LPTIM1_Init();
   MX_USB_DEVICE_Init();
   MX_FATFS_Init();
   MX_ADC1_Init();
   MX_AES_Init();
-  MX_SPI2_Init();
-  MX_SPI3_Init();
   MX_TIM2_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+	//MX_LPTIM1_Init();
+	//MX_SPI2_Init();
+	MX_SPI3_Init();
+	//MX_USART1_UART_Init();
+	//
+	/*TRANSCEIVER_EnterDeepSleep();
+	PORT_EnterStopMode();
+	while (1) {
+		HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+	 }*/
   UwbMain();
   /* USER CODE END 2 */
 
@@ -180,7 +208,7 @@ void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
-    /**Initializes the CPU, AHB and APB busses clocks 
+    /**Initializes the CPU, AHB and APB busses clocks
     */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_LSI
                               |RCC_OSCILLATORTYPE_MSI;
@@ -201,7 +229,7 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Initializes the CPU, AHB and APB busses clocks 
+    /**Initializes the CPU, AHB and APB busses clocks
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -235,18 +263,18 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the main internal regulator output voltage 
+    /**Configure the main internal regulator output voltage
     */
   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the Systick interrupt time 
+    /**Configure the Systick interrupt time
     */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
-    /**Configure the Systick 
+    /**Configure the Systick
     */
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
@@ -281,7 +309,7 @@ static void MX_NVIC_Init(void)
 static void MX_ADC1_Init(void)
 {
 
-    /**Common config 
+    /**Common config
     */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV8;
@@ -342,7 +370,7 @@ static void MX_CRC_Init(void)
 }
 
 /* LPTIM1 init function */
-static void MX_LPTIM1_Init(void)
+void MX_LPTIM1_Init(void)
 {
 
   /* Peripheral clock enable */
@@ -377,18 +405,18 @@ static void MX_RTC_Init(void)
   /* Peripheral clock enable */
   LL_RCC_EnableRTC();
 
-    /**Initialize RTC and set the Time and Date 
+    /**Initialize RTC and set the Time and Date
     */
   RTC_InitStruct.HourFormat = LL_RTC_HOURFORMAT_24HOUR;
   RTC_InitStruct.AsynchPrescaler = 127;
   RTC_InitStruct.SynchPrescaler = 24;
   LL_RTC_Init(RTC, &RTC_InitStruct);
 
-    /**Initialize RTC and set the Time and Date 
+    /**Initialize RTC and set the Time and Date
     */
 
   if(LL_RTC_BAK_GetRegister(RTC, LL_RTC_BKP_DR0) != 0x32F2){
-  
+
   RTC_TimeStruct.Hours = 0;
   RTC_TimeStruct.Minutes = 0;
   RTC_TimeStruct.Seconds = 0;
@@ -401,11 +429,11 @@ static void MX_RTC_Init(void)
 
     LL_RTC_BAK_SetRegister(RTC,LL_RTC_BKP_DR0,0x32F2);
   }
-    /**Initialize RTC and set the Time and Date 
+    /**Initialize RTC and set the Time and Date
     */
 
   if(LL_RTC_BAK_GetRegister(RTC, LL_RTC_BKP_DR0) != 0x32F2){
-  
+
 
     LL_RTC_BAK_SetRegister(RTC,LL_RTC_BKP_DR0,0x32F2);
   }
@@ -422,11 +450,11 @@ static void MX_SPI1_Init(void)
 
   /* Peripheral clock enable */
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
-  
-  /**SPI1 GPIO Configuration  
+
+  /**SPI1 GPIO Configuration
   PA5   ------> SPI1_SCK
   PA6   ------> SPI1_MISO
-  PA7   ------> SPI1_MOSI 
+  PA7   ------> SPI1_MOSI
   */
   GPIO_InitStruct.Pin = LL_GPIO_PIN_5|LL_GPIO_PIN_6|LL_GPIO_PIN_7;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
@@ -437,7 +465,7 @@ static void MX_SPI1_Init(void)
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* SPI1 DMA Init */
-  
+
   /* SPI1_RX Init */
   LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMA_REQUEST_1);
 
@@ -492,7 +520,7 @@ static void MX_SPI1_Init(void)
 }
 
 /* SPI2 init function */
-static void MX_SPI2_Init(void)
+void MX_SPI2_Init(void)
 {
 
   LL_SPI_InitTypeDef SPI_InitStruct;
@@ -501,11 +529,11 @@ static void MX_SPI2_Init(void)
 
   /* Peripheral clock enable */
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_SPI2);
-  
-  /**SPI2 GPIO Configuration  
+
+  /**SPI2 GPIO Configuration
   PB13   ------> SPI2_SCK
   PB14   ------> SPI2_MISO
-  PB15   ------> SPI2_MOSI 
+  PB15   ------> SPI2_MOSI
   */
   GPIO_InitStruct.Pin = LL_GPIO_PIN_13|LL_GPIO_PIN_14|LL_GPIO_PIN_15;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
@@ -535,7 +563,7 @@ static void MX_SPI2_Init(void)
 }
 
 /* SPI3 init function */
-static void MX_SPI3_Init(void)
+void MX_SPI3_Init(void)
 {
 
   /* SPI3 parameter configuration*/
@@ -590,7 +618,7 @@ static void MX_TIM2_Init(void)
 }
 
 /* USART1 init function */
-static void MX_USART1_UART_Init(void)
+void MX_USART1_UART_Init(void)
 {
 
   huart1.Instance = USART1;
@@ -629,10 +657,10 @@ static void MX_WWDG_Init(void)
 
 }
 
-/** 
+/**
   * Enable DMA controller clock
   */
-static void MX_DMA_Init(void) 
+static void MX_DMA_Init(void)
 {
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
@@ -650,9 +678,9 @@ static void MX_DMA_Init(void)
 
 }
 
-/** Configure pins as 
-        * Analog 
-        * Input 
+/** Configure pins as
+        * Analog
+        * Input
         * Output
         * EVENT_OUT
         * EXTI
@@ -675,7 +703,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(DW_CS_GPIO_Port, DW_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, DW_WUP_Pin|LED_R1_Pin|LED_G1_Pin|SD_CS_Pin 
+  HAL_GPIO_WritePin(GPIOB, DW_WUP_Pin|LED_R1_Pin|LED_G1_Pin|SD_CS_Pin
                           |IMU_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -713,9 +741,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DW_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DW_WUP_Pin LED_R1_Pin LED_G1_Pin SD_CS_Pin 
+  /*Configure GPIO pins : DW_WUP_Pin LED_R1_Pin LED_G1_Pin SD_CS_Pin
                            IMU_CS_Pin */
-  GPIO_InitStruct.Pin = DW_WUP_Pin|LED_R1_Pin|LED_G1_Pin|SD_CS_Pin 
+  GPIO_InitStruct.Pin = DW_WUP_Pin|LED_R1_Pin|LED_G1_Pin|SD_CS_Pin
                           |IMU_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -776,7 +804,7 @@ void _Error_Handler(char *file, int line)
   * @retval None
   */
 void assert_failed(uint8_t* file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

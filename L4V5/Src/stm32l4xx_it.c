@@ -46,7 +46,7 @@ extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
 
 /******************************************************************************/
-/*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
+/*            Cortex-M4 Processor Interruption and Exception Handlers         */
 /******************************************************************************/
 
 /**
@@ -205,6 +205,7 @@ void RTC_WKUP_IRQHandler(void)
 	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
   /* USER CODE END RTC_WKUP_IRQn 0 */
   /* USER CODE BEGIN RTC_WKUP_IRQn 1 */
+	PORT_WatchdogRefresh();
 	PORT_LedOn(LED_ERR);
 	TRANSCEIVER_WakeUp();
 	PORT_ExitSleepMode();
@@ -239,7 +240,7 @@ void DMA1_Channel2_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel2_IRQn 0 */
 
   /* USER CODE END DMA1_Channel2_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
 
   /* USER CODE END DMA1_Channel2_IRQn 1 */
@@ -253,7 +254,7 @@ void DMA1_Channel3_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel3_IRQn 0 */
 
   /* USER CODE END DMA1_Channel3_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
 
   /* USER CODE END DMA1_Channel3_IRQn 1 */
@@ -286,6 +287,7 @@ void EXTI9_5_IRQHandler(void)
 
   /* USER CODE END EXTI9_5_IRQn 1 */
 }
+
 /**
 * @brief This function handles TIM2 global interrupt.
 */
