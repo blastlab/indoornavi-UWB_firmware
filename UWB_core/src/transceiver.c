@@ -42,6 +42,8 @@ void TRANSCEIVER_Init() {
 	// the DW does not go into sleep
 	if (ret != DWT_DEVICE_ID) {
 		PORT_WakeupTransceiver(); // device is asleep
+		// do not use TRANSCEIVER_WakeUp() here, because device_id may be wrongly
+		// readed before reseting device
 		dwt_softreset();
 	}
 
@@ -84,9 +86,9 @@ void TRANSCEIVER_Init() {
 	dwt_configeventcounters(settings.transceiver.low_power_mode ? 0 : 1);
 
 	// prepare rx sniff variables
-	transceiver_sniff_on_pac = 2;
+	transceiver_sniff_on_pac = 4;
 	int preamble_time_us = TRASCEIVER_EstimatePreambleTxTime() * 1e6;
-	transceiver_sniff_off_us = MAX(0, MIN(preamble_time_us * 0.3, 255));
+	transceiver_sniff_off_us = MAX(0, MIN(preamble_time_us * 0.4, 255));
 	TRANSCEIVER_ASSERT(preamble_time_us > transceiver_sniff_off_us);
 	TRANSCEIVER_ASSERT(0 <= transceiver_sniff_off_us);
 	TRANSCEIVER_ASSERT(transceiver_sniff_off_us < 255);
@@ -127,9 +129,18 @@ void TRANSCEIVER_DefaultRx() {
 	dwt_setrxtimeout(0);
 	dwt_setpreambledetecttimeout(0);
 	if (settings.transceiver.low_power_mode) {
+//		dwt_configuresleep(DWT_PRESRV_SLEEP | DWT_CONFIG | DWT_RX_EN, DWT_WAKE_SLPCNT | DWT_SLP_EN);
+//		dwt_setlowpowerlistening(1);
+//		dwt_entersleep();
+
 		dwt_setsniffmode(1, transceiver_sniff_on_pac, transceiver_sniff_off_us);
+		dwt_configuresleep(DWT_PRESRV_SLEEP | DWT_CONFIG | DWT_RX_EN, DWT_WAKE_SLPCNT | DWT_SLP_EN);
+		dwt_setlowpowerlistening(1);
+		dwt_rxenable(DWT_START_RX_IMMEDIATE);
+		dwt_entersleep();
+	} else {
+		dwt_rxenable(DWT_START_RX_IMMEDIATE);
 	}
-	dwt_rxenable(DWT_START_RX_IMMEDIATE);
 }
 
 void TRANSCEIVER_EnterDeepSleep()  // TODO
@@ -140,20 +151,32 @@ void TRANSCEIVER_EnterDeepSleep()  // TODO
 void TRANSCEIVER_EnterSleep() {
 	dwt_forcetrxoff();
 	dwt_setleds(0);
-	dwt_configuresleep(DWT_PRESRV_SLEEP, DWT_WAKE_CS | DWT_SLP_EN);
+	dwt_configuresleep(DWT_PRESRV_SLEEP | DWT_CONFIG, DWT_WAKE_CS | DWT_SLP_EN);
 	dwt_entersleep();
 }
 
 void TRANSCEIVER_WakeUp() {
-	PORT_WakeupTransceiver();
 
-	// wt_configuretxrf(&settings.transceiver.dwt_txconfig);
-	dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
-	dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
+	int id;
+	id = dwt_readdevid();
 
-	//dwt_setleds(settings.transceiver.enable_leds & 1);
-	int id = dwt_readdevid();
-	TRANSCEIVER_ASSERT(id == DWT_DEVICE_ID);
+	if (id != DWT_DEVICE_ID) {
+		PORT_WakeupTransceiver();
+
+		// wt_configuretxrf(&settings.transceiver.dwt_txconfig);
+		dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
+		dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
+
+		//dwt_setleds(settings.transceiver.enable_leds & 1);
+		// kilkukrotnie sprawdz czy id sie zgadza
+		int id = dwt_readdevid();
+		if (id == DWT_DEVICE_ID || dwt_readdevid() == DWT_DEVICE_ID) {
+			return;
+		} else {
+			id = dwt_readdevid();
+			TRANSCEIVER_ASSERT(id == DWT_DEVICE_ID);
+		}
+	}
 }
 
 int64_t TRANSCEIVER_GetRxTimestamp(void) {

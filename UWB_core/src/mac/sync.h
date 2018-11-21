@@ -166,6 +166,14 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
 void SYNC_SendBeacon();
 
 /**
+ * @brief TDOA beacon routine
+ *
+ * @param[in] data is a pointer to received frame (data[0] = FC)
+ * @param[in] info is a pointer to packet info structure
+ */
+void FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info);
+
+/**
  * @brief sync rx callback
  *
  * @param[in] data pointer to data to parse

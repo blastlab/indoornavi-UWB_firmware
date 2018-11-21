@@ -424,9 +424,9 @@ int FC_SYNC_FIN_cb(const void* data, const prot_packet_info_t* info) {
 int FC_TDOA_BEACON_cb(const void* data, const prot_packet_info_t* info) {
 	FC_TDOA_BEACON_s* packet = (FC_TDOA_BEACON_s*)data;
 	SYNC_ASSERT(packet->FC == FC_TDOA_BEACON);
-	PROT_CHECK_LEN(FC_SYNC_RESP, packet->len, sizeof(FC_SYNC_RESP_s));
-	if (packet->len != sizeof(FC_BEACON_s) && packet->len != sizeof(FC_BEACON_s) - 5) {
-		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON", packet->len, sizeof(FC_BEACON_s));
+	bool short_beacon = packet->len == sizeof(FC_TDOA_BEACON_s) - 8;
+	if (packet->len != sizeof(FC_TDOA_BEACON_s) && !short_beacon) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON", packet->len, sizeof(FC_TDOA_BEACON_s));
 		return -1;
 	}
 	int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
@@ -434,20 +434,27 @@ int FC_TDOA_BEACON_cb(const void* data, const prot_packet_info_t* info) {
 	tx_packet.FC = FC_TDOA_BEACON_INFO;
 	tx_packet.len = sizeof(tx_packet);
 	tx_packet.batt_voltage = packet->batt_voltage;
-	tx_packet.serial_hi = packet->serial_hi;
-	tx_packet.serial_lo = packet->serial_lo;
+	tx_packet.serial_hi = short_beacon ? 0 : packet->serial_hi;
+	tx_packet.serial_lo = short_beacon ? 0 : packet->serial_lo;
 	tx_packet.tag_addr = info->last_src;
 	tx_packet.anchor_addr = settings.mac.addr;
 	TOA_Write40bValue(&tx_packet.rx_ts[0], SYNC_GlobTime(rx_ts));
 	TOA_Write40bValue(&tx_packet.rx_ts_loc[0], rx_ts);
 
 	_dataSender(&tx_packet, tx_packet.len);
+	LOG_DBG("=== TDOA BEACON === (%X)", info->last_src);
+	TRANSCEIVER_DefaultRx();
 	return 0;
 }
 
-int FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info) {
 	// printuj beacon'a
-	return 0;
+	int len = ((uint8_t*)data)[1];
+	FC_TDOA_BEACON_INFO_s packet;
+	memcpy(&packet, data, len);
+
+	LOG_DBG("=== TDOA BEACON === tag:%X mV:%d anchor:%X", packet.tag_addr, packet.batt_voltage,
+	        packet.anchor_addr);
 }
 
 void SYNC_Tag_Timer_cb() {
@@ -520,7 +527,7 @@ int SYNC_TxCb(int64_t TsDwTx) {
 		SYNC_TRACE("SYNC BEACON send, go sleep");
 		TRANSCEIVER_EnterDeepSleep();
 		PORT_LedOn(LED_STAT);
-		for (volatile int i = 99999; i > 0; --i) {
+		for (volatile int i = 49999; i > 0; --i) {
 				asm("nop");
 		}
 		PORT_EnterStopMode();
