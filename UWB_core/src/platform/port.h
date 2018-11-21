@@ -193,7 +193,7 @@ void PORT_TimeStartTimers();
  *
  * \return void
  */
-void PORT_SleepMs(unsigned int time_ms);
+void PORT_SleepMs(time_ms_t time_ms);
 
 /**
  * \brief Get current milliseconds timer counter value.

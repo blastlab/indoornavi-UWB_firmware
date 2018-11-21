@@ -3985,7 +3985,7 @@
 // <e> NRFX_RTC_ENABLED - nrfx_rtc - RTC peripheral driver
 //==========================================================
 #ifndef NRFX_RTC_ENABLED
-#define NRFX_RTC_ENABLED 1
+#define NRFX_RTC_ENABLED 0
 #endif
 // <q> NRFX_RTC0_ENABLED  - Enable RTC0 instance
  
@@ -3998,7 +3998,7 @@
  
 
 #ifndef NRFX_RTC1_ENABLED
-#define NRFX_RTC1_ENABLED 1
+#define NRFX_RTC1_ENABLED 0
 #endif
 
 // <q> NRFX_RTC2_ENABLED  - Enable RTC2 instance
@@ -4668,7 +4668,7 @@
 // <q> NRFX_TIMER1_ENABLED  - Enable TIMER1 instance
  
 
-#ifndef NRFX_TIMER1_ENABLED						// used as SLOT timer
+#ifndef NRFX_TIMER1_ENABLED						// used as general timer
 #define NRFX_TIMER1_ENABLED 1
 #endif
 
