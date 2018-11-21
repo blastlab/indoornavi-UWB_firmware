@@ -72,7 +72,7 @@ void UwbMain() {
 	if (settings.mac.role == RTLS_DEFAULT) {
 		settings.mac.role = PORT_GetHwRole();
 	}
-#ifdef DBG
+#if DBG
 	LOG_SelfTest();
 #endif
 

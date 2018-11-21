@@ -17,8 +17,8 @@ void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 void PORT_Init() {
 	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	IASSERT(NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
-	rtls_role role = PORT_GetHwRole();
 	PORT_BatteryInit();
+	rtls_role role = PORT_GetHwRole();
 	PORT_BleBeaconInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
