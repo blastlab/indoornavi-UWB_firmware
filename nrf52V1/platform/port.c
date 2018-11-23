@@ -97,7 +97,7 @@ void PORT_ResetTransceiver() {
 	nrf_gpio_cfg_input(DW_RST_PIN, NRF_GPIO_PIN_NOPULL);
 }
 
-void PORT_EnterStopMode() {
+void PORT_EnterSleepMode() {
 
 }
 

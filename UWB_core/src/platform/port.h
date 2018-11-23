@@ -32,6 +32,31 @@
 #define USE_SLOT_TIMER 0
 
 /**
+ * \brief This is a trace enums, useful to track application behavior
+ */
+typedef enum {
+	TRACE_EMPTY = 0,
+	TRACE_SYSTICK = 1,
+	TRACE_PREPARE_SLEEP,
+	TRACE_GO_SLEEP,
+	TRACE_WAKEUP,
+	TRACE_DW_IRQ_ENTER,
+	TRACE_DW_IRQ_RX,
+	TRACE_DW_IRQ_TX,
+	TRACE_DW_IRQ_TO,
+	TRACE_DW_IRQ_ERR,
+	TRACE_DW_IRQ_EXIT,
+	TRACE_SLOT_TIM_ENTER,
+	TRACE_SLOT_TIM_EXIT,
+	TRACE_WAKE_TIM_ENTER,
+	TRACE_WAKE_TIM_EXIT,
+	TRACE_IMU_IRQ_ENTER,
+	TRACE_IMU_IRQ_EXIT,
+	TRACE_USART_IRQ_ENTER,
+	TRACE_USART_IRQ_EXIT,
+} TRACE_t;
+
+/**
  * \brief Initialization for port modules
  *
  * Especially difference is during assertion.
@@ -128,7 +153,7 @@ void PORT_Reboot();
  *
  * \return void
  */
-void PORT_EnterStopMode();
+void PORT_EnterSleepMode();
 
 /**
  * \brief enter low power run mode
@@ -275,9 +300,9 @@ void PORT_SlotTimerSetUsOffset(int32 delta_us);
 void PORT_SetSlotTimerPeriodUs(uint32 us);
 
 /**
- * \brief Set beacon timer for example as a 
+ * \brief Set beacon timer for example as a
  * low power timer or RTC alarm with a given period
- * 
+ *
  * \param time_ms interval
  */
 void PORT_SetBeaconTimerPeriodMs(int time_ms);

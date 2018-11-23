@@ -84,7 +84,7 @@ static void MX_CRC_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_LPTIM1_Init(void);
 static void MX_WWDG_Init(void);
-static void MX_ADC1_Init(void);
+void MX_ADC1_Init(void);
 static void MX_AES_Init(void);
 void MX_SPI2_Init(void);
 void MX_SPI3_Init(void);
@@ -116,6 +116,8 @@ int main(void)
 	UNUSED(MX_LPTIM1_Init);
 
 	__HAL_DBGMCU_FREEZE_WWDG();
+	__HAL_DBGMCU_FREEZE_TIM2();
+	__HAL_DBGMCU_FREEZE_RTC();
 	DBGMCU->CR |= DBGMCU_CR_DBG_STOP | DBGMCU_CR_DBG_SLEEP | DBGMCU_CR_DBG_STANDBY; // 0.3mA
 
   /* USER CODE END 1 */
@@ -177,7 +179,7 @@ int main(void)
 	//MX_USART1_UART_Init();
 	//
 	/*TRANSCEIVER_EnterDeepSleep();
-	PORT_EnterStopMode();
+	PORT_EnterSleepMode();
 	while (1) {
 		HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 	 }*/
@@ -306,7 +308,7 @@ static void MX_NVIC_Init(void)
 }
 
 /* ADC1 init function */
-static void MX_ADC1_Init(void)
+void MX_ADC1_Init(void)
 {
 
     /**Common config
@@ -317,7 +319,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoWait = ENABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DiscontinuousConvMode = DISABLE;

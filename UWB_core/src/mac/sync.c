@@ -526,11 +526,9 @@ int SYNC_TxCb(int64_t TsDwTx) {
 		sync.sending_beacon = false;
 		SYNC_TRACE("SYNC BEACON send, go sleep");
 		TRANSCEIVER_EnterDeepSleep();
-		PORT_LedOn(LED_STAT);
-		for (volatile int i = 49999; i > 0; --i) {
-				asm("nop");
-		}
-		PORT_EnterStopMode();
+		PORT_PrepareSleepMode();
+		PORT_EnterSleepMode();
+		ret = 1;
 	}
 	return ret;
 }

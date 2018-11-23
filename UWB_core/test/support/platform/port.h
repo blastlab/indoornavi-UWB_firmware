@@ -27,7 +27,7 @@ void PORT_WakeupTransceiver();
 void PORT_Reboot();
 
 // turn on low power or stop mode
-void PORT_EnterStopMode();
+void PORT_EnterSleepMode();
 
 // start watchdog work
 void PORT_WatchdogInit();

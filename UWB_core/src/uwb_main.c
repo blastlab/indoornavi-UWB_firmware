@@ -83,17 +83,40 @@ void UwbMain() {
 	if (settings.mac.role == RTLS_DEFAULT) {
 		settings.mac.role = PORT_GetHwRole();
 	}
+	settings.ranging.TDOA = settings.mac.role == RTLS_TAG;
+	//settings.transceiver.low_power_mode = true;
 
 #ifdef DBG
 	LOG_SelfTest();
 #endif
 
+	if (settings.mac.role == RTLS_TAG && settings.ranging.TDOA) {
+		PORT_ImuSleep();
+		PORT_SetBeaconTimerPeriodMs(6000);
+	}
+
 	MAC_Init(BIN_Parse, SendToSink);
 	CARRY_Init(settings.mac.role == RTLS_SINK);
-	FU_Init(settings.mac.role == RTLS_SINK);
+	FU_Init(settings.ranging.TDOA || settings.mac.role == RTLS_SINK);
 
 	PORT_TimeStartTimers();
 	SendTurnOnMessage();
+
+	while (settings.ranging.TDOA == true && settings.mac.role == RTLS_TAG) {
+		// go sleep
+		TRANSCEIVER_EnterDeepSleep();
+		PORT_EnterStopMode();
+
+		CRITICAL(
+		  BatteryControl(); PORT_WatchdogRefresh(););
+
+		PORT_SleepMs(100);
+		// wake up
+		PORT_WatchdogRefresh();
+		PORT_ExitSleepMode();
+		TRANSCEIVER_WakeUp();
+	}
+
 
 	while (1) {
 		PORT_LedOff(LED_STAT);
@@ -109,6 +132,7 @@ void UwbMain() {
 		TXT_Control();
 		FU_Control();
 		PORT_WatchdogRefresh();
+		__WFI();
 	}
 }
 
