@@ -35,13 +35,13 @@ Then you can set measure list with :ref:`setanchors` and :ref:`settags` commands
 For example when you discovered that in your set is:
 
 * **Sink** with did *8001*
-* **Tags** with did *10* and *12*
+* **Tags** with did *10* and *A2*
 * **Anchors** with did *9001* *A001* *9003*
 
 Then you should put::
 
   setanchors 8001 9001 A001 9003
-  settags 10 12 8001 9001 A001 9003
+  settags 10 A2 8001 9001 A001 9003
 
 Now anchors should be auto-located on a screen and tag moves should be visible in TREK.
 In this mode each device is measured to each other - it is a good mode for demo of system.
@@ -50,7 +50,7 @@ To do that just reset measure with :ref:`clear` command and create new measure t
 
   clear -m
   setanchors 8001 9001 A001 9003
-  settags 10 12
+  settags 10 A2
 
 
 Remote server

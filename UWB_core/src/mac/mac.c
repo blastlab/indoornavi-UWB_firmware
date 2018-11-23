@@ -73,7 +73,9 @@ void MAC_Reinit() {
 	MAC_Init(_dataParser, _dataSender);
 }
 
+void Trace(TRACE_t t);
 static void MAC_TxCb(const dwt_cb_data_t* data) {
+	Trace(TRACE_DW_IRQ_TX);
 	int64_t tx_ts = TRANSCEIVER_GetTxTimestamp();
 
 	PORT_LedOn(LED_STAT);
@@ -118,6 +120,7 @@ static void MAC_TxCb(const dwt_cb_data_t* data) {
 }
 
 static void MAC_RxCb(const dwt_cb_data_t* data) {
+	Trace(TRACE_DW_IRQ_RX);
 	PORT_LedOn(LED_STAT);
 	mac.last_rx_ts = PORT_TickHr();
 	mac_buf_t* buf = MAC_Buffer();
@@ -174,6 +177,7 @@ static void MAC_RxCb(const dwt_cb_data_t* data) {
 // timeout error -> check ranging, maybe ACK or default RX
 static void MAC_RxToCb(const dwt_cb_data_t* data) {
 	// ranging isr
+	Trace(TRACE_DW_IRQ_TO);
 	PORT_LedOn(LED_ERR);
 	int ret = SYNC_RxToCb();
 	if (ret != 0) {
@@ -188,9 +192,10 @@ static void MAC_RxToCb(const dwt_cb_data_t* data) {
 
 // error during receiving frame
 static void MAC_RxErrCb(const dwt_cb_data_t* data) {
+	Trace(TRACE_DW_IRQ_ERR);
 	// mayby some log?
 	PORT_LedOn(LED_ERR);
-	LOG_DBG("Rx error status:%X", data->status);
+	//LOG_DBG("Rx error status:%X", data->status);
 	TRANSCEIVER_DefaultRx();
 }
 
