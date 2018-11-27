@@ -242,6 +242,15 @@ static void TXT_ClearCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	bool clear_measures = TXT_CheckFlag(buf, "-m") | clear_both;
 	bool cleared = false;
 
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "clear");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "clear");
+		return;
+	}
+
 	if (clear_measures) {
 		RANGING_MeasureDeleteAll();
 		cleared = true;
@@ -295,6 +304,14 @@ static void TXT_BinCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 
 static void TXT_SetAnchorsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int res, i = 1;
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "setanchors");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "setanchors");
+		return;
+	}
 	RANGING_TempAnchorsReset();
 	res = TXT_GetParamNum(buf, i, 16);
 	while (res > 0) {
@@ -311,6 +328,14 @@ static void TXT_SetAnchorsCb(const txt_buf_t* buf, const prot_packet_info_t* inf
 
 static void TXT_SetTagsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int res, i = 1;
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "settags");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "settags");
+		return;
+	}
 	if (RANGING_TempAnchorsCounter() == 0) {
 		LOG_ERR(ERR_SETTAGS_NEED_SETANCHORS);
 		return;
@@ -333,6 +358,15 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 	int i = 2;
 	int tagDid = TXT_GetParamNum(buf, 1, 16);
 	int ancDid = TXT_GetParamNum(buf, i, 16);
+
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "measure");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "measure");
+		return;
+	}
 
 	if (tagDid < 0 || tagDid > ADDR_BROADCAST) {  // no parameters
 		LOG_INF(INF_MEASURE_CMD_CNT, RANGING_MeasureCounter());
@@ -365,6 +399,16 @@ static void TXT_MeasureCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 static void TXT_DeleteTagsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int res, i = 1, deleted = 0;
 	res = TXT_GetParamNum(buf, i, 16);
+
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "deletetags");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "deletetags");
+		return;
+	}
+
 	while (res > 0) {
 		if (RANGING_MeasureDeleteTag(res)) {
 			++deleted;
@@ -379,6 +423,15 @@ static void TXT_RangingTimeCb(const txt_buf_t* buf, const prot_packet_info_t* in
 	int period = TXT_GetParam(buf, "T:", 10);
 	int delay = TXT_GetParam(buf, "t:", 10);
 	int cnt = TXT_GetParam(buf, "N:", 10);
+
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "rangingtime");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "rangingtime");
+		return;
+	}
 
 	if (period < 0 && delay < 0 && cnt < 0) {
 		PRINT_RangingTime();
@@ -411,6 +464,11 @@ static void TXT_ToaTimeCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 	int fin = TXT_GetParam(buf, "fin:", 10);
 	int resp[TOA_MAX_DEV_IN_POLL];
 
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "toatime");
+		return;
+	}
+
 	for (int i = 0; i < TOA_MAX_DEV_IN_POLL; ++i) {
 		resp_cmd[4] = i + '1';
 		resp[i] = TXT_GetParam(buf, resp_cmd, 10);
@@ -437,6 +495,11 @@ static void TXT_ToaTimeCb(const txt_buf_t* buf, const prot_packet_info_t* info) 
 static void TXT_AutoSetupCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int en = TXT_GetParam(buf, "en:", 10);
 
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "autosetup");
+		return;
+	}
+
 	if (en < 0) {
 	} else {
 		// todo: przerobic na pakiet binarny i binparse
@@ -451,6 +514,15 @@ static void TXT_ParentCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int i = 2;
 	int level = 0;
 	static int readIt = 0;
+
+	if (settings.mac.role != RTLS_SINK) {
+		LOG_ERR(ERR_ITS_ONLY_SINK_COMMAND, "parent");
+		return;
+	}
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "parent");
+		return;
+	}
 
 	if (parent <= 0 && child <= 0) {  // no parametrs
 		LOG_INF(INF_PARENT_CNT, settings.carry.targetCounter);
@@ -554,6 +626,12 @@ static void TXT_ImuCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 
 static void TXT_RoleCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	const char* role = TXT_PointParamNumber(buf, buf->cmd, 1);
+
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "role");
+		return;
+	}
+
 	switch (tolower(role[0])) {
 		case 's':
 			settings.mac.role = RTLS_SINK;
@@ -576,6 +654,11 @@ static void TXT_RoleCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 
 static void TXT_RouteCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	int en = TXT_GetParam(buf, "auto:", 10);
+
+	if (info->original_src != ADDR_BROADCAST) {
+		LOG_ERR(ERR_ITS_ONLY_LOCAL_COMMAND, "route");
+		return;
+	}
 
 	if (0 <= en && en <= 1) {
 		settings.carry.autoRoute = en;
@@ -647,23 +730,31 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 
 const txt_cb_t txt_cb_tab[] = {
     { "stat", TXT_StatCb },
+    { "st", TXT_StatCb },
     { "version", TXT_VersionCb },
+    { "ver", TXT_VersionCb },
     { "_hang", TXT_HangCb },
     { "rfset", TXT_RFSetCb },
     { "test", TXT_TestCb },
     { "save", TXT_SaveCb },
     { "clear", TXT_ClearCb },
+    { "cl", TXT_ClearCb },
     { "reset", TXT_ResetCb },
     { "txset", TXT_TxSetCb },
     { "bin", TXT_BinCb },
     { "setanchors", TXT_SetAnchorsCb },
+    { "sa", TXT_SetAnchorsCb },
     { "settags", TXT_SetTagsCb },
+    { "st", TXT_SetTagsCb },
     { "measure", TXT_MeasureCb },
+    { "me", TXT_MeasureCb },
     { "deletetags", TXT_DeleteTagsCb },
+    { "dt", TXT_DeleteTagsCb },
     { "rangingtime", TXT_RangingTimeCb },
     { "toatime", TXT_ToaTimeCb },
     { "_autosetup", TXT_AutoSetupCb },
     { "parent", TXT_ParentCb },
+    { "pr", TXT_ParentCb },
     { "ble", TXT_BleCb },
     { "imu", TXT_ImuCb },
     { "_role", TXT_RoleCb },

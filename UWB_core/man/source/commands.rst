@@ -25,6 +25,8 @@ status
 
 *stat [did:hex]*
 
+*st [did:hex]*
+
 did:  [0..FFFE]  hexadecimal address of device to check
 
 Get device status. Response is in :ref:`INF_STATUS` format.
@@ -40,6 +42,8 @@ Example::
 
 version
 ===============
+
+*version [did:hex]*
 
 *ver [did:hex]*
 
@@ -180,6 +184,8 @@ clear
 
 *clear [-m] [-p] [-mp] [did:hex]*
 
+*cl [-m] [-p] [-mp] [did:hex]*
+
 * -m clear measure table
 * -p clear parent table
 * -mp combination -m and -p, response :ref:`INF_CLEARED`
@@ -228,6 +234,8 @@ setanchors
 
 *setanchors hex [,hex..]*
 
+*sa hex [,hex..]*
+
 * list of anchors addresses
 
 Fill temporary anchors table. This table is used especially in :ref:`settags` command.
@@ -242,6 +250,8 @@ settags
 ===============
 
 *settags hex [hex..]*
+
+*st hex [hex..]*
 
 * list of tags addresses
 
@@ -269,14 +279,20 @@ measure
 
 *measure*
 
+*me*
+
 Response will be :ref:`INF_MEASURE_CMD_CNT`
 
 *measure FFFF*
+
+*me FFFF*
 
 Response will be :ref:`INF_MEASURE_INFO`.
 After each call measure read index will be incremented, so it is designed to scan whole measures init table.
 
 *measure hex hex [hex..]*
+
+*me hex hex [hex..]*
 
 * target device address
 * list of anchor addresses to measure with target
@@ -299,6 +315,8 @@ deletetags
 ===============
 
 *deletetags hex [hex..]*
+
+*dt hex [hex..]*
 
 * list of measure targets to delete
 
@@ -358,9 +376,13 @@ parent
 
 *parent*
 
+*pr*
+
 Response is :ref:`INF_PARENT_CNT`.
 
 *parent hex*
+
+*pr hex*
 
 * address of asked device
 
@@ -369,6 +391,8 @@ Check anchor parent saved in sink volatile memory.
 Response is :ref:`INF_PARENT_DESCRIPTION`
 
 *parent hex hex [hex..]*
+
+*pr hex hex [hex..]*
 
 Result is :ref:`INF_PARENT_SET`
 
