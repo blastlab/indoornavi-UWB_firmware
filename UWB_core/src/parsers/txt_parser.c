@@ -56,10 +56,10 @@ bool TXT_CheckFlag(const txt_buf_t* buf, cchar* flag) {
 	cchar* ptr = buf->cmd;
 
 	while (*ptr != 0) {
-		for (i = 0; *ptr == flag[i]; ++i) {
+		for (i = 0; *ptr == flag[i] && flag[i] != 0; ++i) {
 			INCREMENT_CYCLE(ptr, buf->start, buf->end);
 		}
-		if (flag[i] == 0) {
+		if (flag[i] == 0 && isalpha(*ptr) == false) {
 			return true;
 		}
 		INCREMENT_CYCLE(ptr, buf->start, buf->end);
