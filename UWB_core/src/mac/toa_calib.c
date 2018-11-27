@@ -12,16 +12,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../decadriver/deca_device_api.h"
-#include "../decadriver/deca_param_types.h"
+#include "platform/port.h"
+#include "decadriver/deca_param_types.h" // NUM_CH_SUPPORTED
 
 #define NUM_16M_OFFSET (37)
 #define NUM_16M_OFFSETWB (68)
 #define NUM_64M_OFFSET (26)
 #define NUM_64M_OFFSETWB (59)
 
-const uint8 chan_idxnb[NUM_CH_SUPPORTED] = { 0, 0, 1, 2, 0, 3, 0, 0 }; // only channels 1,2,3 and 5 are in the narrow band tables
-const uint8 chan_idxwb[NUM_CH_SUPPORTED] = { 0, 0, 0, 0, 0, 0, 0, 1 }; // only channels 4 and 7 are in in the wide band tables
+const uint8_t chan_idxnb[NUM_CH_SUPPORTED] = { 0, 0, 1, 2, 0, 3, 0, 0 }; // only channels 1,2,3 and 5 are in the narrow band tables
+const uint8_t chan_idxwb[NUM_CH_SUPPORTED] = { 0, 0, 0, 0, 0, 0, 0, 1 }; // only channels 4 and 7 are in in the wide band tables
 
 //---------------------------------------------------------------------------------------------------------------------------
 // Range Bias Correction TABLES of range values in integer units of 25 CM, for
@@ -40,7 +40,7 @@ const uint8 chan_idxwb[NUM_CH_SUPPORTED] = { 0, 0, 0, 0, 0, 0, 0, 1 }; // only c
 // MHz PRF, NB: !!!! each MUST END IN 255 !!!!
 //---------------------------------------------------------------------------------------------------------------------------
 
-const uint8 range25cm16PRFnb[4][NUM_16M_OFFSET] = {
+const uint8_t range25cm16PRFnb[4][NUM_16M_OFFSET] = {
 // ch 1 - range25cm16PRFnb
     {
         1,
@@ -206,7 +206,7 @@ const uint8 range25cm16PRFnb[4][NUM_16M_OFFSET] = {
 // MHz PRF, NB: !!!! each MUST END IN 255 !!!!
 //---------------------------------------------------------------------------------------------------------------------------
 
-const uint8 range25cm16PRFwb[2][NUM_16M_OFFSETWB] = {
+const uint8_t range25cm16PRFwb[2][NUM_16M_OFFSETWB] = {
 // ch 4 - range25cm16PRFwb
     {
         7,
@@ -355,7 +355,7 @@ const uint8 range25cm16PRFwb[2][NUM_16M_OFFSETWB] = {
 // MHz PRF, NB: !!!! each MUST END IN 255 !!!!
 //---------------------------------------------------------------------------------------------------------------------------
 
-const uint8 range25cm64PRFnb[4][NUM_64M_OFFSET] =
+const uint8_t range25cm64PRFnb[4][NUM_64M_OFFSET] =
     {
     // ch 1 - range25cm64PRFnb
         {
@@ -478,7 +478,7 @@ const uint8 range25cm64PRFnb[4][NUM_64M_OFFSET] =
 // MHz PRF, NB: !!!! each MUST END IN 255 !!!!
 //---------------------------------------------------------------------------------------------------------------------------
 
-const uint8 range25cm64PRFwb[2][NUM_64M_OFFSETWB] = {
+const uint8_t range25cm64PRFwb[2][NUM_64M_OFFSETWB] = {
 // ch 4 - range25cm64PRFwb
     {
         7,
@@ -621,7 +621,7 @@ const uint8 range25cm64PRFwb[2][NUM_64M_OFFSETWB] = {
  *
  * returns correction needed in meters
  */
-int _TOA_GetRangeBias(uint8 chan, int range, uint8 prf, int smartTxPower) {
+int _TOA_GetRangeBias(uint8_t chan, int range, uint8 prf, int smartTxPower) {
 	// first get the lookup index that corresponds to given range for a particular
 	// channel at 16M PRF
 	int i = 0;

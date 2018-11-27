@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "decadriver/deca_device_api.h"  // decaIrqStatus_t
 
 #include "stm32l4xx_hal.h"
 #include "usbd_cdc_if.h"

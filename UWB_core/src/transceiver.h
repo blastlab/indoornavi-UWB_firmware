@@ -23,8 +23,9 @@
 /**
  * @brief Initialize transceiver based on current settings
  *
+ * @return device part id
  */
-void TRANSCEIVER_Init();
+uint32_t TRANSCEIVER_Init();
 
 /**
  * @brief set device address

@@ -13,6 +13,8 @@
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
+typedef unsigned int time_ms_t;
+
 #define DW_EXTI_IRQn EXTI0_IRQn
 
 #define BOOTLOADER_MAGIC_NUMBER (0xBECA95)

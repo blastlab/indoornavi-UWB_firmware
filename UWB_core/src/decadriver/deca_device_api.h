@@ -1736,7 +1736,7 @@ void dwt_write8bitoffsetreg(int regFileID, int regOffset, uint8 regval);
  *
  * returns DWT_SUCCESS for success, or DWT_ERROR for error
  */
-int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength, const uint8 *bodyBuffer);
+//int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength, const uint8 *bodyBuffer);
 
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn readfromspi()
@@ -1760,7 +1760,7 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength
  *
  * returns DWT_SUCCESS for success (and the position in the buffer at which data begins), or DWT_ERROR for error
  */
-int readfromspi(uint16 headerLength, const uint8 *headerBuffer, uint32 readlength, uint8 *readBuffer);
+//int readfromspi(uint16 headerLength, const uint8 *headerBuffer, uint32 readlength, uint8 *readBuffer);
 
 // ---------------------------------------------------------------------------
 //

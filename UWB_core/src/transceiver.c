@@ -12,7 +12,7 @@ bool set_default_pac);
 static int TRANSCEIVER_CalcSfdTo();
 static int TRANSCEIVER_CalcPGdly(int ch);
 
-void TRANSCEIVER_Init() {
+uint32_t TRANSCEIVER_Init() {
 	int ret;
 	dwt_config_t* conf = &settings.transceiver.dwt_config;
 
@@ -88,6 +88,8 @@ void TRANSCEIVER_Init() {
 	// turn on default rx mode
 	dwt_setrxtimeout(0);
 	dwt_setpreambledetecttimeout(0);
+
+	return dwt_getpartid();
 }
 
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb, dwt_cb_t rxerr_cb) {

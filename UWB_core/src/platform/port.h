@@ -22,6 +22,28 @@
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
 
+// define typedef macro before including
+// deca_device api
+#ifndef uint32
+#define uint32 uint32_t
+#endif
+#ifndef uint16
+#define uint16 uint16_t
+#endif
+#ifndef uint8
+#define uint8 uint8_t
+#endif
+
+#include "decadriver/deca_device_api.h"
+
+#ifndef STATIC
+#ifdef TEST
+#define STATIC
+#else
+#define STATIC static
+#endif
+#endif
+
 /**
  * \brief This is used to set or reset debug mode
  *
@@ -256,7 +278,7 @@ uint32_t PORT_SlotTimerTickUs();
  *
  * \return void
  */
-void PORT_SlotTimerSetUsOffset(int32 delta_us);
+void PORT_SlotTimerSetUsOffset(int32_t delta_us);
 
 /**
  * \brief set new slot timer period time
@@ -265,7 +287,7 @@ void PORT_SlotTimerSetUsOffset(int32 delta_us);
  *
  * \param[in] us new period duration in microseconds
  */
-void PORT_SetSlotTimerPeriodUs(uint32 us);
+void PORT_SetSlotTimerPeriodUs(uint32_t us);
 
 // ========  CRC  ==========
 

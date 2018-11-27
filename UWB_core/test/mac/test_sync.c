@@ -5,16 +5,30 @@
 
 #include "logs.h"
 #include "mac.h"
-#include "mock_deca_device_api.h"
 #include "mock_port.h"
 #include "mock_transceiver.h"
+#include "mock_toa_routine.h"
 #include "toa.h"
+
+TEST_FILE("iassert.c")
+TEST_FILE("logs_common.c")
+//TEST_FILE("mac.c")
 
 settings_otp_t _settings_otp;
 settings_otp_t const *settings_otp = &_settings_otp;
 
 FAKE_VALUE_FUNC(int, _TOA_GetRangeBias, uint8, int, uint8, int);
 FAKE_VOID_FUNC(CARRY_ParseMessage, mac_buf_t *);
+FAKE_VOID_FUNC(dwt_forcetrxoff);
+FAKE_VOID_FUNC(dwt_rxreset);
+FAKE_VOID_FUNC(dwt_setrxtimeout, uint16_t);
+FAKE_VOID_FUNC(dwt_setrxaftertxdelay, unsigned long);
+FAKE_VOID_FUNC(dwt_setdelayedtrxtime, unsigned long);
+FAKE_VALUE_FUNC(int, dwt_rxenable, int);
+FAKE_VOID_FUNC(listener_isr, const dwt_cb_data_t *)
+FAKE_VOID_FUNC(FU_AcceptFirmware);
+
+
 
 settings_t settings = DEF_SETTINGS;
 sync_instance_t sync;

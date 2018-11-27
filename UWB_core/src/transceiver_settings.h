@@ -43,6 +43,18 @@
 #ifndef _TRANSCEIVER_SETTINGS_H
 #define _TRANSCEIVER_SETTINGS_H
 
+// define typedef macro before including
+// deca_device api
+#ifndef uint32
+#define uint32 uint32_t
+#endif
+#ifndef uint16
+#define uint16 uint16_t
+#endif
+#ifndef uint8
+#define uint8 uint8_t
+#endif
+
 #include "decadriver/deca_device_api.h"
 
 #include "iassert.h"

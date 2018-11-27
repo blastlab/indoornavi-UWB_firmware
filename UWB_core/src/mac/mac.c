@@ -21,11 +21,11 @@ void MAC_Init(MAC_DataParserCb_t callback) {
 	MAC_ASSERT(callback != 0);
 	_dataParser = callback;
 	// init transceiver
-	TRANSCEIVER_Init();
+	uint32_t part_id = TRANSCEIVER_Init();
 
 	// get local address
 	if (settings.mac.addr == ADDR_BROADCAST) {
-		settings.mac.addr = (dev_addr_t)dwt_getpartid();
+		settings.mac.addr = (dev_addr_t)part_id;
 	}
 
 	// apply anchor address flag
@@ -331,7 +331,7 @@ void MAC_AckFrameIsr(uint8_t seq_num) {
 	}
 }
 
-static void _MAC_BufferReset(mac_buf_t* buf) {
+STATIC void _MAC_BufferReset(mac_buf_t* buf) {
 	buf->state = BUSY;
 	buf->dPtr = buf->buf;
 	buf->retransmit_fail_cnt = 0;
@@ -342,7 +342,7 @@ static void _MAC_BufferReset(mac_buf_t* buf) {
 
 // get pointer to the oldest buffer with WAIT_FOR_TX or WAIT_FOR_TX_ACK
 // when there is no buffer to tx then return 0
-static mac_buf_t* _MAC_BufGetOldestToTx() {
+STATIC mac_buf_t* _MAC_BufGetOldestToTx() {
 	volatile int oldest_index = MAC_BUF_CNT;
 	int current_time = mac_port_buff_time();
 	int oldest_time = -1;
