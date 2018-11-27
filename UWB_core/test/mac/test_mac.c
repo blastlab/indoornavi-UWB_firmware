@@ -95,7 +95,7 @@ void test_MAC_Read_write_positive_len() {
   }
 }*/
 
-void ttest_MAC_BufGetOldestToTx_return_buf() {
+void test_MAC_BufGetOldestToTx_return_buf() {
   uint8_t data[] = {1, 2, 3, 4, 5, 6};
   data[1] = sizeof(data);
 
