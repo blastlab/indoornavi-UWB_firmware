@@ -55,24 +55,31 @@ ADD_ITEM_M(1212, ERR_BLE_BAD_TXPOWER, "Wrong ble txpower value")
 COMMENT("BLE module is not included into this version of firmware")
 
 // ranging 1300
-ADD_ITEM_M(1301, ERR_MEASURE_ADD_ANCHOR_FAILED_DID, "measure add anchor failed with %X")
+ADD_ITEM_M(1300, ERR_ITS_ONLY_LOCAL_COMMAND, "%s command is only for local usage")
+ARG("string", "command name")
+
+ADD_ITEM_M(1301, ERR_ITS_ONLY_SINK_COMMAND, "%s command is only for sink")
+ARG("string", "command name")
+
+ADD_ITEM_M(1302, ERR_MEASURE_ADD_ANCHOR_FAILED_DID, "measure add anchor failed with %X")
 ARG("hex", "incorrect anchor address")
 
-ADD_ITEM_M(1302, ERR_MEASURE_TARGET_WITH_ANC_FAILED, "measure target failed ancCnt:%d")
+ADD_ITEM_M(1303, ERR_MEASURE_TARGET_WITH_ANC_FAILED, "measure target failed ancCnt:%d")
 ARG("ancCnt", "number of anchors to connect with target")
 
 
-ADD_ITEM_M(1303, ERR_SETANCHORS_FAILED, "setanchors failed (%X)")
+
+ADD_ITEM_M(1305, ERR_SETANCHORS_FAILED, "setanchors failed (%X)")
 ARG("hex", "address of device which cause error")
 
-ADD_ITEM_M(1304, ERR_SETTAGS_NEED_SETANCHORS, "settags need setanchors")
+ADD_ITEM_M(1306, ERR_SETTAGS_NEED_SETANCHORS, "settags need setanchors")
 
-ADD_ITEM_M(1305, ERR_SETTAGS_FAILED, "settags failed after %X")
+ADD_ITEM_M(1307, ERR_SETTAGS_FAILED, "settags failed after %X")
 ARG("hex", "address of device which cause error")
 
-ADD_ITEM_M(1306, ERR_MAC_RAAD_BAD_VALUE, "mac raad value must be 0 or 1 (enable)")
-ADD_ITEM_M(1307, ERR_MAC_ADDR_BAD_VALUE, "mac addr bad value")
-ADD_ITEM_M(1308, ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT, "mac beacon period must be greater than %d")
+ADD_ITEM_M(1310, ERR_MAC_RAAD_BAD_VALUE, "mac raad value must be 0 or 1 (enable)")
+ADD_ITEM_M(1311, ERR_MAC_ADDR_BAD_VALUE, "mac addr bad value")
+ADD_ITEM_M(1312, ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT, "mac beacon period must be greater than %d")
 ARG("%d", "minumum beacon period value")
 
 // settings 1400
