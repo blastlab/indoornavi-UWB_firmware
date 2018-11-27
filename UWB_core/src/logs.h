@@ -1,20 +1,137 @@
+/**
+ * @brief
+ *
+ * @file logs.h
+ * @author Karol Trzcinski
+ * @date 2018-06-29
+ */
 #ifndef _LOGS_H
 #define _LOGS_H
 
 #include <stdlib.h>
+#include <stdarg.h>
 
-#define LOG_CRIT(...) LOG_Text('C', __VA_ARGS__)
-#define LOG_ERR(...) LOG_Text('E', __VA_ARGS__)
-#define LOG_INF(...) LOG_Text('I', __VA_ARGS__)
-#define LOG_DBG(...) LOG_Text('D', __VA_ARGS__)
-#define LOG_TEST(...) LOG_Text('T', __VA_ARGS__)
+#undef ADD_ITEM
+#undef ADD_ITEM_M
+#undef COMMENT
+#undef ARG
 
-#define LOG_BASE64(BUF, LEN) log_bin(BUF, LEN)
+#define ADD_ITEM(CODE,ENUM_VALUE,MESSAGE) ENUM_VALUE,
+#define ADD_ITEM_M(CODE,ENUM_VALUE,MESSAGE) ENUM_VALUE,
+#define COMMENT(X)
+#define ARG(NAME,DESCRIPTION)
 
-// implmented in platform/log.c
-int LOG_Text(char type, const char *frm, ...);
+typedef enum {
+#include "logger/logs_crit.h"
+	CRIT_codes_N
+} CRIT_codes;
 
-// implement in platform/log.c
-int LOG_Bin(char type, const void* bin, int size);
+typedef enum {
+#include "logger/logs_err.h"
+	ERR_codes_N
+} ERR_codes;
 
+typedef enum {
+#include "logger/logs_wrn.h"
+	WRN_codes_N
+} WRN_codes;
+
+typedef enum {
+#include "logger/logs_inf.h"
+	INF_codes_N
+} INF_codes;
+
+typedef enum {
+#include "logger/logs_test.h"
+	TEST_codes_N
+} TEST_codes;
+
+#undef ADD_ITEM
+#undef ADD_ITEM_M
+#undef COMMENT
+#undef ARG
+
+/**
+ * @brief sending messages from circled buffer for logs
+ *
+ */
+void LOG_Control();
+
+/**
+ * @brief logger informations code tester
+ *
+ */
+void LOG_SelfTest();
+
+/**
+ * @brief log text data
+ *
+ * implemented in platform folder
+ *
+ * @param type log type
+ * @param type log identification code
+ * @param frm formating string
+ * @param ... extra arguments
+ * @return int
+ */
+int LOG_Text(char type, int num, const char *frm, va_list arg);
+
+/**
+ * @brief log binary data
+ *
+ * implemented in platform folder
+ *
+ * @param[in] bin pointer to binary data
+ * @param[in] size of binary data
+ * @return int
+ */
+int LOG_Bin(const void *bin, int size);
+
+/**
+ * @brief log criticcal information
+ *
+ * @param code of message
+ * @param ... extra arguments
+ */
+void LOG_CRIT(ERR_codes code, ...);
+
+/**
+ * @brief log error information
+ *
+ * @param code of message
+ * @param ... extra arguments
+ */
+void LOG_ERR(ERR_codes code, ...);
+
+/**
+ * @brief log warning information
+ *
+ * @param code of message
+ * @param ... extra arguments
+ */
+void LOG_WRN(WRN_codes code, ...);
+
+/**
+ * @brief log informations
+ *
+ * @param code of message
+ * @param ... extra arguments
+ */
+void LOG_INF(INF_codes code, ...);
+
+/**
+ * @brief debug information logger
+ *
+ * @param code of message
+ * @param ... extra arguments
+ */
+void LOG_DBG(const char *frm, ...);
+
+/**
+ * @brief target device integration test logger
+ *
+ * @param code of message
+ * @param ... extra arguments
+ */
+void LOG_TEST(TEST_codes code, ...);
 #endif // _LOGS_H

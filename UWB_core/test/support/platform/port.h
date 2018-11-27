@@ -1,97 +1,94 @@
 #ifndef _PORT_H
 #define _PORT_H
 
-#include "decadriver/deca_device_api.h" // decaIrqStatus_t
-#include <stdbool.h>
-#include <stdint.h>
+#include "port_config.h"
 
-#include "iassert.h"
-#define PORT_ASSERT(expr) IASSERT(expr)
+#define UNUSED(x) (void)(x)
 
-#define LOG_USB_EN 1
-#define LOG_SD_EN 0
-#define LOG_USB_UART 0
+// extra initialization for port modules
+void PORT_Init();
 
-// define how many high resolution clock tick is in one us
-#define PORT_TICKS_HR_PER_US 1000
-#define DW_EXTI_IRQn EXTI0_IRQn
-
-#define BOOTLOADER_MAGIC_NUMBER (0xBECA95)
-#define BOOTLOADER_MAGIC_REG (RTC->BKP0R)
-#define BOOTLOADER_MAGIC_REG_GO_SLEEP (0x12345678)
-
-// leds
-#define LED_G1 1
-#define LED_R1 2
-#define LED_STAT LED_G1
-#define LED_ERR LED_R1
+// assert routine
+void PORT_Iassert_fun(const char *msg, int line);
 
 // turn led on
-void port_led_on(int LED_x);
+void PORT_LedOn(int LED_x);
 
 // turrn led off
-void port_led_off(int LED_x);
+void PORT_LedOff(int LED_x);
 
 // reset dw 1000 device by polling RST pin down for at least 500us
-void reset_DW1000();
+void PORT_ResetTransceiver();
+
+// wakeup transceiver after sleep
+void PORT_WakeupTransceiver();
 
 // reset STM
-void port_reboot();
+void PORT_Reboot();
 
 // turn on low power or stop mode
-void port_enter_stop_mode();
+void PORT_EnterStopMode();
 
 // start watchdog work
-void port_watchdog_init();
+void PORT_WatchdogInit();
 
 // refresh watchdog timer
-void port_watchdog_refresh();
+void PORT_WatchdogRefresh();
 
 // measure current battery voltage
-void port_battery_measure();
+void PORT_BatteryMeasure();
 
 // return last battery voltage in [mV]
-int port_battery_voltage();
+int PORT_BatteryVoltage();
 
 // TIME
 
+// run timers when device is fully initialised
+void PORT_TimeStartTimers();
+
 // nop
-void port_sleep_ms(unsigned int time_ms);
+void PORT_SleepMs(unsigned int time_ms);
 
 // get clock
-unsigned int port_tick_ms();
+unsigned int PORT_TickMs();
 
 // get high resolution clock - CPU tick counter
-unsigned int port_tick_hr();
+unsigned int PORT_TickHr();
 
 // get high resolution clock frequency
-unsigned int port_freq_hr();
+unsigned int PORT_FreqHr();
 
-// MUTEX
+// update slot timer for one iteration
+void PORT_SlotTimerSetUsLeft(uint32 us);
 
-// get deca spi mutex
-decaIrqStatus_t decamutexon(void);
+// set slot timer period
+void PORT_SetSlotTimerPeriodUs(uint32 us);
 
-// release deca spi mutex
-void decamutexoff(decaIrqStatus_t s);
+// CRC
+
+// set inital value to the crc calculator
+void PORT_CrcReset();
+
+// feed crc calculator with new data and return result
+uint16_t PORT_CrcFeed(const void *data, int size);
 
 // SPI
 
 // set SPI speed below 3MHz when param is true or below 20MHz when false
-void spi_speed_slow(bool slow);
-
-// returns DWT_SUCCESS(0) for success or DWT_ERROR for error
-int readfromspi(uint16 headerLength, const uint8 *headerBuffer, uint32 readlength, uint8 *readBuffer);
-
-// returns DWT_SUCCESS(0) for success or DWT_ERROR for error
-int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength, const uint8 *bodyBuffer);
+void PORT_SpiSpeedSlow(bool slow);
 
 // FLASH
 
-// erase whole flash sectors with given address and length
-int port_flash_erase(void *flash_addr, uint32_t length);
+// save value in reset-safe backup register
+void PORT_BkpRegisterWrite(uint32_t reg, uint32_t value);
 
-// write in flash at @destination @length bytes of data. @length % 8 must be 0
-int port_flash_save(void *destination, const void *p_source, uint32_t length);
+// read value from reset-safe backup register
+uint32_t PORT_BkpRegisterRead(uint32_t reg);
+
+// clear flash pages before fill with new data
+int PORT_FlashErase(void *flash_addr, uint32_t length);
+
+// write new data to previously erased flash memory
+int PORT_FlashSave(void *destination, const void *p_source, uint32_t length);
 
 #endif

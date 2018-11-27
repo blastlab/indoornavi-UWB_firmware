@@ -23,15 +23,14 @@ for root, dirs, files in os.walk('../'):
                     break
 
 
-hash = int(str(subprocess.Popen("git rev-parse --verify HEAD",
-                                stdout=subprocess.PIPE).communicate()[0])[2:-3][0:8], 16)
+hash = str(subprocess.check_output(['git', 'rev-parse', 'HEAD']))[2:-3]
+hash = int(hash[0:8], 16)
 print("GIT hash:   \"" + hex(hash) + "\"")
-branch = str(subprocess.Popen("git rev-parse --abbrev-ref HEAD",
-                              stdout=subprocess.PIPE).communicate()[0])[2:-3]
+branch = str(subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']))[2:-3]
 print("GIT branch: \"" + branch + "\";")
 
 firmwareMajor = 0
-firmwareMinor = 1
+firmwareMinor = 2
 firmwareMinorMax = 256*256
 
 str = '''// file generated automatically from updateHash.py, do not edit
