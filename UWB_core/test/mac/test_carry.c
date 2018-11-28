@@ -219,7 +219,6 @@ void test_carry_ParseMessage_to_server_from_sink() {
   FC_CARRY_s* carry;
   mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SERVER, &carry);
 
-
   prot_packet_info_t info;
   memset(&info, 0, sizeof(info));
   info.last_src = info.original_src = settings.mac.addr;
@@ -307,6 +306,42 @@ void test_carry_PrepareBufTo_anchor_with_two_hop() {
   TEST_ASSERT_M(carry->hops[1]  == hop2);
 }
 
+void test_carry_ParseMessage_to_device_via_hop() {
+  bool isConnectedToServer = true;
+  settings.mac.role = RTLS_SINK;
+  dev_addr_t target = 0x8030;
+  dev_addr_t hop1 = 0x8031;
+  dev_addr_t hop2 = 0x8032;
+
+  CARRY_Init(isConnectedToServer);
+  CARRY_ParentSet(hop1, settings.mac.addr);
+  CARRY_ParentSet(hop2, hop1);
+  CARRY_ParentSet(target, hop2);
+
+  FC_CARRY_s* carry;
+  mac_buf_t* buf = CARRY_PrepareBufTo(target, &carry);
+
+  TEST_ASSERT_CALLED(MAC_BufferPrepare);
+  TEST_ASSERT_M(buf != 0);
+  TEST_ASSERT_M(buf->frame.dst == hop1);
+  TEST_ASSERT_M(carry != 0);
+  TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_DEV);
+  TEST_ASSERT_M((carry->verHopsNum & CARRY_HOPS_NUM_MASK) == 2);
+  TEST_ASSERT_M(carry->hops[0]  == target);
+  TEST_ASSERT_M(carry->hops[1]  == hop2);
+
+  TEST_ASSERT_NOT_CALLED(MAC_Send);
+
+  prot_packet_info_t info;
+  memset(&info, 0, sizeof(info));
+  info.last_src = info.original_src = settings.mac.addr;
+  CARRY_ParseMessage(carry, &info);
+
+  TEST_ASSERT_CALLED(MAC_Send);
+  mac_buf_t * tx = MAC_Send_fake.arg0_history[0];
+  TEST_ASSERT(tx->frame.dst == hop2);
+}
+
 void test_carry_read_write() {
   uint8_t data[4] = {1, 2, 3, 4};
   uint8_t rd_buf[4];
@@ -350,4 +385,21 @@ void test_carry_new_tag() {
 
   ret = CARRY_TrackTag(tag, parent+1);
   TEST_ASSERT(ret == 1); // new parent for this tag
+}
+
+void test_carry_TargetLevel() {
+  bool isConnectedToServer = true;
+  settings.mac.role = RTLS_SINK;
+  dev_addr_t target = 0x8030;
+  dev_addr_t hop1 = 0x8031;
+  dev_addr_t hop2 = 0x8032;
+
+  CARRY_Init(isConnectedToServer);
+  CARRY_ParentSet(hop1, settings.mac.addr);
+  CARRY_ParentSet(hop2, hop1);
+  CARRY_ParentSet(target, hop2);
+
+  TEST_ASSERT(CARRY_GetTargetLevel(hop1) == 1);
+  TEST_ASSERT(CARRY_GetTargetLevel(hop2) == 2);
+  TEST_ASSERT(CARRY_GetTargetLevel(target) == 3);
 }
