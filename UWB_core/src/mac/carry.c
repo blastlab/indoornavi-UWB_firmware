@@ -68,6 +68,23 @@ carry_target_t* CARRY_NewTarget(dev_addr_t target) {
 }
 
 int CARRY_TrackTag(dev_addr_t tag_did, dev_addr_t parent) {
+	int ret = 0; // when there is no place for a new tag
+	carry_tag_t* tag = CARRY_GetTag(tag_did);
+	if (tag == 0) {
+		LOG_WRN(WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK, CARRY_MAX_TAGS);
+	} else {
+		ret = tag->anchor == parent ? 2 : 1; // 1 when parent will change, 2 otherwise
+		tag->anchor = parent;
+	}
+#ifdef DBG
+	if (ret == 1) {
+		LOG_DBG("trace tag %X new parent (%X)", tag_did, parent);
+	}
+	if (ret == 2) {
+		LOG_DBG("trace tag %X old parent %X", tag_did, parent);
+	}
+#endif
+	return ret;
 }
 
 int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent) {

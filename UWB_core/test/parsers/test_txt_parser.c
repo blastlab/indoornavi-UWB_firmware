@@ -130,7 +130,7 @@ void test_txt_parser_StartsWith(void) {
 }
 
 void test_txt_parser_Input_to_Parse() {
-  const char* cmd = "stat did:12\n";
+  const char* cmd = "stat did:12\r\n";
 
   TXT_Input(cmd, strlen(cmd)-1);
   TXT_Control();

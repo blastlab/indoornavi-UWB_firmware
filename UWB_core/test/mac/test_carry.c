@@ -337,3 +337,17 @@ void test_carry_read_write() {
   CARRY_Read8(buf);
   TEST_ASSERT_CALLED(MAC_Read8);
 }
+
+void test_carry_new_tag() {
+  PORT_TickMs_fake.return_val = 1000; // after one second of working
+  dev_addr_t parent = 0x8012;
+  dev_addr_t tag = 0x12;
+  int ret = CARRY_TrackTag(tag, parent);
+  TEST_ASSERT(ret == 1); // new parent for this tag
+
+  ret = CARRY_TrackTag(tag, parent);
+  TEST_ASSERT(ret == 2); // old parent for this tag
+
+  ret = CARRY_TrackTag(tag, parent+1);
+  TEST_ASSERT(ret == 1); // new parent for this tag
+}
