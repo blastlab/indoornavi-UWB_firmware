@@ -68,6 +68,7 @@ carry_target_t* CARRY_NewTarget(dev_addr_t target) {
 }
 
 int CARRY_TrackTag(dev_addr_t tag_did, dev_addr_t parent) {
+}
 
 int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent) {
 	int ret = 0;
