@@ -36,7 +36,7 @@
 #include "stm32l4xx_it.h"
 
 /* USER CODE BEGIN 0 */
-#include "decadriver/deca_device_api.h"
+#include "transceiver.h"
 #include "mac/mac.h"
 /* USER CODE END 0 */
 

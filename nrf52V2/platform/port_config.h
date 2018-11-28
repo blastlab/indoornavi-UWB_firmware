@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "decadriver/deca_device_api.h"
+#include "transceiver.h"
 #include "nordic_common.h"
 #include "nrf52.h"
 #include "nrf_error.h"
