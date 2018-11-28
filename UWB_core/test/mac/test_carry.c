@@ -27,7 +27,7 @@ FAKE_VALUE_FUNC(const uint8_t*, BIN_Parse, const uint8_t *, const prot_packet_in
 
 mac_buf_t* MAC_BufferPrepare_custom_fake(dev_addr_t target, bool can_append) {
   static mac_buf_t buf;
-  memset(&buf, 13, sizeof(buf));
+  memset(&buf, 0, sizeof(buf));
   buf.frame.dst = target;
   buf.dPtr = &buf.frame.data[0];
   return &buf;
@@ -35,7 +35,7 @@ mac_buf_t* MAC_BufferPrepare_custom_fake(dev_addr_t target, bool can_append) {
 
 mac_buf_t* MAC_Buffer_custom_fake() {
   static mac_buf_t buf;
-  memset(&buf, 13, sizeof(buf));
+  memset(&buf, 0, sizeof(buf));
   buf.dPtr = &buf.buf[0];
   return &buf;
 }
@@ -58,20 +58,22 @@ void setUp(void) {
   RESET_FAKE(MAC_BufferPrepare);
   RESET_FAKE(MAC_Write);
   RESET_FAKE(MAC_Buffer);
+  RESET_FAKE(LOG_Bin);
+  RESET_FAKE(BIN_Parse);
   MAC_Write_fake.custom_fake = MAC_Write_custom_fake;
   MAC_Buffer_fake.custom_fake = MAC_Buffer_custom_fake;
   MAC_BufferPrepare_fake.custom_fake = MAC_BufferPrepare_custom_fake;
   
-  CARRY_ParentDeleteAll();
 }
 
-void tearDown(void) {}
+void tearDown(void) {
+  CARRY_ParentDeleteAll();
+}
 
 void test_carry_PrepareBufTo_sink_from_anchor() {
   dev_addr_t parent = 0x8100;
   bool isConnectedToServer = false;
   settings.mac.role = RTLS_ANCHOR;
-
 
   CARRY_Init(isConnectedToServer);
   CARRY_SetYourParent(parent);
@@ -83,6 +85,9 @@ void test_carry_PrepareBufTo_sink_from_anchor() {
   TEST_ASSERT_M(buf->frame.dst == parent);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SINK);
+
+  CARRY_Send(buf, false);
+  TEST_ASSERT_CALLED(MAC_Send);
 }
 
 void test_carry_PrepareBufTo_sink_from_tag() {
@@ -100,6 +105,9 @@ void test_carry_PrepareBufTo_sink_from_tag() {
   TEST_ASSERT_M(buf->frame.dst == parent);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SINK);
+
+  CARRY_Send(buf, false);
+  TEST_ASSERT_CALLED(MAC_Send);
 }
 
 void test_carry_PrepareBufTo_sink_from_sink() {
@@ -116,6 +124,9 @@ void test_carry_PrepareBufTo_sink_from_sink() {
   TEST_ASSERT_M(buf->frame.dst == settings.mac.addr);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SINK);
+
+  CARRY_Send(buf, false);
+  TEST_ASSERT_CALLED(BIN_Parse);
 }
 
 void test_carry_PrepareBufTo_server_from_anchor() {
@@ -134,6 +145,9 @@ void test_carry_PrepareBufTo_server_from_anchor() {
   TEST_ASSERT_M(buf->frame.dst == parent);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SERVER);
+
+  CARRY_Send(buf, false);
+  TEST_ASSERT_CALLED(MAC_Send);
 }
 
 void test_carry_PrepareBufTo_server_from_tag() {
@@ -152,6 +166,30 @@ void test_carry_PrepareBufTo_server_from_tag() {
   TEST_ASSERT_M(buf->frame.dst == parent);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SERVER);
+
+  CARRY_Send(buf, false);
+  TEST_ASSERT_CALLED(MAC_Send);
+}
+
+void test_carry_ParseMessage_to_server_from_tag() {
+  bool isConnectedToServer = false;
+  settings.mac.role = RTLS_TAG;
+  carry.toSinkId = 0x8010;
+
+  CARRY_Init(isConnectedToServer);
+
+  FC_CARRY_s* pcarry;
+  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SERVER, &pcarry);
+
+  TEST_ASSERT_CALLED_TIMES(1, MAC_BufferPrepare);
+
+  prot_packet_info_t info;
+  memset(&info, 0, sizeof(info));
+  info.last_src = info.original_src = settings.mac.addr;
+  CARRY_ParseMessage(pcarry, &info);
+
+  TEST_ASSERT_CALLED_TIMES(2, MAC_BufferPrepare);
+  TEST_ASSERT(MAC_BufferPrepare_fake.arg0_history[0] == carry.toSinkId);
 }
 
 void test_carry_PrepareBufTo_server_from_sink() {
@@ -167,6 +205,27 @@ void test_carry_PrepareBufTo_server_from_sink() {
   TEST_ASSERT_M(buf->isServerFrame == true);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SERVER);
+
+  CARRY_Send(buf, false);
+  TEST_ASSERT_CALLED(LOG_Bin);
+}
+
+void test_carry_ParseMessage_to_server_from_sink() {
+  bool isConnectedToServer = true;
+  settings.mac.role = RTLS_SINK;
+
+  CARRY_Init(isConnectedToServer);
+
+  FC_CARRY_s* carry;
+  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SERVER, &carry);
+
+
+  prot_packet_info_t info;
+  memset(&info, 0, sizeof(info));
+  info.last_src = info.original_src = settings.mac.addr;
+  CARRY_ParseMessage(carry, &info);
+
+  TEST_ASSERT_CALLED(LOG_Bin);
 }
 
 void test_carry_PrepareBufTo_anchor_without_hops() {
@@ -246,4 +305,35 @@ void test_carry_PrepareBufTo_anchor_with_two_hop() {
   TEST_ASSERT_M((carry->verHopsNum & CARRY_HOPS_NUM_MASK) == 2);
   TEST_ASSERT_M(carry->hops[0]  == target);
   TEST_ASSERT_M(carry->hops[1]  == hop2);
+}
+
+void test_carry_read_write() {
+  uint8_t data[4] = {1, 2, 3, 4};
+  uint8_t rd_buf[4];
+
+  bool isConnectedToServer = true;
+  settings.mac.role = RTLS_SINK;
+
+  CARRY_Init(isConnectedToServer);
+
+  FC_CARRY_s* carry;
+  mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SERVER, &carry);
+
+  TEST_ASSERT_M(buf != 0);
+  TEST_ASSERT_M(buf->isServerFrame == true);
+  TEST_ASSERT_M(carry != 0);
+  TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SERVER);
+
+  int old_len = carry->len;
+  uint8_t* old_dPtr = buf->dPtr;
+  CARRY_Write(carry, buf, data, 3);
+  TEST_ASSERT(carry->len == old_len + 3);
+
+  CARRY_Write8(carry, buf, 4);
+  TEST_ASSERT(carry->len == old_len + 4);
+
+  CARRY_Read(buf, rd_buf, 3);
+  TEST_ASSERT_CALLED(MAC_Read);
+  CARRY_Read8(buf);
+  TEST_ASSERT_CALLED(MAC_Read8);
 }
