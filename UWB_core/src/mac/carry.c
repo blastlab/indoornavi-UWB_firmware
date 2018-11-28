@@ -68,24 +68,6 @@ carry_target_t* CARRY_NewTarget(dev_addr_t target) {
 }
 
 int CARRY_TrackTag(dev_addr_t tag_did, dev_addr_t parent) {
-	int ret = 0; // when there is no place for a new tag
-	carry_tag_t* tag = CARRY_GetTag(tag_did);
-	if (tag == 0) {
-		LOG_WRN(WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK, CARRY_MAX_TAGS);
-	} else {
-		ret = tag->anchor == parent ? 2 : 1; // 1 when parent will change, 2 otherwise
-		tag->anchor = parent;
-	}
-#ifdef DBG
-	if (ret == 1) {
-		LOG_DBG("trace tag %X new parent (%X)", tag_did, parent);
-	}
-	if (ret == 2) {
-		LOG_DBG("trace tag %X old parent %X", tag_did, parent);
-	}
-#endif
-	return ret;
-}
 
 int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent) {
 	int ret = 0;
@@ -105,9 +87,16 @@ int CARRY_ParentSet(dev_addr_t target, dev_addr_t parent) {
 		ret = ptarget->parents[0] == parent ? 1 : 3;  // identical or changed
 	}
 	if (target != 0) {
+		// target has been found
+		// accept new parent if:
+		//   - he has lower level (hops from sink)
+		//   - wasn't changed from a long time (to avoid dead traces)
+		//   - created new device
 		time_ms_t dt = PORT_TickMs() - ptarget->lastUpdateTime;
-		int acceptNew = pparent->level < ptarget->level;
+		int acceptNew = false;
+		acceptNew |= pparent != 0 && (pparent->level < ptarget->level);
 		acceptNew |= dt > settings.carry.minParentLiveTimeMs;
+		acceptNew |= ret == 4;
 		if (!acceptNew) {
 			return 2;  // rejected
 		}
@@ -187,7 +176,9 @@ mac_buf_t* CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry) {
 		target_flags = CARRY_FLAG_TARGET_SERVER;
 		if (carry.isConnectedToServer) {
 			buf = MAC_Buffer();
-			buf->isServerFrame = true;
+			if (buf != 0) {
+				buf->isServerFrame = true;
+			}
 		} else if (carry.toSinkId != 0) {
 			buf = MAC_BufferPrepare(carry.toSinkId, true);
 		} else {

@@ -8,11 +8,17 @@
 TEST_FILE("logs_common.c")
 TEST_FILE("iassert.c")
 
-typedef const txt_buf_t *cp_txt_buf_t;
-typedef const prot_packet_info_t *cp_prot_packet_info_t;
-// FAKE_VOID_FUNC(txt_stat_cb, cp_txt_buf_t, cchar *, cp_prot_packet_info_t);
+typedef const txt_buf_t * cp_txt_buf_t;
+typedef const prot_packet_info_t * cp_prot_packet_info_t;
 
-void txt_stat_cb(cp_txt_buf_t a, cp_prot_packet_info_t b) {}
+//FAKE_VOID_FUNC(txt_stat_cbb, cp_txt_buf_t, cp_prot_packet_info_t);
+
+int stat_call = 0;
+int stat_src = 0;
+void txt_stat_cb(cp_txt_buf_t a, cp_prot_packet_info_t b) {
+  ++stat_call;
+  stat_src = b->original_src;
+}
 
 const txt_cb_t txt_cb_tab[] = {{"stat", txt_stat_cb}};
 
@@ -121,4 +127,18 @@ void test_txt_parser_StartsWith(void) {
 
   TEST_ASSERT_M(TXT_StartsWith(&buf, "qwe") == true);
   TEST_ASSERT_M(TXT_StartsWith(&buf, "qwertyuio") == true);
+}
+
+void test_txt_parser_Input_to_Parse() {
+  const char* cmd = "stat did:12\n";
+
+  TXT_Input(cmd, strlen(cmd)-1);
+  TXT_Control();
+  TEST_ASSERT(stat_call == 0);
+
+  
+  TXT_Input("\n", 1);
+  TXT_Control();
+  TEST_ASSERT(stat_call == 1);
+  TEST_ASSERT(stat_src == 0x12);
 }

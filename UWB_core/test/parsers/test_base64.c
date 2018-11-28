@@ -111,6 +111,11 @@ void test_BASE64_Encode_short() {
   int buf_size = sizeof(buf) / sizeof(*buf);
   int s;
 
+  s = BASE64_Encode(buf, (uint8_t *)":->", 3);
+  DW_ASSERT(memcmp(buf, "Oi0+", 4) == 0);
+  DW_ASSERT(memcmp(buf, "Oi0+", 5) == 0); // sprawdz zero na koncu
+  DW_ASSERT(s == 4);
+
   s = BASE64_Encode(buf, (uint8_t *)"Karol", 5);
   DW_ASSERT(memcmp(buf, "S2Fyb2w=", 8) == 0);
   DW_ASSERT(memcmp(buf, "S2Fyb2w=", 9) == 0); // sprawdz zero na koncu
@@ -138,4 +143,16 @@ void test_BASE64_Decode_encode_cycle() {
   s = BASE64_Decode(buf, str2, buf_size);
   s = BASE64_Encode(buf1, buf, s);
   DW_ASSERT(memcmp(buf1, str2, s) == 0);
+}
+
+void test_BASE64_TextSize() {
+  DW_ASSERT(BASE64_TextSize(0) == 0);
+  DW_ASSERT(BASE64_TextSize(1) == 4);
+  DW_ASSERT(BASE64_TextSize(2) == 4);
+  DW_ASSERT(BASE64_TextSize(3) == 4);
+  DW_ASSERT(BASE64_TextSize(4) == 8);
+  DW_ASSERT(BASE64_TextSize(5) == 8);
+  DW_ASSERT(BASE64_TextSize(6) == 8);
+  DW_ASSERT(BASE64_TextSize(7) == 12);
+  DW_ASSERT(BASE64_TextSize(8) == 12);
 }
