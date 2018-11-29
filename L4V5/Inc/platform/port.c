@@ -1,5 +1,6 @@
 #include "platform/port.h"
 #include "stm32l4xx_ll_crc.h"
+#include "logs.h" // trace
 
 void PORT_AdcInit();
 void PORT_SpiInit();
@@ -110,10 +111,10 @@ volatile uint32_t RCC_config[4];
 uint32_t temp_RCC_APB11, temp_RCC_APB12, temp_RCC_APB2, temp_NVIC_ICER[sizeof(NVIC->ICER)];
 
 static int sleep_cnt = 0;
-void Trace(TRACE_t);
+void LOG_Trace(TRACE_t);
 
 void PORT_PrepareSleepMode() {
-	Trace(TRACE_PREPARE_SLEEP);
+	LOG_Trace(TRACE_PREPARE_SLEEP);
 	USB_StopDevice(USB);
 	USB_DevDisconnect(USB);
 	HAL_SYSCFG_DisableVREFBUF();
@@ -122,7 +123,7 @@ void PORT_PrepareSleepMode() {
 	CLEAR_BIT(ADC1_COMMON->CCR, ADC_CCR_VREFEN);
 
 	LL_ADC_EnableDeepPowerDown(ADC1);
-	Trace(TRACE_GO_SLEEP);
+	LOG_Trace(TRACE_GO_SLEEP);
 	PORT_LedOff(LED_R1);
 	PORT_LedOff(LED_G1);
 	++sleep_cnt;
@@ -167,7 +168,7 @@ bool PORT_EnterSleepMode() {
 }
 
 void PORT_ExitSleepMode() {
-	Trace(TRACE_WAKEUP);
+	LOG_Trace(TRACE_WAKEUP);
 //	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 //	HAL_PWREx_DisableLowPowerRunMode();
 //	RCC->CR = RCC_config[0];

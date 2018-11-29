@@ -91,6 +91,24 @@ void LOG_SelfTest() {
 	LOG_CheckArray(LOG_CodeTest, TEST_codes_N);
 }
 
+#if DBG
+TRACE_t trace_history[TRACE_CNT];
+#endif
+
+void LOG_Trace(TRACE_t t) {
+#if DBG
+	if (t == TRACE_SYSTICK && t == trace_history[0])
+	return;
+
+	CRITICAL(
+			for (int i = TRACE_CNT-1; i > 0; --i) {
+				trace_history[i] = trace_history[i - 1];
+			}
+			trace_history[0] = t;
+	)
+#endif
+}
+
 void LOG_CRIT(ERR_codes code, ...) {
 	const char* frm = LOG_CodeCrit[code].frm;
 	const int code_num = LOG_CodeCrit[code].code;

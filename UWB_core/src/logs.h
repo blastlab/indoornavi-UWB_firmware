@@ -52,6 +52,31 @@ typedef enum {
 #undef ARG
 
 /**
+ * \brief This is a trace enums, useful to track application behavior
+ */
+typedef enum {
+	TRACE_EMPTY = 0,
+	TRACE_SYSTICK = 1,
+	TRACE_PREPARE_SLEEP,
+	TRACE_GO_SLEEP,
+	TRACE_WAKEUP,
+	TRACE_DW_IRQ_ENTER,
+	TRACE_DW_IRQ_RX,
+	TRACE_DW_IRQ_TX,
+	TRACE_DW_IRQ_TO,
+	TRACE_DW_IRQ_ERR,
+	TRACE_DW_IRQ_EXIT,
+	TRACE_SLOT_TIM_ENTER,
+	TRACE_SLOT_TIM_EXIT,
+	TRACE_WAKE_TIM_ENTER,
+	TRACE_WAKE_TIM_EXIT,
+	TRACE_IMU_IRQ_ENTER,
+	TRACE_IMU_IRQ_EXIT,
+	TRACE_USART_IRQ_ENTER,
+	TRACE_USART_IRQ_EXIT,
+} TRACE_t;
+
+/**
  * @brief sending messages from circled buffer for logs
  *
  */
