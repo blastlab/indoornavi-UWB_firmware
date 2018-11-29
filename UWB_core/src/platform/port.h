@@ -50,8 +50,33 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 0
+#define DBG 1
 #define USE_SLOT_TIMER 0
+
+/**
+ * \brief This is a trace enums, useful to track application behavior
+ */
+typedef enum {
+	TRACE_EMPTY = 0,
+	TRACE_SYSTICK = 1,
+	TRACE_PREPARE_SLEEP,
+	TRACE_GO_SLEEP,
+	TRACE_WAKEUP,
+	TRACE_DW_IRQ_ENTER,
+	TRACE_DW_IRQ_RX,
+	TRACE_DW_IRQ_TX,
+	TRACE_DW_IRQ_TO,
+	TRACE_DW_IRQ_ERR,
+	TRACE_DW_IRQ_EXIT,
+	TRACE_SLOT_TIM_ENTER,
+	TRACE_SLOT_TIM_EXIT,
+	TRACE_WAKE_TIM_ENTER,
+	TRACE_WAKE_TIM_EXIT,
+	TRACE_IMU_IRQ_ENTER,
+	TRACE_IMU_IRQ_EXIT,
+	TRACE_USART_IRQ_ENTER,
+	TRACE_USART_IRQ_EXIT,
+} TRACE_t;
 
 /**
  * \brief Initialization for port modules
@@ -143,14 +168,36 @@ void PORT_WakeupTransceiver(void);
 void PORT_Reboot();
 
 /**
+ * \brief Prepare uC to enter sleep-mode
+ *
+ * It turns off peripherals and minimize current consumption
+ *
+ */
+void PORT_PrepareSleepMode();
+
+/**
+ * \brief Reinitialize uC after sleep-mode
+ *
+ * It turns peripherals back on and prepares uC to work
+ *
+ */
+void PORT_ExitSleepMode();
+
+/**
  * \brief turn on low power or stop mode.
  *
- * Used especially after successful firmware upgrade to change
- * working firmware.
+ * PORT_PrepareSleepMode should be used before
  *
- * \return void
+ * \return return true if device should be in sleep mode and false otherwise
  */
-void PORT_EnterStopMode();
+bool PORT_EnterSleepMode();
+
+/**
+ * \brief enter low power run mode
+ *
+ * Used especially with tag.
+ */
+void PORT_LowPowerRun();
 
 /**
  * \brief Start watchdog work
@@ -288,6 +335,14 @@ void PORT_SlotTimerSetUsOffset(int32_t delta_us);
  * \param[in] us new period duration in microseconds
  */
 void PORT_SetSlotTimerPeriodUs(uint32_t us);
+
+/**
+ * \brief Set beacon timer for example as a
+ * low power timer or RTC alarm with a given period
+ *
+ * \param time_ms interval
+ */
+void PORT_SetBeaconTimerPeriodMs(int time_ms);
 
 // ========  CRC  ==========
 
@@ -498,5 +553,11 @@ void PORT_ImuMotionControl(bool sleep_enabled);
  *
  */
 void PORT_ImuIrqHandler();
+
+/**
+ * \brief disable IMU
+ *
+ */
+void PORT_ImuSleep();
 
 #endif

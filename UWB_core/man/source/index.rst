@@ -10,6 +10,8 @@ UWB_core documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   first_steps.rst
    commands.rst
    messages.rst
+   constants.rst
    version.rst

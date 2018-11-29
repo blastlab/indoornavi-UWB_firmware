@@ -134,10 +134,14 @@ void PORT_ImuMotionControl(bool sleep_enabled) {
 		PORT_ExtiInit(true);
 		PORT_WakeupTransceiver();
 		IASSERT(dwt_readdevid() == DWT_DEVICE_ID);
-		MAC_Init(BIN_Parse);
+		MAC_Reinit();
 	}
 }
 
-void PORT_ImuIrqHandler(void) {
+void PORT_ImuIrqHandler() {
 	ImuResetTimer();
+}
+
+void PORT_ImuSleep() {
+	//todo:
 }

@@ -46,7 +46,7 @@ extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
 
 /******************************************************************************/
-/*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
+/*            Cortex-M4 Processor Interruption and Exception Handlers         */
 /******************************************************************************/
 
 /**
@@ -179,12 +179,12 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+	Trace(TRACE_SYSTICK);
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+	//Trace(SYSTICK_EXIT);
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -196,12 +196,42 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+* @brief This function handles RTC wake-up interrupt through EXTI line 20.
+*/
+void RTC_WKUP_IRQHandler(void)
+{
+  /* USER CODE BEGIN RTC_WKUP_IRQn 0 */
+	Trace(TRACE_WAKE_TIM_ENTER);
+	LL_RTC_ClearFlag_WUT(RTC);
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
+  /* USER CODE END RTC_WKUP_IRQn 0 */
+  /* USER CODE BEGIN RTC_WKUP_IRQn 1 */
+	PORT_WatchdogRefresh();
+//	PORT_LedOn(LED_ERR);
+//	for (volatile int i = 19999; i > 0; --i) {
+//		asm("nop");
+//	}
+	TRANSCEIVER_WakeUp();
+	PORT_ExitSleepMode();
+	static int i = 0;
+	if (i-- == 0) {
+		i = 3;
+		//PORT_AdcWake();
+		PORT_BatteryMeasure();
+	}
+	SYNC_SendBeacon();
+	Trace(TRACE_WAKE_TIM_EXIT);
+  /* USER CODE END RTC_WKUP_IRQn 1 */
+}
+
+/**
 * @brief This function handles EXTI line0 interrupt.
 */
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
-  do
+	Trace(TRACE_DW_IRQ_ENTER);
+	do
   {
     HAL_GPIO_WritePin(DW_CS_GPIO_Port, DW_CS_Pin, GPIO_PIN_SET);
     dwt_isr();
@@ -210,7 +240,7 @@ void EXTI0_IRQHandler(void)
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
   /* USER CODE BEGIN EXTI0_IRQn 1 */
-
+	Trace(TRACE_DW_IRQ_EXIT);
   /* USER CODE END EXTI0_IRQn 1 */
 }
 
@@ -222,7 +252,7 @@ void DMA1_Channel2_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel2_IRQn 0 */
 
   /* USER CODE END DMA1_Channel2_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
 
   /* USER CODE END DMA1_Channel2_IRQn 1 */
@@ -236,7 +266,7 @@ void DMA1_Channel3_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel3_IRQn 0 */
 
   /* USER CODE END DMA1_Channel3_IRQn 0 */
-  
+
   /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
 
   /* USER CODE END DMA1_Channel3_IRQn 1 */
@@ -262,24 +292,27 @@ void DMA1_Channel5_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+	Trace(TRACE_IMU_IRQ_ENTER);
 	PORT_ImuIrqHandler();
   /* USER CODE END EXTI9_5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
-
+	Trace(TRACE_IMU_IRQ_EXIT);
   /* USER CODE END EXTI9_5_IRQn 1 */
 }
+
 /**
 * @brief This function handles TIM2 global interrupt.
 */
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
+	Trace(TRACE_SLOT_TIM_ENTER);
 	LL_TIM_ClearFlag_UPDATE(TIM2);
 	MAC_YourSlotIsr();
   /* USER CODE END TIM2_IRQn 0 */
   /* USER CODE BEGIN TIM2_IRQn 1 */
-
+	Trace(TRACE_SLOT_TIM_EXIT);
   /* USER CODE END TIM2_IRQn 1 */
 }
 
@@ -289,11 +322,11 @@ void TIM2_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-
+	Trace(TRACE_USART_IRQ_ENTER);
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-
+	Trace(TRACE_USART_IRQ_EXIT);
   /* USER CODE END USART1_IRQn 1 */
 }
 

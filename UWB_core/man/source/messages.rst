@@ -37,10 +37,16 @@ Information
 
 *code:* 1103
 
-*descriptor:* "Beacon from did:%X mV:%d route:[%s]"
+*descriptor:* "Beacon from did:%X mV:%d route:[%s] serial:%X%X "
+
+ arg *mV*: 
+	device voltage on accumulator connectors
 
  arg *route*: 
 	message route in format '[%X>%X>%X...] where last position is target address
+
+ arg *serial*: 
+	is device 64B or 48B uniqual number, may be build based on device MAC address, especially if device has  BlueTooth functionality
 
 .. _INF_DEV_ACCEPTED:
 

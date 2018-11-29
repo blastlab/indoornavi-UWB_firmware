@@ -130,15 +130,31 @@ void PORT_WakeupTransceiver(void);
  */
 void PORT_Reboot();
 
+
+/**
+ * \brief Prepare uC to enter sleep-mode
+ *
+ * It turns off peripherals and minimize current consumption
+ *
+ */
+void PORT_PrepareSleepMode();
+
+/**
+ * \brief Reinitialize uC after sleep-mode
+ *
+ * It turns peripherals back on and prepares uC to work
+ *
+ */
+void PORT_ExitSleepMode();
+
 /**
  * \brief turn on low power or stop mode.
  *
- * Used especially after successful firmware upgrade to change
- * working firmware.
+ * PORT_PrepareSleepMode should be used before
  *
  * \return void
  */
-void PORT_EnterStopMode();
+void PORT_EnterSleepMode();
 
 /**
  * \brief Start watchdog work
@@ -442,23 +458,6 @@ int PORT_FlashErase(void* flash_addr, uint32_t length);
 int PORT_FlashSave(void* destination, const void* p_source, uint32_t length);
 
 // ========  IMU  ==========
-
-/**
- * \brief Prepare uC to enter sleep-mode
- *
- * It turns off peripherals and minimize current consumption
- *
- */
-void PORT_PrepareSleepMode();
-
-/**
- * \brief Reinitialize uC after sleep-mode
- *
- * It turns peripherals back on and prepares uC to work
- *
- */
-void PORT_ExitSleepMode();
-
 /**
  * \brief Configure Wake-on-Motion feature
  *

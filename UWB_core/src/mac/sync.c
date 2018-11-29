@@ -1,7 +1,8 @@
 #include "sync.h"
 #include "mac.h"
 
-sync_instance_t sync;
+static sync_instance_t sync;
+static MAC_SendToSink_t _dataSender;
 extern mac_instance_t mac;
 
 #define PROT_CHECK_LEN(FC, len, expected)                \
@@ -18,7 +19,9 @@ extern mac_instance_t mac;
 
 #define MOVE_ARRAY_ELEM(ARR_EL, N) ARR_EL[N] = ARR_EL[N - 1]
 
-void SYNC_Init() {
+void SYNC_Init(MAC_SendToSink_t sender) {
+	SYNC_ASSERT(sender != 0);
+	_dataSender = sender;
 	sync.local_obj.addr = settings.mac.addr;
 
 	toa_settings_t* tset = &settings.mac.sync_dly;
@@ -290,6 +293,25 @@ int SYNC_SendFinal() {
 	return MAC_SendRanging(buf, tx_flags);
 }
 
+void SYNC_SendBeacon() {
+	FC_TDOA_BEACON_s packet;
+	packet.FC = FC_TDOA_BEACON;
+	packet.len = sizeof(packet);
+	packet.batt_voltage = PORT_BatteryVoltage();
+	packet.serial_hi = settings_otp->serial >> 32;
+	packet.serial_lo = settings_otp->serial & UINT32_MAX;
+
+	// can't append to save power
+	// send as ranging message to don
+	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+	if (buf != 0) {
+		sync.sending_beacon = true;
+		buf->isRangingFrame = true;
+		MAC_Write(buf, &packet, packet.len);
+		MAC_SendRanging(buf, DWT_START_TX_IMMEDIATE);
+	}
+}
+
 int FC_SYNC_POLL_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&sync.toa, TOA_POLL_REC);
 	FC_SYNC_POLL_s* packet = (FC_SYNC_POLL_s*)data;
@@ -399,6 +421,48 @@ int FC_SYNC_FIN_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
+int FC_TDOA_BEACON_cb(const void* data, const prot_packet_info_t* info) {
+	FC_TDOA_BEACON_s* packet = (FC_TDOA_BEACON_s*)data;
+	SYNC_ASSERT(packet->FC == FC_TDOA_BEACON);
+	bool short_beacon = packet->len == sizeof(FC_TDOA_BEACON_s) - 8;
+	if (packet->len != sizeof(FC_TDOA_BEACON_s) && !short_beacon) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON", packet->len, sizeof(FC_TDOA_BEACON_s));
+		return -1;
+	}
+	int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
+	FC_TDOA_BEACON_INFO_s tx_packet;
+	tx_packet.FC = FC_TDOA_BEACON_INFO;
+	tx_packet.len = sizeof(tx_packet);
+	tx_packet.batt_voltage = packet->batt_voltage;
+	tx_packet.serial_hi = short_beacon ? 0 : packet->serial_hi;
+	tx_packet.serial_lo = short_beacon ? 0 : packet->serial_lo;
+	tx_packet.tag_addr = info->last_src;
+	tx_packet.anchor_addr = settings.mac.addr;
+	TOA_Write40bValue(&tx_packet.rx_ts[0], SYNC_GlobTime(rx_ts));
+	TOA_Write40bValue(&tx_packet.rx_ts_loc[0], rx_ts);
+
+	_dataSender(&tx_packet, tx_packet.len);
+	LOG_DBG("=== TDOA BEACON === (%X)", info->last_src);
+	TRANSCEIVER_DefaultRx();
+	return 0;
+}
+
+void FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info) {
+	// printuj beacon'a
+	int len = ((uint8_t*)data)[1];
+	FC_TDOA_BEACON_INFO_s packet;
+	memcpy(&packet, data, len);
+
+	LOG_DBG("=== TDOA BEACON === tag:%X mV:%d anchor:%X", packet.tag_addr, packet.batt_voltage,
+	        packet.anchor_addr);
+}
+
+void SYNC_Tag_Timer_cb() {
+	PORT_WatchdogRefresh();
+	PORT_WakeupTransceiver();
+	SYNC_SendBeacon();
+}
+
 int SYNC_RxCb(const void* data, const prot_packet_info_t* info) {
 	int ret;
 	switch (*(uint8_t*)data) {
@@ -412,6 +476,14 @@ int SYNC_RxCb(const void* data, const prot_packet_info_t* info) {
 			break;
 		case FC_SYNC_FIN:
 			FC_SYNC_FIN_cb(data, info);
+			ret = 1;
+			break;
+		case FC_TDOA_BEACON:
+			FC_TDOA_BEACON_cb(data, info);
+			ret = 1;
+			break;
+		case FC_TDOA_BEACON_INFO:
+			FC_TDOA_BEACON_INFO_cb(data, info);
 			ret = 1;
 			break;
 		default:
@@ -448,6 +520,15 @@ int SYNC_TxCb(int64_t TsDwTx) {
 		default:
 			ret = 0;
 			break;
+	}
+	if (sync.sending_beacon) {
+		//todo: check it
+		sync.sending_beacon = false;
+		SYNC_TRACE("SYNC BEACON send, go sleep");
+		TRANSCEIVER_EnterDeepSleep();
+		PORT_PrepareSleepMode();
+		PORT_EnterSleepMode();
+		ret = 1;
 	}
 	return ret;
 }

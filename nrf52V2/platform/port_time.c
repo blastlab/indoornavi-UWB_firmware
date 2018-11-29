@@ -112,3 +112,7 @@ void PORT_SetSlotTimerPeriodUs(uint32 us) {
 	TIMER_SLOT.p_reg->CC[NRF_TIMER_CC_CHANNEL0] = nrfx_timer_us_to_ticks(&TIMER_SLOT, us);
 	TIMER_SLOT.p_reg->TASKS_CLEAR = 1;																				// clearing the timer to prevent waiting for overcount when new period is smaller than actual timer count
 }
+
+void PORT_SetBeaconTimerPeriodMs(int ms) {
+	//todo: TDOA beacon timer
+}

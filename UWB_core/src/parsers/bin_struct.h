@@ -41,19 +41,6 @@ typedef struct {
  */
 typedef struct {
 	uint8_t FC, len;
-	uint8_t hop_cnt_batt; ///< number of did in hops[] array (upper nibble) voltage msb (lower nibble)
-	uint8_t voltage; /// voltage lsb, mV-2000
-	uint64_t serial;  ///< device serial number from settings.version.serial
-	dev_addr_t src_did; ///< device id of beacon sender
-	dev_addr_t hops[0];  ///< packet route sink_neighbour..src_neighbour
-}__packed FC_BEACON_s;
-
-/**
- * @brief see #FC_t description
- *
- */
-typedef struct {
-	uint8_t FC, len;
 	uint16_t battery_mV;  ///< last measured battery voltage in millivolt
 	uint16_t err_cnt;  ///< radio transmission and reception error counter
 	uint16_t to_cnt;  ///< radio transmission timeout counter

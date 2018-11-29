@@ -76,6 +76,30 @@ typedef struct {
 	uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
 }__packed FC_SYNC_FIN_s;
 
+/**
+ * @brief see #FC_t description
+ */
+typedef struct {
+	uint8_t FC, len;
+	uint16_t batt_voltage; ///< battery voltage in millivolts
+	uint32_t serial_hi; ///< device serial number from settings.version.serial
+	uint32_t serial_lo; ///< device serial number from settings.version.serial
+}__packed FC_TDOA_BEACON_s;
+
+/**
+ * @brief see #FC_t description
+ */
+typedef struct {
+	uint8_t FC, len;
+	uint16_t batt_voltage; ///< battery voltage in millivolts
+	uint32_t serial_hi; ///< device serial number from settings.version.serial
+	uint32_t serial_lo; ///< device serial number from settings.version.serial
+	dev_addr_t tag_addr; ///< tag address
+	dev_addr_t anchor_addr; ///< anchor address
+	uint8_t rx_ts[5]; ///< beacon receive timestamp in global time units from anchor device
+	uint8_t rx_ts_loc[5]; ///< *optional, beacon receive timestamp in local time units from anchor device
+}__packed FC_TDOA_BEACON_INFO_s;
+
 typedef struct {
 	dev_addr_t addr;           ///< neigtbour address
 	uint8_t tree_level;        ///< number of hops from sink (sink is level 0)
@@ -92,6 +116,7 @@ typedef struct {
 typedef struct {
 	toa_core_t toa;              ///< SYNC toa data
 	int64_t toa_ts_poll_rx_raw;  ///< used to SYNC #TOA_EnableRxBeforeFin
+	bool sending_beacon;         ///< sync beacon sending flag
 	uint8_t tree_level;          ///< local device tree level
 	sync_neighbour_t local_obj;  ///< local clock from dwt data
 	sync_neighbour_t neighbour[SYNC_MAC_NEIGHBOURS];  ///< list of neighbours
@@ -132,6 +157,21 @@ sync_neighbour_t* SYNC_FindOrCreateNeighbour(dev_addr_t addr, int tree_level);
  * @return int
  */
 int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
+
+/**
+ * @brief Send TDOA beacon message as a TAG
+ *        Device go sleep after sending message from SYNC_TxCb
+ *
+ */
+void SYNC_SendBeacon();
+
+/**
+ * @brief TDOA beacon routine
+ *
+ * @param[in] data is a pointer to received frame (data[0] = FC)
+ * @param[in] info is a pointer to packet info structure
+ */
+void FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief sync rx callback

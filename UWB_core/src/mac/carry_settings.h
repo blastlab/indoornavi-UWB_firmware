@@ -8,7 +8,7 @@
 #ifndef _CARRY_SETTINGS_H
 #define _CARRY_SETTINGS_H
 
-#include "../mac/mac_port.h"  // mac_buff_time_t
+#include "platform/port.h"  // mac_buff_time_t
 
 #define CARRY_ASSERT(expr) IASSERT(expr)
 
@@ -26,7 +26,7 @@
 
 /**
  * @brief maximum number of remembered tags
- * 
+ *
  */
 #define CARRY_MAX_TAGS 128
 

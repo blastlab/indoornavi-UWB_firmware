@@ -7,16 +7,16 @@
 
 #include "platform/port.h"
 
-#define LPTIM_SLEEP LPTIM1
+#define LPTIM_BEACON LPTIM1
 #define PTIM_SLOT TIM2
 
 void PORT_TimeInit() {
 	// sleep timer
-	// f = 32kHz / 32 = 1kHz
-	// T = 1 ms
-	LL_LPTIM_EnableIT_ARRM(LPTIM_SLEEP);
-	LL_LPTIM_SetAutoReload(LPTIM_SLEEP, 1000);
-	LL_LPTIM_Enable(LPTIM_SLEEP);
+	// f = 32kHz / 128 = 250Hz
+	// T = 4 ms
+	LL_LPTIM_EnableIT_ARRM(LPTIM_BEACON);
+	LL_LPTIM_SetAutoReload(LPTIM_BEACON, 1000);
+	LL_LPTIM_Enable(LPTIM_BEACON);
 
 	// slot timer
 	// f = 40 MHz / 40 = 1MHz
@@ -50,7 +50,6 @@ void PORT_TimeInit() {
 }
 
 void PORT_TimeStartTimers() {
-	LL_LPTIM_StartCounter(LPTIM_SLEEP, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
 	LL_TIM_EnableCounter(PTIM_SLOT);
 }
 
@@ -96,4 +95,63 @@ void PORT_SlotTimerSetUsOffset(int32 delta_us) {
 void PORT_SetSlotTimerPeriodUs(uint32 us) {
 	// 1 tick = 1 us
 	LL_TIM_SetAutoReload(PTIM_SLOT, us);
+}
+
+static int _PORT_InitRTC() {
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+	LL_PWR_EnableBkUpAccess();
+
+	LL_RCC_LSI_Enable();
+
+	while (LL_RCC_LSI_IsReady() != 1) {
+	}
+	LL_RCC_ForceBackupDomainReset();
+	LL_RCC_ReleaseBackupDomainReset();
+	LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
+
+	LL_RCC_EnableRTC();
+
+	LL_RTC_InitTypeDef RTC_InitStruct;
+	RTC_InitStruct.HourFormat = LL_RTC_HOURFORMAT_24HOUR;
+	RTC_InitStruct.AsynchPrescaler = 127;
+	RTC_InitStruct.SynchPrescaler = 24;
+	LL_RTC_Init(RTC, &RTC_InitStruct); // 32e3 / 128 / 25 = 10 Hz
+	int resolution_ms = 100;
+
+	return resolution_ms;
+}
+
+void PORT_SetBeaconTimerPeriodMs(int time_ms) {
+//	// start RTC init
+	int resolution_ms = _PORT_InitRTC();
+
+	// disable RTC write protection
+	LL_RTC_DisableWriteProtection(RTC);
+
+	// disable wake up timer to modify it
+	LL_RTC_WAKEUP_Disable(RTC);
+	while (LL_RTC_IsActiveFlag_WUTW(RTC) != 1) {
+	}
+
+	// set clock period
+	LL_RTC_WAKEUP_SetAutoReload(RTC, time_ms / resolution_ms);
+	LL_RTC_WAKEUP_SetClock(RTC, LL_RTC_WAKEUPCLOCK_CKSPRE);
+
+	// clear IRQ flags end connect interrupts
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_20);
+	LL_RTC_ClearFlag_WUT(RTC);
+	LL_RTC_EnableIT_WUT(RTC);
+
+	// enable WUT
+	LL_RTC_WAKEUP_Enable(RTC);
+
+	// enable RTC registers write protection
+	LL_RTC_EnableWriteProtection(RTC);
+
+	// enable RTC WakeUp timer interrupt
+	LL_PWR_EnableInternWU();
+	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_20);
+	LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_20);
+	NVIC_EnableIRQ(RTC_WKUP_IRQn); // Configure NVIC for RTC
+	NVIC_SetPriority(RTC_WKUP_IRQn, 2); // Set priority for RTC (=2, low priority)
 }

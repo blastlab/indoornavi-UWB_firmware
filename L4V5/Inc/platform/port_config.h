@@ -18,7 +18,7 @@
 
 #define __H_MAJOR__ 1
 #define __H_MINOR__ 5
-#define HARDWARE_UID_64 (*(uint64_t*)(0x1FFF7590))
+#define HARDWARE_UID_64 (*(uint64_t*)(UID_BASE_ADDRESS))
 #define HARDWARE_OTP_ADDR 0x1FFF7000
 
 #include "iassert.h"

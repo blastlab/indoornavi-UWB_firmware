@@ -3,6 +3,10 @@
  *
  *  Created on: 22.03.2018
  *      Author: KarolTrzcinski
+ *
+ * Note: ADC has a truble with enabling after system reset
+ *       and readed value has an offset voltage
+ *       see inh-295
  */
 
 #include "platform/port.h"
@@ -25,10 +29,22 @@ extern ADC_HandleTypeDef hadc1;  // in main.c
 const float batterFilterCoeff = 0.5f;
 
 static unsigned int _battery_mv = 0;
+static uint32_t adc_cal_value;
 
 void PORT_AdcInit() {
 	HAL_ADCEx_Calibration_Start(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
-	HAL_ADCEx_Calibration_GetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
+	adc_cal_value = HAL_ADCEx_Calibration_GetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED);
+}
+
+void MX_ADC1_Init();
+
+void PORT_AdcWake() {
+	RCC->AHB2RSTR = RCC_AHB2RSTR_ADCRST;
+	PORT_SleepMs(10);
+	__HAL_RCC_ADC_CLK_ENABLE()
+	;
+	MX_ADC1_Init();
+	HAL_ADCEx_Calibration_SetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED, adc_cal_value);
 }
 
 int PORT_AdcMeasure(uint32_t channel) {
@@ -52,19 +68,25 @@ int PORT_AdcMeasure(uint32_t channel) {
 void PORT_BatteryMeasure() {
 	int adcInt, adcBat, nap;
 	float VDDA;
+
 // configure
 #if BAT_PMOS_ACTIVE_HIGH
 	HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_SET);
 #else
 	HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_RESET);
 #endif
-	adcInt = PORT_AdcMeasure(ADC_CHANNEL_VREFINT);
+	PORT_AdcMeasure(ADC_CHANNEL_VREFINT); // dummy read - errata 2.5.1
 	adcBat = PORT_AdcMeasure(ADC_CH_VBAT);
+	adcInt = PORT_AdcMeasure(ADC_CHANNEL_VREFINT);
 #if BAT_PMOS_ACTIVE_HIGH
 	HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_RESET);
 #else
 	HAL_GPIO_WritePin(VBAT_MOS_GPIO_Port, VBAT_MOS_Pin, GPIO_PIN_SET);
 #endif
+
+	if (adcInt < 0 || adcBat < 0) {
+		return;
+	}
 
 	// convert to mV
 	VDDA = adcInt > 0 ? (3.0f * (*VREFINT_CAL_ADDR) / adcInt) : 0;

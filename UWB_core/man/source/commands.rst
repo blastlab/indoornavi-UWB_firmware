@@ -337,8 +337,8 @@ Response is :ref:`INF_RANGING_TIME`.
 *rangingtime [T:dec] [t:dec] [N:dec]*
 
 * T: ranging period in :math:`ms`
-* t: ranging time one slot time in :math:`ms`
-* N: number of ranging slot in one period
+* t: ranging time one slot time in :math:`ms`, must be greater that 5 ms
+* N: number of ranging slot in one period, must be greater than 1 and lower than :ref:`MAX_MEASURE_TRACES`
 
 When each parameter is specified then *N* will be ignored
 

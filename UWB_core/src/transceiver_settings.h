@@ -71,6 +71,7 @@ typedef struct {
 	dwt_config_t dwt_config;
 	dwt_txconfig_t dwt_txconfig;
 	bool smart_tx;
+	char enable_leds;
 } transceiver_settings_t;
 
 /**
@@ -94,6 +95,7 @@ typedef struct {
     .dwt_txconfig.PGdly = 0,                   \
     .dwt_config.dataRate = DWT_BR_6M8,         \
     .smart_tx = 1,                             \
+    .enable_leds = 1,                          \
   \
 }
 #endif

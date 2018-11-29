@@ -5,12 +5,15 @@ int transceiver_br = 0;
 int transceiver_plen = 0;
 int transceiver_pac = 0;
 int transceiver_sfd = 0;
+int transceiver_sniff_on_pac = 2;
+int transceiver_sniff_off_us = 0;
 
 static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t* ts);
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t* ts,
 bool set_default_pac);
 static int TRANSCEIVER_CalcSfdTo();
 static int TRANSCEIVER_CalcPGdly(int ch);
+static float TRASCEIVER_EstimatePreambleTxTime();
 
 uint32_t TRANSCEIVER_Init() {
 	int ret;
@@ -39,6 +42,8 @@ uint32_t TRANSCEIVER_Init() {
 	// the DW does not go into sleep
 	if (ret != DWT_DEVICE_ID) {
 		PORT_WakeupTransceiver(); // device is asleep
+		// do not use TRANSCEIVER_WakeUp() here, because device_id may be wrongly
+		// readed before reseting device
 		dwt_softreset();
 	}
 
@@ -77,13 +82,16 @@ uint32_t TRANSCEIVER_Init() {
 	dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
 
 	// turn on leds and event counters
-	if (settings.transceiver.low_power_mode) {
-		dwt_setleds(0);
-		dwt_configeventcounters(0);
-	} else {
-		dwt_setleds(3);
-		dwt_configeventcounters(1);
-	}
+	TRANSCEIVER_SetLeds(settings.transceiver.enable_leds);
+	dwt_configeventcounters(settings.transceiver.low_power_mode ? 0 : 1);
+
+	// prepare rx sniff variables
+	transceiver_sniff_on_pac = 4;
+	int preamble_time_us = TRASCEIVER_EstimatePreambleTxTime() * 1e6;
+	transceiver_sniff_off_us = MAX(0, MIN(preamble_time_us * 0.4, 255));
+	TRANSCEIVER_ASSERT(preamble_time_us > transceiver_sniff_off_us);
+	TRANSCEIVER_ASSERT(0 <= transceiver_sniff_off_us);
+	TRANSCEIVER_ASSERT(transceiver_sniff_off_us < 255);
 
 	// turn on default rx mode
 	dwt_setrxtimeout(0);
@@ -93,8 +101,8 @@ uint32_t TRANSCEIVER_Init() {
 }
 
 void TRANSCEIVER_SetCb(dwt_cb_t tx_cb, dwt_cb_t rx_cb, dwt_cb_t rxto_cb, dwt_cb_t rxerr_cb) {
-	int tx_flags = SYS_STATUS_ALL_TX | SYS_STATUS_ALL_DBLBUFF;
-	int rx_flags = SYS_STATUS_ALL_RX_GOOD;
+	int tx_flags = tx_cb == 0 ? 0 : (SYS_STATUS_ALL_TX | SYS_STATUS_ALL_DBLBUFF);
+	int rx_flags = rx_cb == 0 ? 0 : SYS_STATUS_ALL_RX_GOOD;
 	int err_flags = SYS_STATUS_ALL_RX_ERR | SYS_STATUS_ALL_RX_TO;
 	/*DWT_INT_RPHE |   // receiver PHY header error
 	 DWT_INT_RFCE |   // receiver CRC error
@@ -114,19 +122,24 @@ void TRANSCEIVER_SetAddr(pan_dev_addr_t pan_addr, dev_addr_t dev_addr) {
 	dwt_setpanid(pan_addr);
 }
 
+void TRANSCEIVER_SetLeds(bool enabled) {
+	settings.transceiver.enable_leds = enabled ? 3 : 0;
+	dwt_setleds(settings.transceiver.enable_leds);
+}
+
 void TRANSCEIVER_DefaultRx() {
 	dwt_setrxtimeout(0);
 	dwt_setpreambledetecttimeout(0);
-	dwt_setlowpowerlistening(false);
-	dwt_rxenable(DWT_START_RX_IMMEDIATE);
-	return;
 	if (settings.transceiver.low_power_mode) {
-		int on_pac = 2;
-		int off_time_us = 20;
-		TRANSCEIVER_ASSERT(transceiver_plen + transceiver_pac < off_time_us);
-		TRANSCEIVER_ASSERT(0 <= off_time_us);
-		TRANSCEIVER_ASSERT(off_time_us < 16);
-		dwt_setsniffmode(1, on_pac, off_time_us);
+//		dwt_configuresleep(DWT_PRESRV_SLEEP | DWT_CONFIG | DWT_RX_EN, DWT_WAKE_SLPCNT | DWT_SLP_EN);
+//		dwt_setlowpowerlistening(1);
+//		dwt_entersleep();
+
+		dwt_setsniffmode(1, transceiver_sniff_on_pac, transceiver_sniff_off_us);
+		dwt_configuresleep(DWT_PRESRV_SLEEP | DWT_CONFIG | DWT_RX_EN, DWT_WAKE_SLPCNT | DWT_SLP_EN);
+		dwt_setlowpowerlistening(1);
+		dwt_rxenable(DWT_START_RX_IMMEDIATE);
+		dwt_entersleep();
 	} else {
 		dwt_rxenable(DWT_START_RX_IMMEDIATE);
 	}
@@ -134,27 +147,38 @@ void TRANSCEIVER_DefaultRx() {
 
 void TRANSCEIVER_EnterDeepSleep()  // TODO
 {
+	TRANSCEIVER_EnterSleep();
 }
 
 void TRANSCEIVER_EnterSleep() {
 	dwt_forcetrxoff();
 	dwt_setleds(0);
-	dwt_configuresleep(DWT_PRESRV_SLEEP, DWT_WAKE_CS | DWT_SLP_EN);
+	dwt_configuresleep(DWT_PRESRV_SLEEP | DWT_CONFIG, DWT_WAKE_CS | DWT_SLP_EN);
 	dwt_entersleep();
 }
 
-void TRANSCEIVER_WakeUp(uint8_t* buf, int len) {
-	TRANSCEIVER_ASSERT(len >= 200);
-	PORT_SpiSpeedSlow(true);
+void TRANSCEIVER_WakeUp() {
 
-	// Need to keep chip select line low for at least 500us
-	int ret = dwt_spicswakeup(buf, len);
-	TRANSCEIVER_ASSERT(ret == DWT_SUCCESS);
-	PORT_SpiSpeedSlow(true);
+	int id;
+	id = dwt_readdevid();
 
-	// wt_configuretxrf(&settings.transceiver.dwt_txconfig);
-	dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
-	dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
+	if (id != DWT_DEVICE_ID) {
+		PORT_WakeupTransceiver();
+
+		// wt_configuretxrf(&settings.transceiver.dwt_txconfig);
+		dwt_setrxantennadelay(settings.transceiver.ant_dly_rx);
+		dwt_settxantennadelay(settings.transceiver.ant_dly_tx);
+
+		//dwt_setleds(settings.transceiver.enable_leds & 1);
+		// kilkukrotnie sprawdz czy id sie zgadza
+		int id = dwt_readdevid();
+		if (id == DWT_DEVICE_ID || dwt_readdevid() == DWT_DEVICE_ID) {
+			return;
+		} else {
+			id = dwt_readdevid();
+			TRANSCEIVER_ASSERT(id == DWT_DEVICE_ID);
+		}
+	}
 }
 
 int64_t TRANSCEIVER_GetRxTimestamp(void) {
@@ -242,26 +266,17 @@ void TRANSCEIVER_Read(void* buf, unsigned int len) {
 	dwt_readrxdata(buf, len, 0);
 }
 
+float TRASCEIVER_EstimatePreambleTxTime() {
+	float symbol_duration;
+	symbol_duration = settings.transceiver.dwt_config.prf == DWT_PRF_16M ? 993.59e-9f : 1017.63e-9f;
+	return (transceiver_plen + transceiver_pac) * symbol_duration;
+}
+
 int TRANSCEIVER_EstimateTxTimeUs(unsigned int len) {
 	const uint16_t data_block_size = 330;
 	const uint16_t reed_solomon_bits = 48;
 
-	float tx_time = 0.0;
-	float symbol_duration = 1000e-9f;
-
-	// Choose the SHR
-	// datasheet 5.1.4
-	switch (settings.transceiver.dwt_config.prf) {
-		case DWT_PRF_16M:
-			symbol_duration = 993.59e-9f;
-			break;
-		case DWT_PRF_64M:
-			symbol_duration = 1017.63e-9f;
-			break;
-	}
-
-	// Find the preamble length
-	tx_time += transceiver_plen * symbol_duration;
+	float tx_time = TRASCEIVER_EstimatePreambleTxTime();
 
 	// CRC len
 	len += 2;

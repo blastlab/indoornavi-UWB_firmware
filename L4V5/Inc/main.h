@@ -54,6 +54,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_ll_crc.h"
 #include "stm32l4xx_ll_lptim.h"
+#include "stm32l4xx_ll_rtc.h"
 #include "stm32l4xx_ll_spi.h"
 #include "stm32l4xx_ll_tim.h"
 #include "stm32l4xx_ll_wwdg.h"

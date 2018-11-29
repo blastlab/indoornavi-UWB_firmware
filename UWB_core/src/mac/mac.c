@@ -8,6 +8,7 @@
 mac_instance_t mac;
 
 static MAC_DataParserCb_t _dataParser;
+static MAC_SendToSink_t _dataSender;
 static mac_buf_t* _MAC_BufGetOldestToTx();
 static void _MAC_BufferReset(mac_buf_t* buf);
 int MAC_TryTransmitFrameInSlot(int64_t glob_time);
@@ -17,9 +18,20 @@ static void MAC_RxCb(const dwt_cb_data_t* data);
 static void MAC_RxToCb(const dwt_cb_data_t* data);
 static void MAC_RxErrCb(const dwt_cb_data_t* data);
 
-void MAC_Init(MAC_DataParserCb_t callback) {
+void MAC_EnableReceiver(bool en) {
+	dwt_cb_t rx_cb = settings.mac.role == RTLS_LISTENER ? listener_isr : MAC_RxCb;
+	dwt_cb_t tx_cb = settings.mac.role == RTLS_LISTENER ? 0 : MAC_TxCb;
+
+	if (en) {
+		TRANSCEIVER_SetCb(tx_cb, rx_cb, MAC_RxToCb, MAC_RxErrCb);
+	} else {
+		TRANSCEIVER_SetCb(tx_cb, 0, MAC_RxToCb, MAC_RxErrCb);
+	}
+}
+void MAC_Init(MAC_DataParserCb_t callback, MAC_SendToSink_t sender) {
 	MAC_ASSERT(callback != 0);
 	_dataParser = callback;
+	_dataSender = sender;
 	// init transceiver
 	uint32_t part_id = TRANSCEIVER_Init();
 
@@ -43,7 +55,7 @@ void MAC_Init(MAC_DataParserCb_t callback) {
 	}
 
 	// initialize synchronization and ranging engine
-	SYNC_Init();
+	SYNC_Init(sender);
 	TOA_InitDly();
 
 	// slot timers
@@ -58,10 +70,29 @@ void MAC_Init(MAC_DataParserCb_t callback) {
 }
 
 void MAC_Reinit() {
-	MAC_Init(_dataParser);
+	MAC_Init(_dataParser, _dataSender);
+}
+
+#if DBG
+TRACE_t trace_history[TRACE_CNT];
+#endif
+
+void Trace(TRACE_t t) {
+#if DBG
+	if (t == TRACE_SYSTICK && t == trace_history[0])
+		return;
+
+	CRITICAL(
+	    for (int i = TRACE_CNT-1; i > 0; --i) {
+		trace_history[i] = trace_history[i - 1];
+	}
+	trace_history[0] = t;
+	)
+#endif
 }
 
 static void MAC_TxCb(const dwt_cb_data_t* data) {
+	Trace(TRACE_DW_IRQ_TX);
 	int64_t tx_ts = TRANSCEIVER_GetTxTimestamp();
 
 	PORT_LedOn(LED_STAT);
@@ -106,6 +137,7 @@ static void MAC_TxCb(const dwt_cb_data_t* data) {
 }
 
 static void MAC_RxCb(const dwt_cb_data_t* data) {
+	Trace(TRACE_DW_IRQ_RX);
 	PORT_LedOn(LED_STAT);
 	mac.last_rx_ts = PORT_TickHr();
 	mac_buf_t* buf = MAC_Buffer();
@@ -162,6 +194,7 @@ static void MAC_RxCb(const dwt_cb_data_t* data) {
 // timeout error -> check ranging, maybe ACK or default RX
 static void MAC_RxToCb(const dwt_cb_data_t* data) {
 	// ranging isr
+	Trace(TRACE_DW_IRQ_TO);
 	PORT_LedOn(LED_ERR);
 	int ret = SYNC_RxToCb();
 	if (ret != 0) {
@@ -176,9 +209,10 @@ static void MAC_RxToCb(const dwt_cb_data_t* data) {
 
 // error during receiving frame
 static void MAC_RxErrCb(const dwt_cb_data_t* data) {
+	Trace(TRACE_DW_IRQ_ERR);
 	// mayby some log?
 	PORT_LedOn(LED_ERR);
-	LOG_DBG("Rx error status:%X", data->status);
+	//LOG_DBG("Rx error status:%X", data->status);
 	TRANSCEIVER_DefaultRx();
 }
 
@@ -193,6 +227,26 @@ unsigned int MAC_BeaconTimerGetMs() {
 // reset beacon timer after sending a beacon message
 void MAC_BeaconTimerReset() {
 	mac.beacon_timer_timestamp = PORT_TickMs();
+}
+
+void MAC_BeaconSend() {
+	MAC_BeaconTimerReset();
+	int voltage = PORT_BatteryVoltage();
+	voltage -= voltage > 2000 ? 2000 : voltage; // 2000 is voltage offset
+	FC_BEACON_s packet;
+	packet.FC = FC_BEACON;
+	packet.len = sizeof(packet);
+	packet.serial_hi = settings_otp->serial >> 32;
+	packet.serial_lo = settings_otp->serial & UINT32_MAX;
+	packet.hop_cnt_batt = (0 << 4) | ((voltage >> 8) & 0x0F);
+	packet.voltage = voltage & 0xFF;
+	packet.src_did = settings.mac.addr;
+	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+	if (buf != 0) {
+		MAC_Write(buf, &packet, packet.len);
+		MAC_Send(buf, false);
+		LOG_DBG("I send beacon - %X role:%c", settings.mac.addr, (char)settings.mac.role);
+	}
 }
 
 // get time from start of super frame in mac_get_port_sync_time units

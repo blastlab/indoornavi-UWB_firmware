@@ -1,5 +1,6 @@
 #ifndef _MAC_CONST
 #define _MAC_CONST
+#include <stdint.h>
 
 #define FR_CR_BEACON 0x00
 #define FR_CR_DATA 0x01
@@ -59,5 +60,19 @@ typedef struct {
 	dev_addr_t original_src, last_src;
 	struct FC_CARRY_s* carry;
 } prot_packet_info_t;
+
+/**
+ * @brief see #FC_t description
+ *
+ */
+typedef struct {
+	uint8_t FC, len;
+	uint8_t hop_cnt_batt; ///< number of did in hops[] array (upper nibble) voltage msb (lower nibble)
+	uint8_t voltage; /// voltage lsb, mV-2000
+	uint32_t serial_hi; ///< device serial number from settings.version.serial
+	uint32_t serial_lo; ///< device serial number from settings.version.serial
+	dev_addr_t src_did; ///< device id of beacon sender
+	dev_addr_t hops[0];  ///< packet route sink_neighbour..src_neighbour
+}__packed FC_BEACON_s;
 
 #endif
