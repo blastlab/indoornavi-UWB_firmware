@@ -48,6 +48,7 @@ SRC_FILES += \
   $(UWB_DIR)/src/decadriver/deca_device.c \
   $(UWB_DIR)/src/decadriver/deca_params_init.c \
   $(UWB_DIR)/src/logger/logs_common.c \
+  $(UWB_DIR)/src/logger/logs_buffer.c \
   $(UWB_DIR)/src/mac/carry.c \
   $(UWB_DIR)/src/mac/mac.c \
   $(UWB_DIR)/src/mac/sync.c \

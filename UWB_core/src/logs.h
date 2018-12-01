@@ -51,8 +51,35 @@ typedef enum {
 #undef COMMENT
 #undef ARG
 
+typedef enum {
+	LOG_PC_Bin = 0x01,
+	LOG_PC_Txt = 0x02,
+	LOG_PC_Ack = 0x03,
+	LOG_PC_Nack = 0x04
+} LOG_PacketCodes_t;
+
 /**
- * @brief sending messages from circled buffer for logs
+ * @brief log data from logger's buffer
+ *
+ * implemented in platform folder
+ * call LOG_BufPop() after successful transaction
+ *
+ * @param[in] p_bin pointer to raw binary packet's data
+ * @param[in] p_size of binary raw packet's data
+ * @param[in] d_bin pointer to binary/text data within a packet
+ * @param[in] d_size of binary/text data within a packet
+ * @param[in] pc packet code
+ */
+void PORT_LogData(const void *p_bin, int p_size, const void *d_bin, int d_size, LOG_PacketCodes_t pc);
+
+/**
+ * @brief pop a message from logger's buffer
+ *
+ */
+void LOG_BufPop();
+
+/**
+ * @brief pull messages from logger's buffer
  *
  */
 void LOG_Control();
@@ -64,9 +91,7 @@ void LOG_Control();
 void LOG_SelfTest();
 
 /**
- * @brief log text data
- *
- * implemented in platform folder
+ * @brief write text data to the logger's buffer
  *
  * @param type log type
  * @param type log identification code
@@ -77,9 +102,7 @@ void LOG_SelfTest();
 int LOG_Text(char type, int num, const char *frm, va_list arg);
 
 /**
- * @brief log binary data
- *
- * implemented in platform folder
+ * @brief write binary data to the logger's buffer
  *
  * @param[in] bin pointer to binary data
  * @param[in] size of binary data
@@ -88,7 +111,7 @@ int LOG_Text(char type, int num, const char *frm, va_list arg);
 int LOG_Bin(const void *bin, int size);
 
 /**
- * @brief log criticcal information
+ * @brief log critical information
  *
  * @param code of message
  * @param ... extra arguments

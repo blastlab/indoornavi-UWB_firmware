@@ -48,7 +48,7 @@ void PORT_UsbUartInit(void) {
 }
 
 uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len) {
-	for (uint16_t i = 0; i < len; i++) {
+	for (int i = 0; i < len; i++) {
 		app_uart_put(*(buf + i));
 	}
 	return PORT_Success;
