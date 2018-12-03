@@ -2,7 +2,7 @@
 #define _TOA_H__
 
 #include "../decadriver/deca_device_api.h"  // DWT_TIME_UNITS
-#include "../logs.h"
+#include "../logger/logs.h"
 #include "../settings.h"
 #include "../transceiver.h"  // read diagnostic
 

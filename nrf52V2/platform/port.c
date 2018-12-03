@@ -7,32 +7,35 @@
 
 void PORT_TimeInit();
 void PORT_GpioInit();
-void PORT_SpiInit();
+void PORT_SpiInit(bool isSink);
 void PORT_BatteryInit();
 void PORT_CrcInit();
-void PORT_ExtiInit(bool imu_available);
+void PORT_ExtiInit(bool isTag);
 void PORT_UsbUartInit();
 void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 void PORT_Init() {
 	APP_ERROR_CHECK(sd_softdevice_vector_table_base_set((uint32_t)(FU_GetCurrentFlashBase())));
 	IASSERT(NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY == NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
+	NVIC_DisableIRQ(GPIOTE_IRQn);
 	PORT_BatteryInit();
 	rtls_role role = PORT_GetHwRole();
 	PORT_BleBeaconInit();
+	PORT_GpioInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
 	PORT_CrcInit();
-	PORT_SpiInit();
-	PORT_GpioInit();
+	PORT_SpiInit(role == RTLS_SINK);
 	PORT_ImuInit(role == RTLS_TAG);
 	PORT_ExtiInit(role == RTLS_TAG);
 #if !DBG
 	PORT_WatchdogInit();
 #endif
+	NVIC_EnableIRQ(GPIOTE_IRQn);
 }
 
 void PORT_GpioInit() {
+	APP_ERROR_CHECK(nrfx_gpiote_init());
 #if LED_G1 && LED_R1
 	nrf_gpio_cfg_output(LED_ERR);
 	nrf_gpio_cfg_output(LED_STAT);
@@ -127,8 +130,7 @@ void DW_EXTI_IRQ_Handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
 	}
 }
 
-void PORT_ExtiInit(bool imu_available) {
-    APP_ERROR_CHECK(nrfx_gpiote_init());
+void PORT_ExtiInit(bool isTag) {
     nrfx_gpiote_in_config_t dw_int_config = {
     		.is_watcher = false,
     		.hi_accuracy = true,
@@ -138,7 +140,7 @@ void PORT_ExtiInit(bool imu_available) {
     APP_ERROR_CHECK(nrfx_gpiote_in_init(DW_EXTI_IRQn, &dw_int_config, DW_EXTI_IRQ_Handler));
 		nrfx_gpiote_in_event_enable(DW_EXTI_IRQn, true);
 #if IMU_EXTI_IRQ1
-    if(imu_available) {
+    if(isTag) {
     	nrfx_gpiote_in_config_t imu_int_config = {
 					.is_watcher = false,
 					.hi_accuracy = true,

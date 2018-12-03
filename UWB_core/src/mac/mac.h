@@ -15,7 +15,7 @@
 #ifndef _MAC_H
 #define _MAC_H
 #include "../parsers/bin_const.h"
-#include "logs.h"
+#include "../logger/logs.h"
 #include "transceiver.h"
 
 #include "mac/mac_const.h"

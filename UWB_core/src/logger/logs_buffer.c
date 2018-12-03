@@ -17,18 +17,6 @@
 #define LOG_BUF_LEN 1024
 
 static char buf[LOG_BUF_LEN + 1];
-typedef struct {
-		uint8_t packetCode;
-		uint8_t len;
-} LOG_FrameHeader_s;
-
-#define FRAME_HEADER_SIZE sizeof(LOG_FrameHeader_s)
-
-typedef struct {
-		LOG_FrameHeader_s header;
-		uint8_t *data;
-		uint16_t crc;
-}	LOG_Frame_s;
 
 struct {
 	const int len;
@@ -154,12 +142,14 @@ void LOG_BufPop() {
 	if(packet_len == 0) {
 		return;
 	}
+CRITICAL(
 	// set the Head at the end of a packet
 	circBuf.head += packet_len - 1;
 	// when another packet is ahead, set the Head at the beginning of it
 	circBuf.head = (circBuf.head == circBuf.tail) ? circBuf.head : circBuf.head + 1;
 	// when the Head exceeds the end of the buffer, set it to 0
 	circBuf.head = (circBuf.len <= circBuf.head) ? 0 : circBuf.head;
+)
 }
 
 int LOG_Text(char type, int num, const char* frm, va_list arg) {
@@ -188,17 +178,16 @@ int LOG_Bin(const void* bin, int size) {
   return n;
 }
 
-void LOG_Control() {
+void LOG_Control(bool isSink) {
 	int packet_len = BUF_GetHeadPacketLen();
 	// when buffer is empty
 	if(packet_len == 0) {
 		return;
 	}
-	PORT_LogData(BUF_GetHeadPacketPtr(), BUF_GetHeadPacketLen(),
-	             BUF_GetHeadPacketDataPtr(), BUF_GetHeadPacketDataLen(),
-	             BUF_GetHeadPacketOpcode());
+	PORT_LogData(BUF_GetHeadPacketPtr(), BUF_GetHeadPacketLen(), BUF_GetHeadPacketOpcode(), isSink);
 	if(circBuf.overflow) {
 		circBuf.overflow = false;
+		LOG_BufPop();
 		LOG_ERR(ERR_LOG_BUF_OVERFLOW);
 	}
 }

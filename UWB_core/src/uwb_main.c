@@ -94,7 +94,7 @@ void UwbMain() {
 		RANGING_Control();
 		RangingReader();
 		BeaconSender();
-		LOG_Control();
+		LOG_Control(settings.mac.role == RTLS_SINK);
 		TXT_Control();
 		FU_Control();
 		PORT_WatchdogRefresh();
