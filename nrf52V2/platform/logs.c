@@ -60,6 +60,7 @@ static void sendAckToEthSlave(bool isAck) {
 void SpiSlaveRequest() {
 #if ETH_SPI_SS_PIN
 	// read first two bytes (opcode and len), then read the rest of message
+	// only slave's irq can oall this method, so critical section is only needed for peripheral use
 	CRITICAL(
 	nrf_gpio_pin_clear(ETH_SPI_SS_PIN);
 	readFromEthSpiSlave(spiHandling.rx_buf, FRAME_HEADER_SIZE);
