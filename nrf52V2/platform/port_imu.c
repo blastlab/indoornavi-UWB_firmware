@@ -38,18 +38,17 @@ static volatile uint8_t imu_sleep_mode;
 void PORT_ExtiInit(bool imu_available);
 
 static void ImuWriteRegister(lsm6dsm_register_t addr, uint8_t val) {
+#if IMU_EXTI_IRQ1
 	uint8_t data[] = { addr & 0b0111111, val };					// adding 'write' bit
-	nrf_gpio_pin_clear(IMU_SPI_SS_PIN);
-	PORT_SpiTx(2, data);
-	nrf_gpio_pin_set(IMU_SPI_SS_PIN);
+	PORT_SpiTx(data, 2, IMU_SPI_SS_PIN);
+#endif
 }
 
 static void ImuReadRegister(lsm6dsm_register_t addr, uint8_t *val, uint16_t count) {
+#if IMU_EXTI_IRQ1
 	uint8_t m_addr = addr | 0b10000000;							// adding 'read' bit
-	nrf_gpio_pin_clear(IMU_SPI_SS_PIN);
-	PORT_SpiTx(1, &m_addr);
-	PORT_SpiRx(count, val);
-	nrf_gpio_pin_set(IMU_SPI_SS_PIN);
+	PORT_SpiTxRx(&m_addr, 1, val, count, IMU_SPI_SS_PIN);
+#endif
 }
 
 static void ImuReset(void) {

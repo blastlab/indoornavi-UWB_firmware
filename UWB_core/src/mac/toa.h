@@ -1,7 +1,7 @@
 #ifndef _TOA_H__
 #define _TOA_H__
 
-#include "../logs.h"
+#include "../logger/logs.h"
 #include "../settings.h"
 #include "../transceiver.h"  // read diagnostic
 

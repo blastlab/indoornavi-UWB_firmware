@@ -18,6 +18,7 @@ void SWI1_IRQHandler(void)						// radio notifications
 	m_ble_radio_active = !m_ble_radio_active;	// implementation copied from nordic's library
 }
 
+BLE_CODE(
 static void ble_stack_init(void)
 {
     ret_code_t err_code;
@@ -35,14 +36,17 @@ static void ble_stack_init(void)
     err_code = nrf_sdh_ble_enable(&ram_start);
     APP_ERROR_CHECK(err_code);
 }
+)
 
 void PORT_BleBeaconInit(void) {
 	if(settings.mac.role != RTLS_SINK && settings.mac.role != RTLS_ANCHOR) {
 		settings.ble.is_enabled = 0;
 	}
+BLE_CODE(
 	if(settings.ble.is_enabled) {
 	    ble_stack_init();
 //	    advertising_init();
 //	    PORT_BleSetPower(settings.ble.tx_power);
 	}
+)
 }

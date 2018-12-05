@@ -6,7 +6,7 @@
  */
 
 #include <stdio.h>
-#include "logs.h"
+#include "../logger/logs.h"
 #include "port.h"
 #include "nrf52.h"
 

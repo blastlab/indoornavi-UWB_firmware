@@ -4661,21 +4661,21 @@
 // <q> NRFX_TIMER0_ENABLED  - Enable TIMER0 instance
  
 
-#ifndef NRFX_TIMER0_ENABLED
+#ifndef NRFX_TIMER0_ENABLED						// reserved for BLE stack
 #define NRFX_TIMER0_ENABLED 0
 #endif
 
 // <q> NRFX_TIMER1_ENABLED  - Enable TIMER1 instance
  
 
-#ifndef NRFX_TIMER1_ENABLED
+#ifndef NRFX_TIMER1_ENABLED						// used as SLOT timer
 #define NRFX_TIMER1_ENABLED 1
 #endif
 
 // <q> NRFX_TIMER2_ENABLED  - Enable TIMER2 instance
  
 
-#ifndef NRFX_TIMER2_ENABLED
+#ifndef NRFX_TIMER2_ENABLED						// used by bootloader as IWDG
 #define NRFX_TIMER2_ENABLED 0
 #endif
 

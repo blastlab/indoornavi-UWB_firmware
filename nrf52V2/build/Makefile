@@ -48,6 +48,7 @@ SRC_FILES += \
   $(UWB_DIR)/src/decadriver/deca_device.c \
   $(UWB_DIR)/src/decadriver/deca_params_init.c \
   $(UWB_DIR)/src/logger/logs_common.c \
+  $(UWB_DIR)/src/logger/logs_buffer.c \
   $(UWB_DIR)/src/mac/carry.c \
   $(UWB_DIR)/src/mac/mac.c \
   $(UWB_DIR)/src/mac/sync.c \
@@ -116,6 +117,7 @@ CFLAGS += -DNRF52_PAN_74
 CFLAGS += -DNRF_SD_BLE_API_VERSION=6
 CFLAGS += -DS132
 CFLAGS += -DSOFTDEVICE_PRESENT
+CFLAGS += -DCONFIG_NFCT_PINS_AS_GPIOS
 CFLAGS += -DSWI_DISABLE0
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs
@@ -134,6 +136,7 @@ ASMFLAGS += -mcpu=cortex-m4
 ASMFLAGS += -mthumb -mabi=aapcs
 ASMFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
+ASMFLAGS += -DCONFIG_NFCT_PINS_AS_GPIOS
 ASMFLAGS += -DFLOAT_ABI_HARD
 ASMFLAGS += -DNRF52
 ASMFLAGS += -DNRF52832_XXAA

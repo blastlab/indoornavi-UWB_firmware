@@ -39,12 +39,16 @@ void decamutexoff(decaIrqStatus_t s) {
 
 decaIrqStatus_t PORT_EnterCritical() {
 	uint8_t s = 0;
+BLE_CODE(
 	volatile bool s_swi2 = is_irq_enabled(SWI2_EGU2_IRQn);
 	while(m_ble_radio_active);
+)
 	sd_nvic_critical_region_enter(&s);
+	BLE_CODE(
 	if(s_swi2) {
 		NVIC_EnableIRQ(SWI2_EGU2_IRQn);
 	}
+)
 	return s;
 }
 

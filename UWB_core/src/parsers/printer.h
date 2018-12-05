@@ -12,7 +12,7 @@
 #define _PRINTER_H
 #include "bin_struct.h"
 #include "../mac/toa.h"
-#include "../logs.h"
+#include "../logger/logs.h"
 
 /**
  * @brief print version message

@@ -2,222 +2,134 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "logs.h"
+#include "nrf_gpio.h"
+#include "../logger/logs.h"
 #include "parsers/base64.h"
+#include "parsers/txt_parser.h"
 #include "port.h"
 
-#define CIRC_BUF_LEN 1024
 #define LOG_BUF_LEN 1024
+static char tx_buf[LOG_BUF_LEN + 1];
 
-static char buf[LOG_BUF_LEN + 1];
-uint8_t PORT_UsbUartTransmit(uint8_t* buf, uint16_t len);
+uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len);
 
-typedef struct {
-		uint8_t packetCode;
-		uint8_t len;
-} LOG_FrameHeader_s;
-
-#define FRAME_HEADER_SIZE sizeof(LOG_FrameHeader_s)
-
-typedef struct {
-		LOG_FrameHeader_s header;
-		uint8_t *data;
-		uint16_t crc;
-}	LOG_Frame_s;
-
-typedef enum {
-	LOG_PC_Bin = 0x01,
-	LOG_PC_Txt = 0x02,
-	LOG_PC_Ack = 0x03,
-	LOG_PC_NAck = 0x04
-} LOG_PacketCode_t;
-
-struct {
-	const int len;
-	volatile int head;
-	volatile int tail;
-	uint8_t data[CIRC_BUF_LEN];
-	bool overflow;
-} circBuf = {
-		.len = CIRC_BUF_LEN,
-		.head = 0,
-		.tail = 0,
-		.overflow = false
+struct spiHandling {
+		bool 		ifWaitingForAck;
+		bool 		isAck;
+		bool 		isNack;
+		int 		txTick;
+		uint8_t	rx_buf[LOG_BUF_LEN + 1];
+} spiHandling = {
+		.ifWaitingForAck = false,
+		.isAck = false,
+		.isNack = false,
+		.txTick = 0,
+		.rx_buf = { 0 }
 };
 
-void LOG_BufClear() {
-	circBuf.head = 0;
-	circBuf.tail = circBuf.head;
+#if LOG_SPI_EN
+static void readFromEthSpiSlave(uint8_t *rx_buf, uint32_t len) {
+	NRF_SPIM1->TXD.PTR = (uint32_t)NULL;
+	NRF_SPIM1->TXD.MAXCNT = 0;
+	NRF_SPIM1->RXD.PTR = (uint32_t)rx_buf;
+	NRF_SPIM1->RXD.MAXCNT = len;
+	NRF_SPIM1->EVENTS_END = 0x0UL;
+	NRF_SPIM1->TXD.LIST = 0x0UL;
+	NRF_SPIM1->RXD.LIST = 0x0UL;
+	NRF_SPIM1->TASKS_START = 0x1UL;
+	while(NRF_SPIM1->EVENTS_END == 0x0UL);
 }
+static const uint8_t ack_msg[4] = { LOG_PC_Ack, 4, 8, 216 };
+static const uint8_t nack_msg[4] = { LOG_PC_Nack, 4, 145, 79 };
+static const prot_packet_info_t bin_packet = {
+		.original_src = CARRY_ADDR_SERVER,
+		.last_src = CARRY_ADDR_SERVER,
+		.carry = NULL
+};
 
-static int BUF_GetHeadPacketLen() {
-	// when buffer is empty
-	if(circBuf.head == circBuf.tail) {
-		return 0;
+static void sendAckToEthSlave(bool isAck) {
+#if ETH_SPI_SS_PIN
+	if(isAck) {
+		PORT_SpiTx((uint8_t *)ack_msg, sizeof(ack_msg), ETH_SPI_SS_PIN);
+	} else {
+		PORT_SpiTx((uint8_t *)nack_msg, sizeof(nack_msg), ETH_SPI_SS_PIN);
 	}
-	// the packet's length may not fit into left space of the buffer, so the conditions must be checked separately
-	// when a header of the buffer fits into the end of memory block
-	if(circBuf.head + FRAME_HEADER_SIZE < circBuf.len) {
-		if(circBuf.len < circBuf.head + circBuf.data[circBuf.head + 1]) {				// when the packet does not fit into left space,
-			circBuf.head = 0;																									// the header is also at the beginning,
-		}																																		// else, start reading from current "head"
-	}
-	// when does not, the header is at the beginning of the buffer
-	else {
-		circBuf.head = 0;
-	}
-	return circBuf.data[circBuf.head + 1];
+#endif
 }
 
-static inline int BUF_GetHeadPacketTextLen() {
-	return BUF_GetHeadPacketLen() - FRAME_HEADER_SIZE - 2;
-}
-
-static inline uint8_t BUF_GetHeadPacketOpcode() {
-	return circBuf.data[circBuf.head];
-}
-
-static inline uint8_t * BUF_GetHeadPacketDataPtr() {
-	return (uint8_t *)(&circBuf.data[circBuf.head] + FRAME_HEADER_SIZE);
-}
-
-static void BUF_WriteHeader(LOG_Frame_s *frame) {
-	// when the buffer is empty, the first byte is written to a current head == tail position
-	circBuf.tail = (circBuf.tail == circBuf.head || circBuf.tail == 0) ? circBuf.tail : circBuf.tail + 1;
-	memcpy(&circBuf.data[circBuf.tail], &frame->header, FRAME_HEADER_SIZE);
-	circBuf.tail += FRAME_HEADER_SIZE - 1;
-}
-
-int BUF_WritePacket(uint8_t *data, LOG_PacketCode_t packetCode, uint8_t len) {
-	// when the buffer is full - { . . Tail Head . . .} || { Head . . . . Tail }
-	if((((circBuf.tail + 1) % circBuf.len) == circBuf.head)) {
-		goto buffer_full;
-	}
-	LOG_Frame_s frame = {
-		.header.packetCode = (uint8_t)(packetCode),
-		.header.len = (uint8_t)(len + FRAME_HEADER_SIZE + sizeof(frame.crc)),			// added header and crc length
-		.data = data,
-	};
-	PORT_CrcReset();
-	// feed CRC with opcode and packet length
-	PORT_CrcFeed((uint8_t *)&frame, FRAME_HEADER_SIZE);
-	frame.crc = PORT_CrcFeed(frame.data, len);				// feed CRC with data and write value to the packet's end
-
-	// frame is ready to write to buffer here
-	// when the Head is before the Tail - { . . . Head . . . Tail . HERE . . . .  }
-	if(circBuf.head <= circBuf.tail) {
-		// when the packet will fit into space at the end of the buffer
-		if(circBuf.tail + frame.header.len < circBuf.len) {
-			goto write_packet;
-		}
-		// else, when the packet will fit on the beginning of the buffer
-		else if(frame.header.len <= circBuf.head) {
-			// when the packet's header will fit into space at the end of the buffer, we will inform the reader about next frame
-			// when no header fit into the end of buffer, the reader will know this and starts reading from head = 0
-			if(circBuf.tail + FRAME_HEADER_SIZE < circBuf.len) {
-				BUF_WriteHeader(&frame);
-			}
-			circBuf.tail = 0;
-			goto write_packet;
-		}
-		// when the packet will not fit at the end and at the beginning of the buffer
-		else {
-			goto buffer_full;
-		}
-	}
-	// else, when the Tail is before the Head and a packet will fit before actual Head - { . Tail . HERE . . . . Head . . . . . .  }
-	else if(circBuf.tail < circBuf.head && circBuf.tail + frame.header.len < circBuf.head) {
-		goto write_packet;
-	}
-	// else, when the buffer is full
-	else {
-		goto buffer_full;
-	}
-
-write_packet:
-	BUF_WriteHeader(&frame);
-	memcpy(&circBuf.data[++circBuf.tail], frame.data, len);
-	circBuf.tail += len;
-	circBuf.data[circBuf.tail] = (uint8_t)(frame.crc >> 8);
-	circBuf.data[++circBuf.tail] = (uint8_t)(frame.crc & 0xFF);
-	return frame.header.len;
-buffer_full:
-	circBuf.overflow = true;
-	return 0;
-}
-
-void BUF_Pop() {
-	int packet_len = BUF_GetHeadPacketLen();
-	// when the buffer is empty
-	if(packet_len == 0) {
-		return;
-	}
-	// set the Head at the end of a packet
-	circBuf.head += packet_len - 1;
-	// when another packet is ahead, set the Head at the beginning of it
-	circBuf.head = (circBuf.head == circBuf.tail) ? circBuf.head : circBuf.head + 1;
-	// when the Head exceeds the end of the buffer, set it to 0
-	circBuf.head = (circBuf.len <= circBuf.head) ? 0 : circBuf.head;
-}
-
-int LOG_Text(char type, int num, const char* frm, va_list arg) {
-  int n, f;
-  // prefix np. "E101 "
-  snprintf(buf, LOG_BUF_LEN, "%c%d ", type, num);
-  f = strlen(buf);
-  // zawartosc
-  n = vsnprintf(buf + f, LOG_BUF_LEN - f, frm, arg) + f;
-  if (n > 0 && n < LOG_BUF_LEN) {
-    buf[n++] = '\r';
-    buf[n++] = '\n';
-    buf[n] = 0;
-    CRITICAL(
-    BUF_WritePacket((uint8_t*)buf, LOG_PC_Txt, n);
-    )
-  }
-  return n;
-}
-
-int LOG_Bin(const void* bin, int size) {
-  int n;
+void SpiSlaveRequest() {
+#if ETH_SPI_SS_PIN
+	// read first two bytes (opcode and len), then read the rest of message
+	// only slave's irq can oall this method, so critical section is only needed for peripheral use
 	CRITICAL(
-	n = BUF_WritePacket((uint8_t*)bin, LOG_PC_Bin, size);
+	nrf_gpio_pin_clear(ETH_SPI_SS_PIN);
+	readFromEthSpiSlave(spiHandling.rx_buf, FRAME_HEADER_SIZE);
+	readFromEthSpiSlave(&spiHandling.rx_buf[FRAME_HEADER_SIZE], spiHandling.rx_buf[1] - FRAME_HEADER_SIZE);
+	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
 	)
-  return n;
-}
+	int packet_len = spiHandling.rx_buf[1];
+	int data_len = spiHandling.rx_buf[1] - FRAME_HEADER_SIZE - 2;
+	switch(spiHandling.rx_buf[0]) {
+		case LOG_PC_Bin:
+			BIN_Parse(&spiHandling.rx_buf[FRAME_HEADER_SIZE], &bin_packet, data_len);
+			break;
 
-void LOG_Control() {
-	int packet_len = BUF_GetHeadPacketLen();
-	// when buffer is empty
-	if(packet_len == 0) {
-		return;
+		case LOG_PC_Txt:
+			PORT_CrcReset();
+			if(PORT_CrcFeed(spiHandling.rx_buf, packet_len) == 0) {
+				sendAckToEthSlave(true);
+				TXT_Input((char *)&spiHandling.rx_buf[FRAME_HEADER_SIZE], data_len);
+			} else {
+				sendAckToEthSlave(false);
+			}
+			break;
+
+		case LOG_PC_Ack:
+			if(spiHandling.ifWaitingForAck) {
+				spiHandling.ifWaitingForAck = false;
+				LOG_BufPop();
+			}
+			break;
+
+		case LOG_PC_Nack:
+			if(spiHandling.ifWaitingForAck) {
+				spiHandling.ifWaitingForAck = false;
+			}
+			break;
 	}
-	int data_len = BUF_GetHeadPacketTextLen();
-	// wyslij dane na SD i do USB
-	#if LOG_USB_EN
-	if(BUF_GetHeadPacketOpcode() == LOG_PC_Bin) {
-		strcpy(buf, "B1000 ");
-		int f = strlen(buf);
-		if (BASE64_TextSize(data_len) + f >= LOG_BUF_LEN) {
-			LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t *)BUF_GetHeadPacketDataPtr())[0]);
+#endif
+}
+#endif
+
+void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) {
+	#if LOG_SPI_EN
+	if(isSink) {
+		// when the device is not waiting for previous message ack or when waiting timed out
+		if(spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 50) < PORT_TickMs()) {
+			spiHandling.ifWaitingForAck = true;
+			spiHandling.txTick = PORT_TickMs();
+			PORT_SpiTx((uint8_t *)bin, size, ETH_SPI_SS_PIN);
 		} else {
-			f += BASE64_Encode((unsigned char*)(buf + f), BUF_GetHeadPacketDataPtr(), data_len);
-			buf[f++] = '\n';
-			PORT_UsbUartTransmit((uint8_t*)buf, f);
+			return;
 		}
-	} else if(BUF_GetHeadPacketOpcode() == LOG_PC_Txt) {
-		PORT_UsbUartTransmit(BUF_GetHeadPacketDataPtr(), data_len);
 	}
 	#endif
-	#if LOG_LCD_EN
-			if (type == LOG_ERR)
-				lcd_err(buf);
-	#endif
-	#if LOG_SD_EN
-	#endif
-	BUF_Pop();
-	if(circBuf.overflow) {
-		circBuf.overflow = false;
-		LOG_ERR(ERR_LOG_BUF_OVERFLOW);
+	#if LOG_USB_EN
+	if(pc == LOG_PC_Bin) {
+		strcpy(tx_buf, "B1000 ");
+		int f = strlen(tx_buf);
+		if (BASE64_TextSize(size - FRAME_HEADER_SIZE - 2) + f >= LOG_BUF_LEN) {
+			LOG_ERR(ERR_BASE64_TOO_LONG_OUTPUT, ((uint8_t *)bin)[FRAME_HEADER_SIZE]);
+		} else {
+			f += BASE64_Encode((unsigned char*)(tx_buf + f), ((uint8_t *)bin + FRAME_HEADER_SIZE), size - FRAME_HEADER_SIZE - 2);
+			tx_buf[f++] = '\n';
+			PORT_UsbUartTransmit((uint8_t*)tx_buf, f);
+		}
+	} else if(pc == LOG_PC_Txt) {
+		PORT_UsbUartTransmit(((uint8_t *)bin + FRAME_HEADER_SIZE), size - FRAME_HEADER_SIZE - 2);
 	}
+	#endif
+#if !LOG_SPI_EN
+	LOG_BufPop();
+#endif
 }

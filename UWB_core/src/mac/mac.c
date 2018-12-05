@@ -150,6 +150,7 @@ static void MAC_RxCb(const dwt_cb_data_t* data) {
 				}
 				if (ret == 0) {
 					LOG_WRN(WRN_MAC_FRAME_BAD_OPCODE, buf->frame.data[0]);
+					TRANSCEIVER_DefaultRx();
 				}
 			} else if (type == FR_CR_DATA) {
 				TRANSCEIVER_DefaultRx();

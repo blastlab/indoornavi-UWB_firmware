@@ -5,7 +5,7 @@
  *      Author: KarolTrzcinski
  */
 
-#include "logs.h"
+#include "logger/logs.h"
 #include "platform/port.h"
 
 void PORT_iassert_fun(const char* msg, int line) {

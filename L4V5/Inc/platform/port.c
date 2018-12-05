@@ -1,6 +1,6 @@
 #include "platform/port.h"
 #include "stm32l4xx_ll_crc.h"
-#include "logs.h" // trace
+#include "logger/logs.h" // trace
 
 void PORT_AdcInit();
 void PORT_SpiInit();
