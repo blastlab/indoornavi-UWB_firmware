@@ -16,7 +16,7 @@ ARG("fV", "firmware major version")
 
 ADD_ITEM_M(1102, INF_DEVICE_TURN_OFF, "Device turn off did:%X")
 
-ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X mV:%d route:[%s] serial:%X%X ")
+ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X mV:%d route:[%s] serial:%X%08X ")
 ARG("mV", "device voltage on accumulator connectors")
 ARG("route", "message route in format '[%X>%X>%X...] where last position is target address")
 ARG("serial", "is device 64B or 48B uniqual number, may be build based on device MAC address, especially if device has  BlueTooth functionality")
@@ -50,7 +50,7 @@ ARG("To", "12-bits counter of timeout during transmitting or receiving frames, v
 ARG("Uptime", "device work time in format days.hours.minuts.seconds. It overflow ofter 49.7 days.")
 COMMENT("see :ref:`status`")
 
-ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%X r:%s hV:%d.%d fV:%d.%d.%X%X")
+ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%08X r:%s hV:%d.%d fV:%d.%d.%X%X")
 ARG("serial", "64-bit device unique identificator number")
 ARG("r", "device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}")
 ARG("hV", "hardware version, major.minor")

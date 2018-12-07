@@ -540,6 +540,5 @@ const prot_cb_t prot_cb_tab[] = {
     ADD_FC(FC_MAC_ASK, FC_MAC_ASK_cb),
     ADD_FC(FC_MAC_RESP, FC_MAC_RESP_cb),
     ADD_FC(FC_MAC_SET, FC_MAC_SET_cb),
-    ADD_FC(FC_TDOA_BEACON_INFO, FC_TDOA_BEACON_INFO_cb),
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

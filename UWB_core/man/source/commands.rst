@@ -136,6 +136,13 @@ txset
 
 note: when smart tx power is disabled then always P4 is used
 
+note: when smart tx power is enabled then
+
+* *P4* is used for frames with duration longer than 0.5ms
+* *P3* is used for frames with duration longer between 0.25ms and 0.5ms
+* *P2* is used for frames with duration longer between 0.125ms and 0.25ms
+* *P1* is used for frames with duration shorter than 0.125ms
+
 note: This command is only for advanced users
 
 .. _recommended PG delay:

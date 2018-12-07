@@ -87,11 +87,14 @@ void UwbMain() {
 	LOG_SelfTest();
 #endif
 
+	settings.ranging.TDOA = true;
+	bool TDOA_TAG = settings.ranging.TDOA == true && settings.mac.role == RTLS_TAG;
+
 	MAC_Init(BIN_Parse, SendToSink);
 	CARRY_Init(settings.mac.role == RTLS_SINK);
-	FU_Init(settings.ranging.TDOA || settings.mac.role == RTLS_SINK);
+	FU_Init(TDOA_TAG || settings.mac.role == RTLS_SINK);
 
-	if (settings.mac.role == RTLS_TAG && settings.ranging.TDOA) {
+	if (TDOA_TAG) {
 		PORT_ImuSleep();
 		PORT_SetBeaconTimerPeriodMs(2000);
 		MAC_EnableReceiver(false);
@@ -102,13 +105,20 @@ void UwbMain() {
 	SendTurnOnMessage();
 	MAC_TryTransmitFrame();
 
-	if (2400 < PORT_BatteryVoltage() && PORT_BatteryVoltage() < 3100) {
-		TurnOff();
+	// prepare sleep mode before first beacon time
+	if (TDOA_TAG) {
+		PORT_PrepareSleepMode();
 	}
 
-	while (settings.ranging.TDOA == true && settings.mac.role == RTLS_TAG) {
+	// TDOA_TAG main loop
+	while (TDOA_TAG) {
 		// wake up
 		PORT_WatchdogRefresh();
+		PORT_LedOff(LED_R1);
+		PORT_LedOff(LED_G1);
+		if (2400 < PORT_BatteryVoltage() && PORT_BatteryVoltage() < 3100) {
+			TurnOff();
+		}
 		PORT_EnterSleepMode();
 	}
 
