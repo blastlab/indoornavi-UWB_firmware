@@ -201,6 +201,24 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
 void SYNC_SendBeacon();
 
 /**
+ * @brief Process TDOA beacon message sent from TAG device
+ * 
+ * @param[in] data pointer to FC_TDOA_BEACON_TAG_INFO_s
+ * @param[in] info extra packet info 
+ * @return int 
+ */
+int FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info);
+
+/**
+ * @brief Process TDOA beacon message sent from ANCHOR or SINK device
+ * 
+ * @param[in] data pointer to FC_TDOA_BEACON_ANCHOR_INFO_s
+ * @param[in] info extra packet info 
+ * @return int 
+ */
+int FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info);
+
+/**
  * @brief sync rx callback
  *
  * @param[in] data pointer to data to parse

@@ -158,6 +158,22 @@ ADD_ITEM_M(1313, INF_DELETETAGS, "deletetags deleted t:%d tags")
 ARG("t", "number of deleted tag")
 COMMENT("see :ref:`deletetags`")
 
+// ranging TDOA
+ADD_ITEM_M(1350, INF_TDOA_BEACON_FROM_TAG, "tdoa_tag did:%X anchor:%X mV:%d serial:%X%08X tsrg:%X%08X tsrl:%X%08X")
+ARG("did", "tag short identification number")
+ARG("mV", "tag battery voltage")
+ARG("serial", "Tag serial number - this parameter may be deleted in a future")
+ARG("tsrg", "TimeSample of Receive packet in Global time domain (after clock synchronization)")
+ARG("tsrl", "TimeSample of Receive packet in Local time domain (without clock synchronization)")
+
+ADD_ITEM_M(1351, INF_TDOA_BEACON_FROM_ANCHOR, "tdoa_anchor at:%X ar:%X tstg:%X%08X tstl:%X%08X tsrg:%X%08X tsrl:%X%08X tof:%d")
+ARG("at", "identificator (DID) of anchor witch transmit beacon")
+ARG("ar", "identificator (DID) of anchor witch received beacon")
+ARG("tstg", "TimeSample of Transmission packet in Global time domain  in transmiting device (after clock synchronization)")
+ARG("tstl", "TimeSample of Transmission packet in Local time domain in transmiting device (without clock synchronization)")
+ARG("tsrg", "TimeSample of Receive packet in Global time domain in receiving device (after clock synchronization)")
+ARG("tsrl", "TimeSample of Receive packet in Local time domain in receiving device (without clock synchronization)")
+
 // settings
 ADD_ITEM_M(1401, INF_SETTINGS_SAVED, "settings saved did:%X")
 COMMENT("see :ref:`save`")

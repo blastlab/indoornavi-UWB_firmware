@@ -214,13 +214,12 @@ void RTC_WKUP_IRQHandler(void)
 	PORT_ExitSleepMode();
 	TRANSCEIVER_WakeUp();
 	PORT_LedOn(LED_STAT);
+	//PORT_SleepMs(100);
 	static int i = 0;
 	if (i++ == 5) {
 		i = 0;
-		//SystemClock_Config();
 		PORT_AdcWake();
 		PORT_BatteryMeasure();
-		//PORT_Reboot();
 	}
 	SYNC_SendBeacon();
 	LOG_Trace(TRACE_WAKE_TIM_EXIT);

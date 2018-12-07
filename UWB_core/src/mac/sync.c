@@ -302,13 +302,14 @@ void SYNC_SendBeaconAsAnchor() {
 	packet.serial_lo = settings_otp->serial & UINT32_MAX;
 
 	// can't append to save power
-	// send as ranging message to don
+	// send as standard package to do it in your slot time
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {
 		sync.sending_beacon = true;
 		buf->isRangingFrame = true;
 		MAC_Write(buf, &packet, packet.len);
-		MAC_SendRanging(buf, DWT_START_TX_IMMEDIATE);
+		MAC_SetFrameType(buf, FR_CR_MAC);
+		MAC_Send(buf, false);
 	}
 }
 
@@ -325,7 +326,7 @@ void SYNC_SendBeaconAsTag() {
 	packet.serial_lo = settings_otp->serial & UINT32_MAX;
 
 	// can't append to save power
-	// send as ranging message to don
+	// send as ranging message to do it immediately
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {
 		sync.sending_beacon = true;
@@ -481,7 +482,7 @@ int FC_TDOA_BEACON_TAG_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info) {
+int FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info) {
 	// printuj beacon'a
 	int len = ((uint8_t*)data)[1];
 	FC_TDOA_BEACON_TAG_INFO_s packet;
@@ -494,9 +495,10 @@ void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info
 	uint32_t rx_ts_loc_lo = (uint32_t)rx_ts_loc;
 	uint32_t rx_ts_loc_hi = (uint32_t)(rx_ts_loc >> 32);
 
-	LOG_DBG("tdoa_tag did:%X anchor:%X mV:%d serial:%X%08X ts:%X%08X tsl:%X%08X", packet.tag_addr,
-	        packet.anchor_addr, packet.batt_voltage, packet.serial_hi, packet.serial_lo, rx_ts_lo,
-	        rx_ts_hi, rx_ts_loc_lo, rx_ts_loc_hi);
+	LOG_INF(INF_TDOA_BEACON_FROM_TAG, packet.tag_addr,
+	        packet.anchor_addr, packet.batt_voltage, packet.serial_hi, packet.serial_lo, rx_ts_hi,
+	        rx_ts_lo, rx_ts_loc_hi, rx_ts_loc_lo);
+	return 0;
 }
 
 int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
@@ -524,7 +526,7 @@ int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info) {
+int FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info) {
 	// printuj beacon'a
 	int len = ((uint8_t*)data)[1];
 	FC_TDOA_BEACON_ANCHOR_INFO_s packet;
@@ -544,9 +546,10 @@ void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* i
 	uint32_t tx_ts_loc_lo = (uint32_t)tx_ts_loc;
 	uint32_t tx_ts_loc_hi = (uint32_t)(tx_ts_loc >> 32);
 
-	LOG_DBG("tdoa_anchor at:%X ar:%X tstg:%X%08X tstl:%X%08X tsrg:%X%08X tsrl:%X%08X tof:%d",
+	LOG_INF(INF_TDOA_BEACON_FROM_ANCHOR,
 	        packet.anchor_tx_addr, packet.anchor_rx_addr, tx_ts_glo_hi, tx_ts_glo_lo, tx_ts_loc_hi,
 	        tx_ts_loc_lo, rx_ts_glo_hi, rx_ts_glo_lo, rx_ts_loc_hi, rx_ts_loc_lo, packet.tof);
+	return 0;
 }
 
 void SYNC_Tag_Timer_cb() {
