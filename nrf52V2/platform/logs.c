@@ -108,7 +108,9 @@ void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) 
 		if(spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 50) < PORT_TickMs()) {
 			spiHandling.ifWaitingForAck = true;
 			spiHandling.txTick = PORT_TickMs();
-			PORT_SpiTx((uint8_t *)bin, size, ETH_SPI_SS_PIN);
+			CRITICAL(
+				PORT_SpiTx((uint8_t *)bin, size, ETH_SPI_SS_PIN);
+			)
 		} else {
 			return;
 		}

@@ -8,6 +8,7 @@
 #include "port.h"
 #include "nrfx_spim.h"
 #include "nrfx_gpiote.h"
+#include "nrf_delay.h"
 
 // ==== SPI ====
 #define DW_SPI_INSTANCE  		0
@@ -71,7 +72,11 @@ void PORT_SpiInit(bool isSink) {
 	nrfx_spim_config_t spi1_config = NRFX_SPIM_GEN_CONFIG;
 	APP_ERROR_CHECK(nrfx_spim_init(&spi1, &spi1_config, NULL, NULL));
 #endif
-#if LOG_SPI_EN && ETH_SPI_SS_PIN && ETH_SPI_SLAVE_IRQ
+#if ETH_SPI_SS_PIN
+	nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
+	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
+#endif
+#if LOG_SPI_EN && ETH_SPI_SLAVE_IRQ
 	if(isSink) {
 		nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
 		nrf_gpio_pin_set(ETH_SPI_SS_PIN);
@@ -91,14 +96,12 @@ void PORT_SpiInit(bool isSink) {
 inline void PORT_SpiTx(uint8_t* buf, int length, int cs_pin) {
 #if GEN_SPI_SCK_PIN
 	IASSERT(nrfx_is_in_ram(buf));
-	nrf_gpio_pin_clear(cs_pin);
 	NRF_SPIM1->TXD.PTR = (uint32_t)buf;
 	NRF_SPIM1->TXD.MAXCNT = length;
-	NRF_SPIM1->RXD.PTR = (uint32_t)NULL;
 	NRF_SPIM1->RXD.MAXCNT = 0;
 	NRF_SPIM1->EVENTS_END = 0x0UL;
-	NRF_SPIM1->TXD.LIST = 0x0UL;
-	NRF_SPIM1->RXD.LIST = 0x0UL;
+	nrf_gpio_pin_clear(cs_pin);
+	nrf_delay_us(5);
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
 	nrf_gpio_pin_set(cs_pin);
@@ -155,27 +158,19 @@ inline void PORT_SpiRx(uint8_t* rx_buf, int rx_length, int cs_pin) {
 
 #pragma GCC optimize("O3")
 inline static void dw_spiTx(uint32_t length, const uint8_t *buf) {
-	IASSERT(nrfx_is_in_ram(buf));
 	NRF_SPIM0->TXD.PTR = (uint32_t)buf;
 	NRF_SPIM0->TXD.MAXCNT = length;
-	NRF_SPIM0->RXD.PTR = (uint32_t)NULL;
 	NRF_SPIM0->RXD.MAXCNT = 0;
 	NRF_SPIM0->EVENTS_END = 0x0UL;
-	NRF_SPIM0->TXD.LIST = 0x0UL;
-	NRF_SPIM0->RXD.LIST = 0x0UL;
 	NRF_SPIM0->TASKS_START = 0x1UL;
 	while(NRF_SPIM0->EVENTS_END == 0x0UL);
 }
 #pragma GCC optimize("O3")
 inline static void dw_spiRx(uint32_t length, uint8_t *buf) {
-	IASSERT(nrfx_is_in_ram(buf));
-	NRF_SPIM0->TXD.PTR = (uint32_t)NULL;
 	NRF_SPIM0->TXD.MAXCNT = 0;
 	NRF_SPIM0->RXD.PTR = (uint32_t)buf;
 	NRF_SPIM0->RXD.MAXCNT = length;
 	NRF_SPIM0->EVENTS_END = 0x0UL;
-	NRF_SPIM0->TXD.LIST = 0x0UL;
-	NRF_SPIM0->RXD.LIST = 0x0UL;
 	NRF_SPIM0->TASKS_START = 0x1UL;
 	while(NRF_SPIM0->EVENTS_END == 0x0UL);
 }
