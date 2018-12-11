@@ -230,7 +230,12 @@ void PORT_ExitSleepMode() {
 //	USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
 //	USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
 //	USBD_Start(&hUsbDeviceFS);
-	SYSCLKConfig_AfterSTOP();
-	//HAL_PWREx_DisableLowPowerRunMode();
-	--sleep_cnt;
+	if (sleep_cnt == 1) {
+		SYSCLKConfig_AfterSTOP();
+	}
+
+	if (sleep_cnt > 0) {
+		//HAL_PWREx_DisableLowPowerRunMode();
+		--sleep_cnt;
+	}
 }

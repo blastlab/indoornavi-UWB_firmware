@@ -98,6 +98,8 @@ void UwbMain() {
 		PORT_ImuSleep();
 		PORT_SetBeaconTimerPeriodMs(2000);
 		MAC_EnableReceiver(false);
+	} else if (settings.ranging.TDOA && settings.mac.role != RTLS_TAG) {
+		PORT_SetBeaconTimerPeriodMs(4000);
 	}
 
 	PORT_TimeStartTimers();

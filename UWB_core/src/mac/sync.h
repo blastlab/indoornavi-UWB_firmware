@@ -99,7 +99,7 @@ typedef struct {
 	uint16_t batt_voltage; ///< battery voltage in millivolts
 	uint16_t px, py, pz; ///< current device position vector in cm
 	uint8_t orientation; ///< hi nibble is vertical orientation, low nibble is horizontal orientation
-	uint8_t padding; ///< dummy byte
+	uint8_t padding; ///< dummy byte - It may be last readed message counter in next generation
 	uint32_t serial_hi; ///< device serial number from settings.version.serial
 	uint32_t serial_lo; ///< device serial number from settings.version.serial
 	dev_addr_t tag_addr; ///< tag address
@@ -151,7 +151,7 @@ typedef struct {
 typedef struct {
 	toa_core_t toa;              ///< SYNC toa data
 	int64_t toa_ts_poll_rx_raw;  ///< used to SYNC #TOA_EnableRxBeforeFin
-	bool sending_beacon;         ///< sync beacon sending flag
+	bool sleep_after_tx;         ///< sync beacon sending flag
 	uint8_t tree_level;          ///< local device tree level
 	sync_neighbour_t local_obj;  ///< local clock from dwt data
 	sync_neighbour_t neighbour[SYNC_MAC_NEIGHBOURS];  ///< list of neighbours
@@ -202,19 +202,19 @@ void SYNC_SendBeacon();
 
 /**
  * @brief Process TDOA beacon message sent from TAG device
- * 
+ *
  * @param[in] data pointer to FC_TDOA_BEACON_TAG_INFO_s
- * @param[in] info extra packet info 
- * @return int 
+ * @param[in] info extra packet info
+ * @return int
  */
 int FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief Process TDOA beacon message sent from ANCHOR or SINK device
- * 
+ *
  * @param[in] data pointer to FC_TDOA_BEACON_ANCHOR_INFO_s
- * @param[in] info extra packet info 
- * @return int 
+ * @param[in] info extra packet info
+ * @return int
  */
 int FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info);
 

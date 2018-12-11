@@ -294,18 +294,17 @@ int SYNC_SendFinal() {
 }
 
 void SYNC_SendBeaconAsAnchor() {
-	FC_TDOA_BEACON_TAG_s packet;
-	packet.FC = FC_TDOA_BEACON_TAG;
+	uint64_t tx_ts = TOA_SetTxTime(TRANSCEIVER_GetTime(), 100);
+	FC_TDOA_BEACON_ANCHOR_s packet;
+	packet.FC = FC_TDOA_BEACON_ANCHOR;
 	packet.len = sizeof(packet);
-	packet.batt_voltage = PORT_BatteryVoltage();
-	packet.serial_hi = settings_otp->serial >> 32;
-	packet.serial_lo = settings_otp->serial & UINT32_MAX;
+	TOA_Write40bValue(&packet.ts_glo[0], SYNC_GlobTime(tx_ts));
+	TOA_Write40bValue(&packet.ts_loc[0], tx_ts);
 
 	// can't append to save power
 	// send as standard package to do it in your slot time
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {
-		sync.sending_beacon = true;
 		buf->isRangingFrame = true;
 		MAC_Write(buf, &packet, packet.len);
 		MAC_SetFrameType(buf, FR_CR_MAC);
@@ -329,7 +328,7 @@ void SYNC_SendBeaconAsTag() {
 	// send as ranging message to do it immediately
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {
-		sync.sending_beacon = true;
+		sync.sleep_after_tx = true;
 		buf->isRangingFrame = true;
 		MAC_Write(buf, &packet, packet.len);
 		MAC_SendRanging(buf, DWT_START_TX_IMMEDIATE);
@@ -562,36 +561,37 @@ int SYNC_RxCb(const void* data, const prot_packet_info_t* info) {
 	int ret;
 	switch (*(uint8_t*)data) {
 		case FC_SYNC_POLL:
-			FC_SYNC_POLL_cb(data, info);
-			ret = 1;
+			ret = FC_SYNC_POLL_cb(data, info);
 			break;
 		case FC_SYNC_RESP:
-			FC_SYNC_RESP_cb(data, info);
-			ret = 1;
+			ret = FC_SYNC_RESP_cb(data, info);
 			break;
 		case FC_SYNC_FIN:
-			FC_SYNC_FIN_cb(data, info);
-			ret = 1;
+			ret = FC_SYNC_FIN_cb(data, info);
 			break;
 		case FC_TDOA_BEACON_TAG:
-			FC_TDOA_BEACON_TAG_cb(data, info);
-			ret = 1;
+			ret = FC_TDOA_BEACON_TAG_cb(data, info);
 			break;
 		case FC_TDOA_BEACON_TAG_INFO:
-			FC_TDOA_BEACON_TAG_INFO_cb(data, info);
-			ret = 1;
+			ret = FC_TDOA_BEACON_TAG_INFO_cb(data, info);
 			break;
 		case FC_TDOA_BEACON_ANCHOR:
-			FC_TDOA_BEACON_ANCHOR_cb(data, info);
-			ret = 1;
+			ret = FC_TDOA_BEACON_ANCHOR_cb(data, info);
 			break;
 		case FC_TDOA_BEACON_ANCHOR_INFO:
-			FC_TDOA_BEACON_ANCHOR_INFO_cb(data, info);
-			ret = 1;
+			ret = FC_TDOA_BEACON_ANCHOR_INFO_cb(data, info);
 			break;
 		default:
-			ret = 0;
+			ret = 2;
 			break;
+	}
+	if (ret == 0) { // wiadomosc obsluzona
+		return 1;
+	} else if (ret < 0) { // blad w obsludze wiadomosci
+		TRANSCEIVER_DefaultRx();
+		return 1;
+	} else { // wiadomsoc nie obsluzona
+		return 0;
 	}
 	return ret;
 }
@@ -624,9 +624,9 @@ int SYNC_TxCb(int64_t TsDwTx) {
 			ret = 0;
 			break;
 	}
-	if (sync.sending_beacon) {
+	if (sync.sleep_after_tx) {
 		//todo: check it
-		sync.sending_beacon = false;
+		sync.sleep_after_tx = false;
 		SYNC_TRACE("SYNC BEACON send, go sleep");
 		TRANSCEIVER_EnterDeepSleep();
 		PORT_PrepareSleepMode();
