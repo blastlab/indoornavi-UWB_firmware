@@ -18,6 +18,7 @@ settings_t settings = DEF_SETTINGS;
 settings_otp_t _settings_otp;
 settings_otp_t const *settings_otp = &_settings_otp;
 extern mac_instance_t mac;
+bool transceiver_receiver_permanent_disable;
 #define TEST_ASSERT_M(expr) TEST_ASSERT_MESSAGE(expr, #expr)
 
 //FAKE_VALUE_FUNC(int, SYNC_RxToCb);

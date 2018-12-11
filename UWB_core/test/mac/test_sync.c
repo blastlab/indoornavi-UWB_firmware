@@ -16,6 +16,7 @@ TEST_FILE("logs_common.c")
 
 settings_otp_t _settings_otp;
 settings_otp_t const *settings_otp = &_settings_otp;
+bool transceiver_receiver_permanent_disable;
 
 FAKE_VALUE_FUNC(int, _TOA_GetRangeBias, uint8, int, uint8, int);
 FAKE_VOID_FUNC(CARRY_ParseMessage, mac_buf_t *);
