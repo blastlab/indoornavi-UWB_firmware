@@ -37,9 +37,9 @@ static void readFromEthSpiSlave(uint8_t *rx_buf, uint32_t len) {
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
 }
-static const uint8_t ack_msg[4] = { LOG_PC_Ack, 4, 8, 216 };
-static const uint8_t nack_msg[4] = { LOG_PC_Nack, 4, 145, 79 };
-static const prot_packet_info_t bin_packet = {
+static uint8_t ack_msg[4] = { LOG_PC_Ack, 4, 8, 216 };
+static uint8_t nack_msg[4] = { LOG_PC_Nack, 4, 145, 79 };
+static prot_packet_info_t bin_packet = {
 		.original_src = CARRY_ADDR_SERVER,
 		.last_src = CARRY_ADDR_SERVER,
 		.carry = NULL
@@ -47,11 +47,9 @@ static const prot_packet_info_t bin_packet = {
 
 static void sendAckToEthSlave(bool isAck) {
 #if ETH_SPI_SS_PIN
-	if(isAck) {
-		PORT_SpiTx((uint8_t *)ack_msg, sizeof(ack_msg), ETH_SPI_SS_PIN);
-	} else {
-		PORT_SpiTx((uint8_t *)nack_msg, sizeof(nack_msg), ETH_SPI_SS_PIN);
-	}
+	CRITICAL(
+	PORT_SpiTx((uint8_t *)((isAck) ? ack_msg : nack_msg), sizeof(ack_msg), ETH_SPI_SS_PIN);
+	)
 #endif
 }
 
@@ -63,7 +61,8 @@ void SpiSlaveRequest() {
 	nrf_gpio_pin_clear(ETH_SPI_SS_PIN);
 	nrf_delay_us(5);
 	readFromEthSpiSlave(spiHandling.rx_buf, FRAME_HEADER_SIZE);
-	readFromEthSpiSlave(&spiHandling.rx_buf[FRAME_HEADER_SIZE], spiHandling.rx_buf[1] - FRAME_HEADER_SIZE);
+	if(1 < (spiHandling.rx_buf[1] - FRAME_HEADER_SIZE))
+		readFromEthSpiSlave(&spiHandling.rx_buf[FRAME_HEADER_SIZE], spiHandling.rx_buf[1] - FRAME_HEADER_SIZE);
 	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
 	)
 	int packet_len = spiHandling.rx_buf[1];
@@ -91,6 +90,7 @@ void SpiSlaveRequest() {
 			break;
 
 		case LOG_PC_Nack:
+		default:
 			if(spiHandling.ifWaitingForAck) {
 				spiHandling.ifWaitingForAck = false;
 			}
