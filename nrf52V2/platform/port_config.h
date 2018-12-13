@@ -58,14 +58,18 @@ typedef uint32_t time_ms_t;
 #define BLE_CODE(_CODE_)
 #endif
 
-#define ETH_SINK_PCB 0
+#define ETH_SINK_PCB 1
+#define ETH_MINI_SINK_PCB 0
 #define TAG_PCB 0
 
 #if ETH_SINK_PCB
 #undef LOG_SPI_EN
 #define LOG_SPI_EN 1
 
-#define ETH_SPI_SLAVE_IRQ 0
+#undef LOG_USB_EN
+#define LOG_USB_EN 0
+
+#define ETH_SPI_SLAVE_IRQ 14
 
 #define DW_RST_PIN 24
 #define DW_EXTI_IRQn 19
@@ -103,6 +107,29 @@ typedef uint32_t time_ms_t;
 #define IMU_SPI_SS_PIN 3
 #define IMU_EXTI_IRQ1 23
 #define IMU_EXTI_IRQ2 13
+
+#define USB_UART_RX_PIN 11
+#define USB_UART_TX_PIN 5
+
+#define BATT_ADC_TRIG_PIN 27
+#define HW_TYPE_PULL 26
+
+#define LED_G1 9
+#define LED_R1 12
+#elif ETH_MINI_SINK_PCB
+#define DW_RST_PIN 24
+#define DW_EXTI_IRQn 19
+#define DW_SPI_MISO_PIN 18
+#define DW_SPI_MOSI_PIN 20
+#define DW_SPI_SCK_PIN 16
+#define DW_SPI_SS_PIN 17
+
+#define GEN_SPI_MISO_PIN 7
+#define GEN_SPI_MOSI_PIN 6
+#define GEN_SPI_SCK_PIN 4
+
+#define ETH_SPI_SS_PIN 3
+#define ETH_SPI_SLAVE_IRQ 0 //14
 
 #define USB_UART_RX_PIN 11
 #define USB_UART_TX_PIN 5

@@ -186,8 +186,8 @@ void LOG_Control(bool isSink) {
 	}
 	PORT_LogData(BUF_GetHeadPacketPtr(), BUF_GetHeadPacketLen(), BUF_GetHeadPacketOpcode(), isSink);
 	if(circBuf.overflow) {
-		circBuf.overflow = false;
-		LOG_BufPop();
-		LOG_ERR(ERR_LOG_BUF_OVERFLOW);
+//		circBuf.overflow = false;
+//		LOG_BufPop();
+//		LOG_ERR(ERR_LOG_BUF_OVERFLOW);
 	}
 }

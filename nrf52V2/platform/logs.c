@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "nrf_gpio.h"
+#include "nrf_delay.h"
 #include "../logger/logs.h"
 #include "parsers/base64.h"
 #include "parsers/txt_parser.h"
@@ -29,13 +30,10 @@ struct spiHandling {
 
 #if LOG_SPI_EN
 static void readFromEthSpiSlave(uint8_t *rx_buf, uint32_t len) {
-	NRF_SPIM1->TXD.PTR = (uint32_t)NULL;
-	NRF_SPIM1->TXD.MAXCNT = 0;
 	NRF_SPIM1->RXD.PTR = (uint32_t)rx_buf;
 	NRF_SPIM1->RXD.MAXCNT = len;
+	NRF_SPIM1->TXD.MAXCNT = 0;
 	NRF_SPIM1->EVENTS_END = 0x0UL;
-	NRF_SPIM1->TXD.LIST = 0x0UL;
-	NRF_SPIM1->RXD.LIST = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
 }
@@ -63,6 +61,7 @@ void SpiSlaveRequest() {
 	// only slave's irq can oall this method, so critical section is only needed for peripheral use
 	CRITICAL(
 	nrf_gpio_pin_clear(ETH_SPI_SS_PIN);
+	nrf_delay_us(5);
 	readFromEthSpiSlave(spiHandling.rx_buf, FRAME_HEADER_SIZE);
 	readFromEthSpiSlave(&spiHandling.rx_buf[FRAME_HEADER_SIZE], spiHandling.rx_buf[1] - FRAME_HEADER_SIZE);
 	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
@@ -86,8 +85,8 @@ void SpiSlaveRequest() {
 
 		case LOG_PC_Ack:
 			if(spiHandling.ifWaitingForAck) {
-				spiHandling.ifWaitingForAck = false;
 				LOG_BufPop();
+				spiHandling.ifWaitingForAck = false;
 			}
 			break;
 
@@ -105,7 +104,7 @@ void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) 
 	#if LOG_SPI_EN
 	if(isSink) {
 		// when the device is not waiting for previous message ack or when waiting timed out
-		if(spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 50) < PORT_TickMs()) {
+		if(spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 100) < PORT_TickMs()) {
 			spiHandling.ifWaitingForAck = true;
 			spiHandling.txTick = PORT_TickMs();
 			CRITICAL(
