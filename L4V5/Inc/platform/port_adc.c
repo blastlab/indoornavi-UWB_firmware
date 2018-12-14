@@ -39,6 +39,12 @@ void PORT_AdcInit() {
 void MX_ADC1_Init();
 
 void PORT_AdcWake() {
+	// wake ADC
+	//LL_ADC_DisableDeepPowerDown(ADC1);
+	//LL_ADC_EnableInternalRegulator(ADC1);
+	// PROT_SleepMs(2);
+	//LL_ADC_Enable(ADC1);
+
 	HAL_ADC_DeInit(&hadc1);
 	MX_ADC1_Init();
 	HAL_ADCEx_Calibration_SetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED, adc_cal_value);
