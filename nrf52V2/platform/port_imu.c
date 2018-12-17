@@ -16,12 +16,24 @@ typedef enum {
 	FUNC_CFG_ACCESS = 0x01,
 	INT1_CTRL = 0x0d,
 	WHO_AM_I = 0x0f,
+	FIFO_CTRL1 = 0x06,
+	FIFO_CTRL2 = 0x07,
+	FIFO_CTRL3 = 0x08,
+	FIFO_CTRL4 = 0x09,
+	FIFO_CTRL5 = 0x0A,
 	CTRL1_XL = 0x10,
+	CTRL2_G = 0x11,
 	CTRL3_C = 0x12,
 	CTRL6_C = 0x15,
 	CTRL8_XL = 0x17,
 	CTRL10_C = 0x19,
 	WAKE_UP_SRC = 0x1b,
+	FIFO_STATUS1 = 0x3a,
+	FIFO_STATUS2 = 0x3b,
+	FIFO_STATUS3 = 0x3c,
+	FIFO_STATUS4 = 0x3d,
+	FIFO_DATA_OUT_L = 0x3e,
+	FIFO_DATA_OUT_H = 0x3f,
 	TAP_CFG = 0x58,
 	WAKE_UP_THS = 0x5b,
 	WAKE_UP_DUR = 0x5c,
@@ -103,6 +115,46 @@ void PORT_ImuInit(bool imu_available) {
 		ImuWriteRegister(FUNC_CFG_ACCESS, 0);			// disabling embedded functions register configuration
 		ImuWriteRegister(CTRL1_XL, 0b01100000);	// enabling accel, setting ODR (hi-pwoer mode) and full-scale
 	}
+#endif
+}
+
+void PORT_ImuMotionTrackingInit(bool imu_available) {
+#if IMU_SPI_SS_PIN
+	if (!imu_available) {
+		return;
+	}
+	nrf_gpio_cfg_output(IMU_SPI_SS_PIN);
+	nrf_gpio_pin_set(IMU_SPI_SS_PIN);
+	ImuReset();
+
+	ImuWriteRegister(CTRL3_C, 0b01000100);
+	ImuWriteRegister(CTRL1_XL, 0b01100000);
+	ImuWriteRegister(CTRL2_G, 0b01100000);
+
+	ImuWriteRegister(FIFO_CTRL1, 0b00000000);
+	ImuWriteRegister(FIFO_CTRL2, 0b00000000);
+	ImuWriteRegister(FIFO_CTRL3, 0b00001001);
+	ImuWriteRegister(FIFO_CTRL4, 0b00000000);
+	ImuWriteRegister(FIFO_CTRL5, 0b00110110);
+
+
+	uint8_t data[256] = { 0 };
+	while(1) {
+		uint8_t fifo_stat[2];
+		float x_g, y_g, z_g, x_a, y_a, z_a;
+		ImuReadRegister(FIFO_STATUS1, fifo_stat, 2);
+		if(fifo_stat > 24) {
+			ImuReadRegister(FIFO_DATA_OUT_L, data, 12);
+			x_g = (int16_t)((data[1] << 8) | data[0])*8.75f;
+			y_g = (int16_t)((data[3] << 8) | data[2])*8.75f;
+			z_g = (int16_t)((data[5] << 8) | data[4])*8.75f;
+			x_a = (int16_t)((data[7] << 8) | data[6])*0.061f;
+			y_a = (int16_t)((data[9] << 8) | data[8])*0.061f;
+			z_a = (int16_t)((data[11] << 8) | data[10])*0.061f;
+		}
+		PORT_SleepMs(1);
+	}
+
 #endif
 }
 

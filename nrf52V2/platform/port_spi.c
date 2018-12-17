@@ -108,27 +108,19 @@ inline void PORT_SpiTx(uint8_t* buf, int length, int cs_pin) {
 #pragma GCC optimize("O3")
 inline void PORT_SpiTxRx(uint8_t* tx_buf, int tx_length, uint8_t* rx_buf, int rx_length, int cs_pin) {
 #if GEN_SPI_SCK_PIN
-	IASSERT(nrfx_is_in_ram(tx_buf));
-	IASSERT(nrfx_is_in_ram(rx_buf));
 	nrf_gpio_pin_clear(cs_pin);
 	// tx data
 	NRF_SPIM1->TXD.PTR = (uint32_t)tx_buf;
 	NRF_SPIM1->TXD.MAXCNT = tx_length;
-	NRF_SPIM1->RXD.PTR = (uint32_t)NULL;
 	NRF_SPIM1->RXD.MAXCNT = 0;
 	NRF_SPIM1->EVENTS_END = 0x0UL;
-	NRF_SPIM1->TXD.LIST = 0x0UL;
-	NRF_SPIM1->RXD.LIST = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
 	// rx data
-	NRF_SPIM1->TXD.PTR = (uint32_t)NULL;
-	NRF_SPIM1->TXD.MAXCNT = 0;
 	NRF_SPIM1->RXD.PTR = (uint32_t)rx_buf;
 	NRF_SPIM1->RXD.MAXCNT = rx_length;
+	NRF_SPIM1->TXD.MAXCNT = 0;
 	NRF_SPIM1->EVENTS_END = 0x0UL;
-	NRF_SPIM1->TXD.LIST = 0x0UL;
-	NRF_SPIM1->RXD.LIST = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
 	while(NRF_SPIM1->EVENTS_END == 0x0UL);
 	nrf_gpio_pin_set(cs_pin);

@@ -77,6 +77,9 @@ void UwbMain() {
 	// CheckSleepMode();
 	SETTINGS_Init();
 	PORT_Init();
+
+	PORT_ImuMotionTrackingInit(true);
+
 	Desynchronize();  // base on device address
 
 	if (settings.mac.role == RTLS_DEFAULT) {

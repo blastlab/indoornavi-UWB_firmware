@@ -555,6 +555,8 @@ void PORT_ImuInit(bool imu_available);
  */
 void PORT_ImuMotionControl(bool sleep_enabled);
 
+void PORT_ImuMotionTrackingInit(bool imu_available);
+
 /**
  * \brief IMU IRQ handler
  *
