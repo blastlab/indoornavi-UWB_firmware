@@ -205,18 +205,18 @@ void SYNC_SendBeacon();
  *
  * @param[in] data pointer to FC_TDOA_BEACON_TAG_INFO_s
  * @param[in] info extra packet info
- * @return int
+ * @return void
  */
-int FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info);
+void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief Process TDOA beacon message sent from ANCHOR or SINK device
  *
  * @param[in] data pointer to FC_TDOA_BEACON_ANCHOR_INFO_s
  * @param[in] info extra packet info
- * @return int
+ * @return void
  */
-int FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info);
+void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief sync rx callback

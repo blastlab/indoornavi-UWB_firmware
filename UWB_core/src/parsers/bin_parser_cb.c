@@ -55,7 +55,7 @@ void FC_TURN_ON_cb(const void* data, const prot_packet_info_t* info) {
   BIN_ASSERT(*(uint8_t*)data == FC_TURN_ON);
   FC_TURN_ON_s packet;
   memcpy(&packet, data, sizeof(packet));
-	PRINT_TurnOn(data, packet->src_did);
+	PRINT_TurnOn(data, packet.src_did);
   if (settings.mac.role == RTLS_SINK) {
 	  if(packet.src_did == info->original_src) {
 		  SendDevAccepted(packet.src_did, settings.mac.addr);

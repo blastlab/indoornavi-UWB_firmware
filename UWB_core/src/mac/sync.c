@@ -481,9 +481,13 @@ int FC_TDOA_BEACON_TAG_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info) {
 	// printuj beacon'a
 	int len = ((uint8_t*)data)[1];
+	if (len != sizeof(FC_TDOA_BEACON_TAG_INFO_s)) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_TAG_INFO", len, sizeof(FC_TDOA_BEACON_TAG_INFO_s));
+		return;
+	}
 	FC_TDOA_BEACON_TAG_INFO_s packet;
 	memcpy(&packet, data, len);
 
@@ -497,7 +501,6 @@ int FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info)
 	LOG_INF(INF_TDOA_BEACON_FROM_TAG, packet.tag_addr,
 	        packet.anchor_addr, packet.batt_voltage, packet.serial_hi, packet.serial_lo, rx_ts_hi,
 	        rx_ts_lo, rx_ts_loc_hi, rx_ts_loc_lo);
-	return 0;
 }
 
 int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
@@ -525,9 +528,13 @@ int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info) {
 	// printuj beacon'a
 	int len = ((uint8_t*)data)[1];
+	if (len != sizeof(FC_TDOA_BEACON_ANCHOR_INFO_s)) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_ANCHOR_INFO", len, sizeof(FC_TDOA_BEACON_ANCHOR_INFO_s));
+		return;
+	}
 	FC_TDOA_BEACON_ANCHOR_INFO_s packet;
 	memcpy(&packet, data, len);
 
@@ -548,7 +555,7 @@ int FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* in
 	LOG_INF(INF_TDOA_BEACON_FROM_ANCHOR,
 	        packet.anchor_tx_addr, packet.anchor_rx_addr, tx_ts_glo_hi, tx_ts_glo_lo, tx_ts_loc_hi,
 	        tx_ts_loc_lo, rx_ts_glo_hi, rx_ts_glo_lo, rx_ts_loc_hi, rx_ts_loc_lo, packet.tof);
-	return 0;
+	return;
 }
 
 void SYNC_Tag_Timer_cb() {
@@ -573,13 +580,17 @@ int SYNC_RxCb(const void* data, const prot_packet_info_t* info) {
 			ret = FC_TDOA_BEACON_TAG_cb(data, info);
 			break;
 		case FC_TDOA_BEACON_TAG_INFO:
-			ret = FC_TDOA_BEACON_TAG_INFO_cb(data, info);
+			FC_TDOA_BEACON_TAG_INFO_cb(data, info);
+			TRANSCEIVER_DefaultRx();
+			ret = 0;
 			break;
 		case FC_TDOA_BEACON_ANCHOR:
 			ret = FC_TDOA_BEACON_ANCHOR_cb(data, info);
 			break;
 		case FC_TDOA_BEACON_ANCHOR_INFO:
-			ret = FC_TDOA_BEACON_ANCHOR_INFO_cb(data, info);
+			FC_TDOA_BEACON_ANCHOR_INFO_cb(data, info);
+			TRANSCEIVER_DefaultRx();
+			ret = 0;
 			break;
 		default:
 			ret = 2;
