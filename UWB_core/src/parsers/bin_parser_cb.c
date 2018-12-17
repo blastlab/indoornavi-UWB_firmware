@@ -55,7 +55,7 @@ void FC_TURN_ON_cb(const void* data, const prot_packet_info_t* info) {
   BIN_ASSERT(*(uint8_t*)data == FC_TURN_ON);
   FC_TURN_ON_s packet;
   memcpy(&packet, data, sizeof(packet));
-  PRINT_TurnOn(data, info->original_src);
+	PRINT_TurnOn(data, packet.src_did);
   if (settings.mac.role == RTLS_SINK) {
 	  if(packet.src_did == info->original_src) {
 		  SendDevAccepted(packet.src_did, settings.mac.addr);
@@ -540,6 +540,7 @@ const prot_cb_t prot_cb_tab[] = {
     ADD_FC(FC_MAC_ASK, FC_MAC_ASK_cb),
     ADD_FC(FC_MAC_RESP, FC_MAC_RESP_cb),
     ADD_FC(FC_MAC_SET, FC_MAC_SET_cb),
-    ADD_FC(FC_TDOA_BEACON_INFO, FC_TDOA_BEACON_INFO_cb),
+    ADD_FC(FC_TDOA_BEACON_TAG_INFO, FC_TDOA_BEACON_TAG_INFO_cb),
+    ADD_FC(FC_TDOA_BEACON_ANCHOR_INFO, FC_TDOA_BEACON_ANCHOR_INFO_cb),
 };
 const int prot_cb_len = sizeof(prot_cb_tab) / sizeof(*prot_cb_tab);

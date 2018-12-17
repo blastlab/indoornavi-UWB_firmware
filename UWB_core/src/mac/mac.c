@@ -22,6 +22,8 @@ void MAC_EnableReceiver(bool en) {
 	dwt_cb_t rx_cb = settings.mac.role == RTLS_LISTENER ? listener_isr : MAC_RxCb;
 	dwt_cb_t tx_cb = settings.mac.role == RTLS_LISTENER ? 0 : MAC_TxCb;
 
+	extern bool transceiver_receiver_permanent_disable;
+	transceiver_receiver_permanent_disable = en;
 	if (en) {
 		TRANSCEIVER_SetCb(tx_cb, rx_cb, MAC_RxToCb, MAC_RxErrCb);
 	} else {
@@ -77,7 +79,9 @@ static void MAC_TxCb(const dwt_cb_data_t* data) {
 	LOG_Trace(TRACE_DW_IRQ_TX);
 	int64_t tx_ts = TRANSCEIVER_GetTxTimestamp();
 
-	PORT_LedOn(LED_STAT);
+	if (settings.mac.role != RTLS_TAG || settings.ranging.TDOA == false) {
+		PORT_LedOn(LED_STAT);
+	}
 
 	// zero means that no next frame has been send as
 	// a ranging frame in a called callback

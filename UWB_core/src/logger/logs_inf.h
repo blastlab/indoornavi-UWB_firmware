@@ -16,7 +16,7 @@ ARG("fV", "firmware major version")
 
 ADD_ITEM_M(1102, INF_DEVICE_TURN_OFF, "Device turn off did:%X")
 
-ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X mV:%d route:[%s] serial:%X%X ")
+ADD_ITEM_M(1103, INF_BEACON, "Beacon from did:%X mV:%d route:[%s] serial:%X%08X ")
 ARG("mV", "device voltage on accumulator connectors")
 ARG("route", "message route in format '[%X>%X>%X...] where last position is target address")
 ARG("serial", "is device 64B or 48B uniqual number, may be build based on device MAC address, especially if device has  BlueTooth functionality")
@@ -50,7 +50,7 @@ ARG("To", "12-bits counter of timeout during transmitting or receiving frames, v
 ARG("Uptime", "device work time in format days.hours.minuts.seconds. It overflow ofter 49.7 days.")
 COMMENT("see :ref:`status`")
 
-ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%X r:%s hV:%d.%d fV:%d.%d.%X%X")
+ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%08X r:%s hV:%d.%d fV:%d.%d.%X%X")
 ARG("serial", "64-bit device unique identificator number")
 ARG("r", "device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}")
 ARG("hV", "hardware version, major.minor")
@@ -157,6 +157,22 @@ COMMENT("see :ref:`settags`")
 ADD_ITEM_M(1313, INF_DELETETAGS, "deletetags deleted t:%d tags")
 ARG("t", "number of deleted tag")
 COMMENT("see :ref:`deletetags`")
+
+// ranging TDOA
+ADD_ITEM_M(1350, INF_TDOA_BEACON_FROM_TAG, "tdoa_tag did:%X anchor:%X mV:%d serial:%X%08X tsrg:%X%08X tsrl:%X%08X")
+ARG("did", "tag short identification number")
+ARG("mV", "tag battery voltage")
+ARG("serial", "Tag serial number - this parameter may be deleted in a future")
+ARG("tsrg", "TimeSample of Receive packet in Global time domain (after clock synchronization)")
+ARG("tsrl", "TimeSample of Receive packet in Local time domain (without clock synchronization)")
+
+ADD_ITEM_M(1351, INF_TDOA_BEACON_FROM_ANCHOR, "tdoa_anchor at:%X ar:%X tstg:%X%08X tstl:%X%08X tsrg:%X%08X tsrl:%X%08X tof:%d")
+ARG("at", "identificator (DID) of anchor witch transmit beacon")
+ARG("ar", "identificator (DID) of anchor witch received beacon")
+ARG("tstg", "TimeSample of Transmission packet in Global time domain  in transmiting device (after clock synchronization)")
+ARG("tstl", "TimeSample of Transmission packet in Local time domain in transmiting device (without clock synchronization)")
+ARG("tsrg", "TimeSample of Receive packet in Global time domain in receiving device (after clock synchronization)")
+ARG("tsrl", "TimeSample of Receive packet in Local time domain in receiving device (without clock synchronization)")
 
 // settings
 ADD_ITEM_M(1401, INF_SETTINGS_SAVED, "settings saved did:%X")

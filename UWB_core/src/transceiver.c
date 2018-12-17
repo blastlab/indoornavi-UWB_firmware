@@ -7,6 +7,7 @@ int transceiver_pac = 0;
 int transceiver_sfd = 0;
 int transceiver_sniff_on_pac = 2;
 int transceiver_sniff_off_us = 0;
+bool transceiver_receiver_permanent_disable = false;
 
 static void _TRANSCEIVER_FillTxConfig(transceiver_settings_t* ts);
 static void _TRANSCEIVER_InitGlobalsFromSet(transceiver_settings_t* ts,
@@ -128,6 +129,9 @@ void TRANSCEIVER_SetLeds(bool enabled) {
 }
 
 void TRANSCEIVER_DefaultRx() {
+	if (transceiver_receiver_permanent_disable) {
+		return;
+	}
 	dwt_setrxtimeout(0);
 	dwt_setpreambledetecttimeout(0);
 	if (settings.transceiver.low_power_mode) {

@@ -11,13 +11,6 @@
 #define PTIM_SLOT TIM2
 
 void PORT_TimeInit() {
-	// sleep timer
-	// f = 32kHz / 128 = 250Hz
-	// T = 4 ms
-	LL_LPTIM_EnableIT_ARRM(LPTIM_BEACON);
-	LL_LPTIM_SetAutoReload(LPTIM_BEACON, 1000);
-	LL_LPTIM_Enable(LPTIM_BEACON);
-
 	// slot timer
 	// f = 40 MHz / 40 = 1MHz
 	// T = 1 us
@@ -121,7 +114,7 @@ static int _PORT_InitRTC() {
 	return resolution_ms;
 }
 
-void PORT_SetBeaconTimerPeriodMs(int time_ms) {
+void PORT_SetBeaconTimerPeriodMs_RTC(int time_ms) {
 //	// start RTC init
 	int resolution_ms = _PORT_InitRTC();
 
@@ -154,4 +147,22 @@ void PORT_SetBeaconTimerPeriodMs(int time_ms) {
 	LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_20);
 	NVIC_EnableIRQ(RTC_WKUP_IRQn); // Configure NVIC for RTC
 	NVIC_SetPriority(RTC_WKUP_IRQn, 2); // Set priority for RTC (=2, low priority)
+}
+
+void PORT_SetBeaconTimerPeriodMs_LPTIM(int time_ms) {
+	// low power timer - 16 bit
+	// f = 32kHz / 128 = 250Hz
+	// T = 4 ms to 4 minutes
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_LPTIM1);
+	LL_LPTIM_Enable(LPTIM_BEACON);
+	LL_LPTIM_SetClockSource(LPTIM1, LL_LPTIM_CLK_SOURCE_INTERNAL);
+	LL_LPTIM_SetPrescaler(LPTIM1, LL_LPTIM_PRESCALER_DIV128);
+	LL_LPTIM_EnableIT_ARRM(LPTIM_BEACON);
+	int T = MIN(time_ms / 4, 0xFFFF);
+	LL_LPTIM_SetAutoReload(LPTIM_BEACON, T);
+	LL_LPTIM_StartCounter(LPTIM_BEACON, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
+}
+
+void PORT_SetBeaconTimerPeriodMs(int time_ms) {
+	PORT_SetBeaconTimerPeriodMs_LPTIM(time_ms);
 }
