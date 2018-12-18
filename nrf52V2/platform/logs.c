@@ -104,7 +104,7 @@ void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) 
 	#if LOG_SPI_EN
 	if(isSink) {
 		// when the device is not waiting for previous message ack or when waiting timed out
-		if(spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 100) < PORT_TickMs()) {
+		if((spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 100) < PORT_TickMs()) && nrf_gpio_pin_read(ETH_SPI_STATE_PIN) == 0) {
 			spiHandling.ifWaitingForAck = true;
 			spiHandling.txTick = PORT_TickMs();
 			CRITICAL(

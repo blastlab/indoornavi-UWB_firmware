@@ -10,10 +10,43 @@
 #include "nrfx_gpiote.h"
 #include "nrf_delay.h"
 
+// ==== SPI ====
+#define DW_SPI_INSTANCE  		0
+#define GENERAL_SPI_INSTANCE	1
+
+static const nrfx_spim_t spi0 = NRFX_SPIM_INSTANCE(DW_SPI_INSTANCE);
+static const nrfx_spim_t spi1 = NRFX_SPIM_INSTANCE(GENERAL_SPI_INSTANCE);
+
+#define NRFX_SPIM_DW_CONFIG                             		 	\
+{                                                            	\
+    .sck_pin        = DW_SPI_SCK_PIN,                					\
+    .mosi_pin       = DW_SPI_MOSI_PIN,                				\
+    .miso_pin       = DW_SPI_MISO_PIN,                				\
+    .ss_pin         = NRFX_SPIM_PIN_NOT_USED,                	\
+    .ss_active_high = false,                                 	\
+    .irq_priority   = NRFX_SPIM_DEFAULT_CONFIG_IRQ_PRIORITY, 	\
+    .orc            = 0xFF,                                  	\
+    .frequency      = NRF_SPIM_FREQ_8M,                      	\
+    .mode           = NRF_SPIM_MODE_0,                       	\
+    .bit_order      = NRF_SPIM_BIT_ORDER_MSB_FIRST,          	\
+}
+
+#define NRFX_SPIM_GEN_CONFIG                             		 	\
+{                                                            	\
+    .sck_pin        = GEN_SPI_SCK_PIN,                				\
+    .mosi_pin       = GEN_SPI_MOSI_PIN,                				\
+    .miso_pin       = GEN_SPI_MISO_PIN,                				\
+    .ss_pin         = NRFX_SPIM_PIN_NOT_USED,                	\
+    .ss_active_high = false,                                 	\
+    .irq_priority   = NRFX_SPIM_DEFAULT_CONFIG_IRQ_PRIORITY, 	\
+    .orc            = 0xFF,                                  	\
+    .frequency      = NRF_SPIM_FREQ_8M,                      	\
+    .mode           = NRF_SPIM_MODE_0,                       	\
+    .bit_order      = NRF_SPIM_BIT_ORDER_MSB_FIRST,          	\
+}
+
 void PORT_SpiSpeedSlow(bool slow) {
-	NRF_SPIM0->ENABLE = (SPIM_ENABLE_ENABLE_Disabled << SPIM_ENABLE_ENABLE_Pos);
 	NRF_SPIM0->FREQUENCY = (slow) ? NRF_SPIM_FREQ_2M : NRF_SPIM_FREQ_8M;
-	NRF_SPIM0->ENABLE = (SPIM_ENABLE_ENABLE_Enabled << SPIM_ENABLE_ENABLE_Pos);
 }
 
 #if LOG_SPI_EN
@@ -26,79 +59,20 @@ static void EthSpiSlaveirq(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) 
 }
 #endif
 
-static void dwSpiInit(void) {
-	// SCK, SPI mode 0
-	nrf_gpio_pin_clear(GEN_SPI_SCK_PIN);
-  nrf_gpio_cfg(GEN_SPI_SCK_PIN,
-               NRF_GPIO_PIN_DIR_OUTPUT,
-               NRF_GPIO_PIN_INPUT_DISCONNECT,
-               NRF_GPIO_PIN_NOPULL,
-               NRF_GPIO_PIN_H0H1,
-               NRF_GPIO_PIN_NOSENSE);
-  // MOSI
-  nrf_gpio_pin_clear(GEN_SPI_MOSI_PIN);
-  nrf_gpio_cfg(GEN_SPI_MOSI_PIN,
-               NRF_GPIO_PIN_DIR_OUTPUT,
-               NRF_GPIO_PIN_INPUT_DISCONNECT,
-               NRF_GPIO_PIN_NOPULL,
-               NRF_GPIO_PIN_H0H1,
-               NRF_GPIO_PIN_NOSENSE);
-  // MISO
-  nrf_gpio_cfg_input(GEN_SPI_MISO_PIN, (nrf_gpio_pin_pull_t)NRFX_SPIM_MISO_PULL_CFG);
-  // CS
-	nrf_gpio_pin_set(DW_SPI_SS_PIN);
-  nrf_gpio_cfg_output(DW_SPI_SS_PIN);
-  NRF_SPIM0->PSEL.SCK = DW_SPI_SCK_PIN;
-  NRF_SPIM0->PSEL.MOSI = DW_SPI_MOSI_PIN;
-  NRF_SPIM0->PSEL.MISO = DW_SPI_MISO_PIN;
-  NRF_SPIM0->FREQUENCY = NRF_SPIM_FREQ_8M;
-  NRF_SPIM0->CONFIG = SPIM_CONFIG_ORDER_MsbFirst |
-  		(SPIM_CONFIG_CPOL_ActiveHigh << SPIM_CONFIG_CPOL_Pos) |
-      (SPIM_CONFIG_CPHA_Leading << SPIM_CONFIG_CPHA_Pos);
-  NRF_SPIM0->ORC = 0xFF;
-  NRF_SPIM0->ENABLE = (SPIM_ENABLE_ENABLE_Enabled << SPIM_ENABLE_ENABLE_Pos);
-}
-
-void genSpiInit(void) {
-	// SCK, SPI mode 0
-	nrf_gpio_pin_clear(GEN_SPI_SCK_PIN);
-  nrf_gpio_cfg(GEN_SPI_SCK_PIN,
-               NRF_GPIO_PIN_DIR_OUTPUT,
-               NRF_GPIO_PIN_INPUT_DISCONNECT,
-               NRF_GPIO_PIN_NOPULL,
-               NRF_GPIO_PIN_H0H1,
-               NRF_GPIO_PIN_NOSENSE);
-  // MOSI
-  nrf_gpio_pin_clear(GEN_SPI_MOSI_PIN);
-  nrf_gpio_cfg(GEN_SPI_MOSI_PIN,
-               NRF_GPIO_PIN_DIR_OUTPUT,
-               NRF_GPIO_PIN_INPUT_DISCONNECT,
-               NRF_GPIO_PIN_NOPULL,
-               NRF_GPIO_PIN_H0H1,
-               NRF_GPIO_PIN_NOSENSE);
-  // MISO
-  nrf_gpio_cfg_input(GEN_SPI_MISO_PIN, (nrf_gpio_pin_pull_t)NRFX_SPIM_MISO_PULL_CFG);
-#if ETH_SPI_SS_PIN
-  // CS
-	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
-  nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
-#endif
-  NRF_SPIM1->PSEL.SCK = GEN_SPI_SCK_PIN;
-  NRF_SPIM1->PSEL.MOSI = GEN_SPI_MOSI_PIN;
-  NRF_SPIM1->PSEL.MISO = GEN_SPI_MISO_PIN;
-  NRF_SPIM1->FREQUENCY = NRF_SPIM_FREQ_1M;
-  NRF_SPIM1->CONFIG = SPIM_CONFIG_ORDER_MsbFirst |
-  		(SPIM_CONFIG_CPOL_ActiveHigh << SPIM_CONFIG_CPOL_Pos) |
-      (SPIM_CONFIG_CPHA_Leading << SPIM_CONFIG_CPHA_Pos);
-  NRF_SPIM1->ORC = 0xFF;
-  NRF_SPIM1->ENABLE = (SPIM_ENABLE_ENABLE_Enabled << SPIM_ENABLE_ENABLE_Pos);
-}
 void PORT_SpiInit(bool isSink) {
-	dwSpiInit();
+  nrf_gpio_cfg_output(DW_SPI_SS_PIN);
+	nrf_gpio_pin_set(DW_SPI_SS_PIN);
+	nrfx_spim_config_t spi0_config = NRFX_SPIM_DW_CONFIG;
+	APP_ERROR_CHECK(nrfx_spim_init(&spi0, &spi0_config, NULL, NULL));
+
 #if GEN_SPI_SCK_PIN
-	genSpiInit();
+	nrfx_spim_config_t spi1_config = NRFX_SPIM_GEN_CONFIG;
+	APP_ERROR_CHECK(nrfx_spim_init(&spi1, &spi1_config, NULL, NULL));
 #endif
-#if LOG_SPI_EN && ETH_SPI_SLAVE_IRQ
+#if LOG_SPI_EN && ETH_SPI_SS_PIN && ETH_SPI_SLAVE_IRQ
+	nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
+	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
+	nrf_gpio_cfg_input(ETH_SPI_STATE_PIN, NRF_GPIO_PIN_NOPULL);
 	if(isSink) {
     nrfx_gpiote_in_config_t spi_slave_irq_config = {
     		.is_watcher = false,

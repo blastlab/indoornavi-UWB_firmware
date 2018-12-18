@@ -83,6 +83,7 @@ typedef uint32_t time_ms_t;
 #define GEN_SPI_SCK_PIN 4
 
 #define ETH_SPI_SS_PIN 22
+#define ETH_SPI_STATE_PIN 13
 
 #define USB_UART_RX_PIN 11
 #define USB_UART_TX_PIN 5
