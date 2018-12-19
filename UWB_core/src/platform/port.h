@@ -51,7 +51,7 @@
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
 #define DBG 0
-#define USE_SLOT_TIMER 0
+#define USE_SLOT_TIMER 1
 
 /**
  * \brief Initialization for port modules

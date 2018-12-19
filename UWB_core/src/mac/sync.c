@@ -293,22 +293,53 @@ int SYNC_SendFinal() {
 	return MAC_SendRanging(buf, tx_flags);
 }
 
-void SYNC_SendBeacon() {
-	FC_TDOA_BEACON_s packet;
-	packet.FC = FC_TDOA_BEACON;
+void SYNC_SendBeaconAsAnchor() {
+	uint64_t tx_ts = TOA_SetTxTime(TRANSCEIVER_GetTime(), 100);
+	FC_TDOA_BEACON_ANCHOR_s packet;
+	packet.FC = FC_TDOA_BEACON_ANCHOR;
 	packet.len = sizeof(packet);
+	TOA_Write40bValue(&packet.ts_glo[0], SYNC_GlobTime(tx_ts));
+	TOA_Write40bValue(&packet.ts_loc[0], tx_ts);
+
+	// can't append to save power
+	// send as standard package to do it in your slot time
+	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
+	if (buf != 0) {
+		buf->isRangingFrame = true;
+		MAC_Write(buf, &packet, packet.len);
+		MAC_SetFrameType(buf, FR_CR_MAC);
+		MAC_Send(buf, false);
+	}
+}
+
+void SYNC_SendBeaconAsTag() {
+	FC_TDOA_BEACON_TAG_s packet;
+	packet.FC = FC_TDOA_BEACON_TAG;
+	packet.len = sizeof(packet);
+	packet.px = 1;
+	packet.py = 2;
+	packet.pz = 3;
+	packet.orientation = 4;
 	packet.batt_voltage = PORT_BatteryVoltage();
 	packet.serial_hi = settings_otp->serial >> 32;
 	packet.serial_lo = settings_otp->serial & UINT32_MAX;
 
 	// can't append to save power
-	// send as ranging message to don
+	// send as ranging message to do it immediately
 	mac_buf_t* buf = MAC_BufferPrepare(ADDR_BROADCAST, false);
 	if (buf != 0) {
-		sync.sending_beacon = true;
+		sync.sleep_after_tx = true;
 		buf->isRangingFrame = true;
 		MAC_Write(buf, &packet, packet.len);
 		MAC_SendRanging(buf, DWT_START_TX_IMMEDIATE);
+	}
+}
+
+void SYNC_SendBeacon() {
+	if(settings.mac.role == RTLS_TAG) {
+		SYNC_SendBeaconAsTag();
+	} else {
+		SYNC_SendBeaconAsAnchor();
 	}
 }
 
@@ -421,41 +452,111 @@ int FC_SYNC_FIN_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TDOA_BEACON_cb(const void* data, const prot_packet_info_t* info) {
-	FC_TDOA_BEACON_s* packet = (FC_TDOA_BEACON_s*)data;
-	SYNC_ASSERT(packet->FC == FC_TDOA_BEACON);
-	bool short_beacon = packet->len == sizeof(FC_TDOA_BEACON_s) - 8;
-	if (packet->len != sizeof(FC_TDOA_BEACON_s) && !short_beacon) {
-		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON", packet->len, sizeof(FC_TDOA_BEACON_s));
-		TRANSCEIVER_DefaultRx();
+int FC_TDOA_BEACON_TAG_cb(const void* data, const prot_packet_info_t* info) {
+	FC_TDOA_BEACON_TAG_s* packet = (FC_TDOA_BEACON_TAG_s*)data;
+	SYNC_ASSERT(packet->FC == FC_TDOA_BEACON_TAG);
+	bool short_beacon = packet->len == sizeof(FC_TDOA_BEACON_TAG_s) - 8;
+	if (packet->len != sizeof(FC_TDOA_BEACON_TAG_s) && !short_beacon) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_TAG", packet->len, sizeof(FC_TDOA_BEACON_TAG_s));
+    TRANSCEIVER_DefaultRx();
 		return -1;
 	}
 	int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
-	FC_TDOA_BEACON_INFO_s tx_packet;
-	tx_packet.FC = FC_TDOA_BEACON_INFO;
+	FC_TDOA_BEACON_TAG_INFO_s tx_packet;
+	tx_packet.FC = FC_TDOA_BEACON_TAG_INFO;
 	tx_packet.len = sizeof(tx_packet);
 	tx_packet.batt_voltage = packet->batt_voltage;
+	tx_packet.px = packet->px;
+	tx_packet.py = packet->py;
+	tx_packet.pz = packet->pz;
+	tx_packet.orientation = packet->orientation;
 	tx_packet.serial_hi = short_beacon ? 0 : packet->serial_hi;
 	tx_packet.serial_lo = short_beacon ? 0 : packet->serial_lo;
 	tx_packet.tag_addr = info->last_src;
 	tx_packet.anchor_addr = settings.mac.addr;
-	TOA_Write40bValue(&tx_packet.rx_ts[0], SYNC_GlobTime(rx_ts));
+	TOA_Write40bValue(&tx_packet.rx_ts_glo[0], SYNC_GlobTime(rx_ts));
 	TOA_Write40bValue(&tx_packet.rx_ts_loc[0], rx_ts);
 
 	_dataSender(&tx_packet, tx_packet.len);
-	LOG_DBG("=== TDOA BEACON === (%X)", info->last_src);
 	TRANSCEIVER_DefaultRx();
 	return 0;
 }
 
-void FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info) {
+void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info) {
 	// printuj beacon'a
 	int len = ((uint8_t*)data)[1];
-	FC_TDOA_BEACON_INFO_s packet;
+	if (len != sizeof(FC_TDOA_BEACON_TAG_INFO_s)) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_TAG_INFO", len, sizeof(FC_TDOA_BEACON_TAG_INFO_s));
+		return;
+	}
+	FC_TDOA_BEACON_TAG_INFO_s packet;
 	memcpy(&packet, data, len);
 
-	LOG_DBG("=== TDOA BEACON === tag:%X mV:%d anchor:%X", packet.tag_addr, packet.batt_voltage,
-	        packet.anchor_addr);
+	uint64_t rx_ts_glo = TOA_Read40bValue(packet.rx_ts_glo);
+	uint64_t rx_ts_loc = TOA_Read40bValue(packet.rx_ts_loc);
+	uint32_t rx_ts_lo = (uint32_t)rx_ts_glo;
+	uint32_t rx_ts_hi = (uint32_t)(rx_ts_glo >> 32);
+	uint32_t rx_ts_loc_lo = (uint32_t)rx_ts_loc;
+	uint32_t rx_ts_loc_hi = (uint32_t)(rx_ts_loc >> 32);
+
+	LOG_INF(INF_TDOA_BEACON_FROM_TAG, packet.tag_addr,
+	        packet.anchor_addr, packet.batt_voltage, packet.serial_hi, packet.serial_lo, rx_ts_hi,
+	        rx_ts_lo, rx_ts_loc_hi, rx_ts_loc_lo);
+}
+
+int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
+	FC_TDOA_BEACON_ANCHOR_s* packet = (FC_TDOA_BEACON_ANCHOR_s*)data;
+	SYNC_ASSERT(packet->FC == FC_TDOA_BEACON_ANCHOR);
+	bool short_beacon = packet->len == sizeof(FC_TDOA_BEACON_ANCHOR_s) - 8;
+	if (packet->len != sizeof(FC_TDOA_BEACON_ANCHOR_s) && !short_beacon) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_ANCHOR", packet->len, sizeof(FC_TDOA_BEACON_ANCHOR_s));
+		return -1;
+	}
+	int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
+	FC_TDOA_BEACON_ANCHOR_INFO_s tx_packet;
+	tx_packet.FC = FC_TDOA_BEACON_ANCHOR_INFO;
+	tx_packet.len = sizeof(tx_packet);
+	tx_packet.anchor_tx_addr = info->original_src;
+	tx_packet.anchor_rx_addr = settings.mac.addr;
+	tx_packet.tof = 0; // to calculate in host
+	memcpy(&packet->ts_loc[0], &tx_packet.tx_ts_loc[0], sizeof(packet->ts_loc));
+	memcpy(&packet->ts_glo[0], &tx_packet.tx_ts_glo[0], sizeof(packet->ts_loc));
+	TOA_Write40bValue(&tx_packet.rx_ts_glo[0], SYNC_GlobTime(rx_ts));
+	TOA_Write40bValue(&tx_packet.rx_ts_loc[0], rx_ts);
+
+	_dataSender(&tx_packet, tx_packet.len);
+	TRANSCEIVER_DefaultRx();
+	return 0;
+}
+
+void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info) {
+	// printuj beacon'a
+	int len = ((uint8_t*)data)[1];
+	if (len != sizeof(FC_TDOA_BEACON_ANCHOR_INFO_s)) {
+		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_ANCHOR_INFO", len, sizeof(FC_TDOA_BEACON_ANCHOR_INFO_s));
+		return;
+	}
+	FC_TDOA_BEACON_ANCHOR_INFO_s packet;
+	memcpy(&packet, data, len);
+
+	uint64_t rx_ts_glo = TOA_Read40bValue(packet.rx_ts_glo);
+	uint64_t rx_ts_loc = TOA_Read40bValue(packet.rx_ts_loc);
+	uint32_t rx_ts_glo_lo = (uint32_t)rx_ts_glo;
+	uint32_t rx_ts_glo_hi = (uint32_t)(rx_ts_glo >> 32);
+	uint32_t rx_ts_loc_lo = (uint32_t)rx_ts_loc;
+	uint32_t rx_ts_loc_hi = (uint32_t)(rx_ts_loc >> 32);
+
+	uint64_t tx_ts_glo = TOA_Read40bValue(packet.tx_ts_glo);
+	uint64_t tx_ts_loc = TOA_Read40bValue(packet.tx_ts_loc);
+	uint32_t tx_ts_glo_lo = (uint32_t)tx_ts_glo;
+	uint32_t tx_ts_glo_hi = (uint32_t)(tx_ts_glo >> 32);
+	uint32_t tx_ts_loc_lo = (uint32_t)tx_ts_loc;
+	uint32_t tx_ts_loc_hi = (uint32_t)(tx_ts_loc >> 32);
+
+	LOG_INF(INF_TDOA_BEACON_FROM_ANCHOR,
+	        packet.anchor_tx_addr, packet.anchor_rx_addr, tx_ts_glo_hi, tx_ts_glo_lo, tx_ts_loc_hi,
+	        tx_ts_loc_lo, rx_ts_glo_hi, rx_ts_glo_lo, rx_ts_loc_hi, rx_ts_loc_lo, packet.tof);
+	return;
 }
 
 void SYNC_Tag_Timer_cb() {
@@ -468,28 +569,41 @@ int SYNC_RxCb(const void* data, const prot_packet_info_t* info) {
 	int ret;
 	switch (*(uint8_t*)data) {
 		case FC_SYNC_POLL:
-			FC_SYNC_POLL_cb(data, info);
-			ret = 1;
+			ret = FC_SYNC_POLL_cb(data, info);
 			break;
 		case FC_SYNC_RESP:
-			FC_SYNC_RESP_cb(data, info);
-			ret = 1;
+			ret = FC_SYNC_RESP_cb(data, info);
 			break;
 		case FC_SYNC_FIN:
-			FC_SYNC_FIN_cb(data, info);
-			ret = 1;
+			ret = FC_SYNC_FIN_cb(data, info);
 			break;
-		case FC_TDOA_BEACON:
-			FC_TDOA_BEACON_cb(data, info);
-			ret = 1;
+		case FC_TDOA_BEACON_TAG:
+			ret = FC_TDOA_BEACON_TAG_cb(data, info);
 			break;
-		case FC_TDOA_BEACON_INFO:
-			FC_TDOA_BEACON_INFO_cb(data, info);
-			ret = 1;
-			break;
-		default:
+		case FC_TDOA_BEACON_TAG_INFO:
+			FC_TDOA_BEACON_TAG_INFO_cb(data, info);
+			TRANSCEIVER_DefaultRx();
 			ret = 0;
 			break;
+		case FC_TDOA_BEACON_ANCHOR:
+			ret = FC_TDOA_BEACON_ANCHOR_cb(data, info);
+			break;
+		case FC_TDOA_BEACON_ANCHOR_INFO:
+			FC_TDOA_BEACON_ANCHOR_INFO_cb(data, info);
+			TRANSCEIVER_DefaultRx();
+			ret = 0;
+			break;
+		default:
+			ret = 2;
+			break;
+	}
+	if (ret == 0) { // wiadomosc obsluzona
+		return 1;
+	} else if (ret < 0) { // blad w obsludze wiadomosci
+		TRANSCEIVER_DefaultRx();
+		return 1;
+	} else { // wiadomsoc nie obsluzona
+		return 0;
 	}
 	return ret;
 }
@@ -522,9 +636,9 @@ int SYNC_TxCb(int64_t TsDwTx) {
 			ret = 0;
 			break;
 	}
-	if (sync.sending_beacon) {
+	if (sync.sleep_after_tx) {
 		//todo: check it
-		sync.sending_beacon = false;
+		sync.sleep_after_tx = false;
 		SYNC_TRACE("SYNC BEACON send, go sleep");
 		TRANSCEIVER_EnterDeepSleep();
 		PORT_PrepareSleepMode();

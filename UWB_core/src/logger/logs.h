@@ -110,7 +110,13 @@ typedef enum {
 } TRACE_t;
 
 /**
- * @brief pop a message from logger's buffer
+ * @brief LOG some event in history for debug purpose
+ *
+ */
+void LOG_Trace(TRACE_t);
+
+/**
+ * @brief sending messages from circled buffer for logs
  *
  */
 void LOG_BufPop();

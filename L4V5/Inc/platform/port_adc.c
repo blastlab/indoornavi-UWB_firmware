@@ -39,12 +39,19 @@ void PORT_AdcInit() {
 void MX_ADC1_Init();
 
 void PORT_AdcWake() {
-	RCC->AHB2RSTR = RCC_AHB2RSTR_ADCRST;
-	PORT_SleepMs(10);
-	__HAL_RCC_ADC_CLK_ENABLE()
-	;
+	// wake ADC
+	//LL_ADC_DisableDeepPowerDown(ADC1);
+	//LL_ADC_EnableInternalRegulator(ADC1);
+	// PROT_SleepMs(2);
+	//LL_ADC_Enable(ADC1);
+
+	HAL_ADC_DeInit(&hadc1);
 	MX_ADC1_Init();
 	HAL_ADCEx_Calibration_SetValue(&ADC_HADC_VBAT, ADC_SINGLE_ENDED, adc_cal_value);
+}
+
+void PORT_AdcSleep() {
+	HAL_ADC_DeInit(&hadc1);
 }
 
 int PORT_AdcMeasure(uint32_t channel) {
@@ -68,6 +75,8 @@ int PORT_AdcMeasure(uint32_t channel) {
 void PORT_BatteryMeasure() {
 	int adcInt, adcBat, nap;
 	float VDDA;
+
+	PORT_AdcWake();
 
 // configure
 #if BAT_PMOS_ACTIVE_HIGH
@@ -104,6 +113,8 @@ void PORT_BatteryMeasure() {
 		PORT_ASSERT(0.f <= a && a < 1.f);
 		_battery_mv = a * nap + (1 - a) * _battery_mv;
 	}
+
+	PORT_AdcSleep();
 }
 
 // return last battery voltage in [mV]

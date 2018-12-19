@@ -82,23 +82,58 @@ typedef struct {
 typedef struct {
 	uint8_t FC, len;
 	uint16_t batt_voltage; ///< battery voltage in millivolts
+	uint16_t px, py, pz; ///< current device position vector in cm
+	uint8_t orientation; ///< hi nibble is vertical orientation, low nibble is horizontal orientation
+	uint8_t padding; ///< dummy byte
 	uint32_t serial_hi; ///< device serial number from settings.version.serial
 	uint32_t serial_lo; ///< device serial number from settings.version.serial
-}__packed FC_TDOA_BEACON_s;
+}__packed FC_TDOA_BEACON_TAG_s;
+
+/**
+ * @brief see #FC_t description
+ *
+ * This struct is generated for FC_TDOA_BEACON_TAG_s and for FC_TDOA_BEACON_ANCHOR_s.
+ */
+typedef struct {
+	uint8_t FC, len;
+	uint16_t batt_voltage; ///< battery voltage in millivolts
+	uint16_t px, py, pz; ///< current device position vector in cm
+	uint8_t orientation; ///< hi nibble is vertical orientation, low nibble is horizontal orientation
+	uint8_t padding; ///< dummy byte - It may be last readed message counter in next generation
+	uint32_t serial_hi; ///< device serial number from settings.version.serial
+	uint32_t serial_lo; ///< device serial number from settings.version.serial
+	dev_addr_t tag_addr; ///< tag address
+	dev_addr_t anchor_addr; ///< anchor address
+	uint8_t rx_ts_glo[5]; ///< beacon receive timestamp in global time units from anchor device
+	uint8_t rx_ts_loc[5]; ///< *optional, beacon receive timestamp in local time units from anchor device
+}__packed FC_TDOA_BEACON_TAG_INFO_s;
+
 
 /**
  * @brief see #FC_t description
  */
 typedef struct {
 	uint8_t FC, len;
-	uint16_t batt_voltage; ///< battery voltage in millivolts
-	uint32_t serial_hi; ///< device serial number from settings.version.serial
-	uint32_t serial_lo; ///< device serial number from settings.version.serial
-	dev_addr_t tag_addr; ///< tag address
-	dev_addr_t anchor_addr; ///< anchor address
-	uint8_t rx_ts[5]; ///< beacon receive timestamp in global time units from anchor device
+	uint8_t ts_glo[5]; ///< global tx timestamp from device
+	uint8_t ts_loc[5]; ///< local tx timestamp from device
+}__packed FC_TDOA_BEACON_ANCHOR_s;
+
+/**
+ * @brief see #FC_t description
+ *
+ * This struct is generated for FC_TDOA_BEACON_TAG_s and for FC_TDOA_BEACON_ANCHOR_s.
+ */
+typedef struct {
+	uint8_t FC, len;
+	dev_addr_t anchor_tx_addr; ///< anchor1 address
+	dev_addr_t anchor_rx_addr; ///< anchor2 address
+	uint8_t tof;					///< time of flight in dwt time units or zero
+	uint8_t padding;
+	uint8_t tx_ts_glo[5]; ///< beacon receive timestamp in global time units from anchor device
+	uint8_t rx_ts_glo[5]; ///< beacon receive timestamp in global time units from anchor device
+	uint8_t tx_ts_loc[5]; ///< *optional, beacon receive timestamp in local time units from anchor device
 	uint8_t rx_ts_loc[5]; ///< *optional, beacon receive timestamp in local time units from anchor device
-}__packed FC_TDOA_BEACON_INFO_s;
+}__packed FC_TDOA_BEACON_ANCHOR_INFO_s;
 
 typedef struct {
 	dev_addr_t addr;           ///< neigtbour address
@@ -116,7 +151,7 @@ typedef struct {
 typedef struct {
 	toa_core_t toa;              ///< SYNC toa data
 	int64_t toa_ts_poll_rx_raw;  ///< used to SYNC #TOA_EnableRxBeforeFin
-	bool sending_beacon;         ///< sync beacon sending flag
+	bool sleep_after_tx;         ///< sync beacon sending flag
 	uint8_t tree_level;          ///< local device tree level
 	sync_neighbour_t local_obj;  ///< local clock from dwt data
 	sync_neighbour_t neighbour[SYNC_MAC_NEIGHBOURS];  ///< list of neighbours
@@ -166,12 +201,22 @@ int SYNC_SendPoll(dev_addr_t dst, dev_addr_t anchors[], int anc_cnt);
 void SYNC_SendBeacon();
 
 /**
- * @brief TDOA beacon routine
+ * @brief Process TDOA beacon message sent from TAG device
  *
- * @param[in] data is a pointer to received frame (data[0] = FC)
- * @param[in] info is a pointer to packet info structure
+ * @param[in] data pointer to FC_TDOA_BEACON_TAG_INFO_s
+ * @param[in] info extra packet info
+ * @return void
  */
-void FC_TDOA_BEACON_INFO_cb(const void* data, const prot_packet_info_t* info);
+void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info);
+
+/**
+ * @brief Process TDOA beacon message sent from ANCHOR or SINK device
+ *
+ * @param[in] data pointer to FC_TDOA_BEACON_ANCHOR_INFO_s
+ * @param[in] info extra packet info
+ * @return void
+ */
+void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* info);
 
 /**
  * @brief sync rx callback

@@ -207,18 +207,19 @@ void RTC_WKUP_IRQHandler(void)
   /* USER CODE END RTC_WKUP_IRQn 0 */
   /* USER CODE BEGIN RTC_WKUP_IRQn 1 */
 	PORT_WatchdogRefresh();
-//	PORT_LedOn(LED_ERR);
-//	for (volatile int i = 19999; i > 0; --i) {
-//		asm("nop");
-//	}
-	TRANSCEIVER_WakeUp();
-	PORT_ExitSleepMode();
+	PORT_LedOn(LED_STAT);
+
+	if (settings.mac.role == RTLS_TAG) {
+		PORT_ExitSleepMode();
+		TRANSCEIVER_WakeUp();
+	}
+
 	static int i = 0;
-	if (i-- == 0) {
-		i = 3;
-		//PORT_AdcWake();
+	if (i++ == 5) {
+		i = 0;
 		PORT_BatteryMeasure();
 	}
+
 	SYNC_SendBeacon();
 	LOG_Trace(TRACE_WAKE_TIM_EXIT);
   /* USER CODE END RTC_WKUP_IRQn 1 */
@@ -339,7 +340,22 @@ void LPTIM1_IRQHandler(void)
   LL_LPTIM_ClearFLAG_ARRM(LPTIM1);
   /* USER CODE END LPTIM1_IRQn 0 */
   /* USER CODE BEGIN LPTIM1_IRQn 1 */
+	PORT_WatchdogRefresh();
+	PORT_LedOn(LED_STAT);
 
+	if (settings.mac.role == RTLS_TAG) {
+		PORT_ExitSleepMode();
+		TRANSCEIVER_WakeUp();
+	}
+
+	static int i = 0;
+	if (i++ == 5) {
+		i = 0;
+		PORT_BatteryMeasure();
+	}
+
+	SYNC_SendBeacon();
+	LOG_Trace(TRACE_WAKE_TIM_EXIT);
   /* USER CODE END LPTIM1_IRQn 1 */
 }
 

@@ -167,6 +167,56 @@ bool PORT_EnterSleepMode() {
 	return sleep_cnt > 0;
 }
 
+/**
+ * @brief Configures system clock after wake-up from STOP: enable MSI, PLL, ADC1
+ *  and select PLL as system clock source.
+ * @param None
+ * @retval None
+ */
+static void SYSCLKConfig_AfterSTOP(void) {
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	uint32_t pFLatency = 0;
+	/* Enable Power Control clock */
+	__HAL_RCC_PWR_CLK_ENABLE()
+	;
+	/* Get the Oscillators configuration according to the internal RCC registers */
+	HAL_RCC_GetOscConfig(&RCC_OscInitStruct);
+	/* Enable PLL */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_NONE;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+	/* Get the Clocks configuration according to the internal RCC registers */
+	HAL_RCC_GetClockConfig(&RCC_ClkInitStruct, &pFLatency);
+	/* Select PLL as system clock source and keep HCLK, PCLK1 and PCLK2 clocks dividers as before */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_SYSCLK;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, pFLatency) != HAL_OK) {
+		Error_Handler();
+	}
+	/* ENABLE ADC1 source clock */
+	RCC_PeriphCLKInitTypeDef PeriphClkInit;
+	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_USART1
+	    | RCC_PERIPHCLK_LPTIM1 | RCC_PERIPHCLK_USB | RCC_PERIPHCLK_ADC;
+	PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+	PeriphClkInit.Lptim1ClockSelection = RCC_LPTIM1CLKSOURCE_LSI;
+	PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLSAI1;
+	PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+	PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+	PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_MSI;
+	PeriphClkInit.PLLSAI1.PLLSAI1M = 1;
+	PeriphClkInit.PLLSAI1.PLLSAI1N = 16;
+	PeriphClkInit.PLLSAI1.PLLSAI1P = RCC_PLLP_DIV7;
+	PeriphClkInit.PLLSAI1.PLLSAI1Q = RCC_PLLQ_DIV2;
+	PeriphClkInit.PLLSAI1.PLLSAI1R = RCC_PLLR_DIV2;
+	PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_ADC1CLK;
+	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+		Error_Handler();
+	}
+}
+
 void PORT_ExitSleepMode() {
 	LOG_Trace(TRACE_WAKEUP);
 //	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
@@ -180,7 +230,12 @@ void PORT_ExitSleepMode() {
 //	USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
 //	USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
 //	USBD_Start(&hUsbDeviceFS);
+	if (sleep_cnt == 1) {
+		SYSCLKConfig_AfterSTOP();
+	}
 
-	//HAL_PWREx_DisableLowPowerRunMode();
-	--sleep_cnt;
+	if (sleep_cnt > 0) {
+		//HAL_PWREx_DisableLowPowerRunMode();
+		--sleep_cnt;
+	}
 }
