@@ -60,7 +60,7 @@ static inline uint8_t* FU_GetAddressToWrite() {
 
 // check
 int FU_AcceptFirmwareVersion(int Ver) {
-	uint16_t fMinor = (Ver) & 0xFFFF;
+	uint16_t fMinor = Ver;
 	if ((fMinor % 2) == (settings.version.f_minor % 2)) {
 		return 0;
 	} else {
@@ -69,8 +69,8 @@ int FU_AcceptFirmwareVersion(int Ver) {
 }
 
 int FU_AcceptHardwareVersion(int Ver) {
-	uint8_t hVer = Ver >> 24;
-	if (H_MAJOR_CALC(hVer) != H_MAJOR_CALC(settings.version.h_version)) {
+	uint16_t hType = Ver;
+	if (hType != settings.version.h_type) {
 		return 0;
 	} else {
 		return 1;
@@ -238,10 +238,10 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 		FU_SendError(info, FU_ERR_BAD_FRAME_LEN);
 		return;
 	}  // sprawdz czy ta wersja jest odpowiednia - nalezy do odpowiedniej partycji
-	else if (FU_AcceptFirmwareVersion(fup->fversion) == 0) {
+	else if (FU_AcceptFirmwareVersion(fup->fMinor) == 0) {
 		FU_SendError(info, FU_ERR_BAD_F_VERSION);
 		return;
-	} else if (FU_AcceptHardwareVersion(fup->fversion) == 0) {
+	} else if (FU_AcceptHardwareVersion(fup->hType) == 0) {
 		FU_SendError(info, FU_ERR_BAD_H_VERSION);
 		return;
 	} else if (fup->fileSize > FU_MAX_PROGRAM_SIZE || fup->fileSize == 0) {
@@ -257,7 +257,7 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 
 	// overwrite new firmware info
 	FU.newCrc = fup->firmwareCRC;  // zapis CRC calego pliku .bin
-	FU.newVer = fup->fversion;     // zapis numeru nowej wersji programu
+	FU.newVer = fup->fMinor;     // zapis numeru nowej wersji programu
 	FU.fileSize = fup->fileSize;
 	FU.blockSize = fup->blockSize;
 	FU.newHash = fup->hash;

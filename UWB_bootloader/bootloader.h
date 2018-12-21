@@ -14,17 +14,11 @@
 #define MAX_PASS_FAIL_COUNTER	4
 
 typedef struct {
-	const uint16_t hType;
-	const uint8_t hMajor, hMinor;
-	const uint64_t serial;
-}__packed settings_otp_t;
-
-typedef struct {
 	const uint32_t boot_reserved;
 	uint16_t hType;
 	uint8_t hMajor;
 	uint8_t hMinor;
-	uint8_t hVersion;
+	uint8_t padding; ///< dummy padding byte
 	uint8_t fMajor;
 	uint16_t fMinor;
 	uint64_t hash;

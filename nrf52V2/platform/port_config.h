@@ -10,6 +10,7 @@
 #define HARDWARE_UID_64 (((uint64_t)NRF_FICR->DEVICEADDR[1] << 32) | NRF_FICR->DEVICEADDR[0])
 #define __H_MAJOR__ 2
 #define __H_MINOR__ 2
+#define __H_TYPE__  2
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)

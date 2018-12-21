@@ -158,10 +158,12 @@ bool SomeAppWasRunnig() {
 	return some_app_was_run;
 }
 
-static bool IsTestProcJustFinished() {
+static bool IsTestProcJustFinished(int previous_app) {
+	const settings_edit_t* pset = settings.stat[previous_app].firmware_version;
+	bool is_boot_reserved_clear = pset->boot_reserved != BOOTLOADER_MAGIC_NUMBER;
 	bool all_pass_are_zero = !settings.stat[0].pass_cnt && !settings.stat[1].pass_cnt;
 	bool all_fail_are_zero = !settings.stat[0].fail_cnt && !settings.stat[1].fail_cnt;
-	return all_pass_are_zero && all_fail_are_zero && SomeAppWasRunnig();
+	return is_boot_reserved_clear && all_pass_are_zero && all_fail_are_zero && SomeAppWasRunnig();
 }
 
 void StartTest(int app) {
@@ -196,7 +198,7 @@ void Start(uint32_t reset_src) {
 	// if test procedure has just finished, then check app as correct or failed
 	// (base on MAGIC_REG and MAGIC_NUMBER)
 	// then mark them as old
-	if (IsTestProcJustFinished()) {
+	if (IsTestProcJustFinished(previous_app)) {
 		change_cnt += UpdateAppPassFailCounter(previous_app);
 		Bootloader_MarkFirmwareAsOld(previous_app);
 		Bootloader_BkpSave(0);

@@ -18,28 +18,6 @@
 #include "ranging_settings.h"
 #include "imu_settings.h"
 
-/**
- * @brief generate hardware version description byte from major and minor
- *
- * It it possible to define up to 32 major firmware version and 8 minor.
- * @note Minor versions should be pin to pin compatible and run with same firmware.
- *
- */
-#define H_VERSION_CALC(major, minor) ((major << 3) | (minor & 0x07))
-
-/**
- * @brief calculate hardware major version from description byte
- *
- * It it possible to define up to 32 major firmware version and 8 minor.
- * @note Minor versions should be pin to pin compatible and run with same firmware.
- *
- */
-#define H_MAJOR_CALC(hversion) ((hversion&0xFF)>>3)
-
-/**
- * @brief generate current version number
- */
-#define __H_VERSION__ H_VERSION_CALC(__H_MAJOR__, __H_MINOR__)
 
 /**
  * @brief Internal One Time Programmable settings structure.
@@ -57,6 +35,7 @@ typedef struct
 	uint64_t serial; ///< hardware serial number
 	uint8_t h_major; ///< hardware major version number
 	uint8_t h_minor; ///< hardware minor version number
+	uint16_t h_type; ///< hardware version from #H_VERSION_CALC
 }__packed settings_otp_t;
 
 /**
@@ -71,10 +50,12 @@ typedef struct
  * @note This structure is packed
  */
 typedef struct
-
 {
 	uint32_t boot_reserved; ///< field reserved for bootloader
-	uint8_t h_version; ///< hardware version from #H_VERSION_CALC
+	uint16_t h_type; ///< hardware version from #H_VERSION_CALC
+	uint8_t h_major; ///< hardware version from #H_VERSION_CALC
+	uint8_t h_minor; ///< hardware version from #H_VERSION_CALC
+	uint8_t padding; ///< dummy padding byte
 	uint8_t f_major; ///< firmware major version number
 	uint16_t f_minor; ///< firmware minor version number
 	uint64_t f_hash; ///< firmware hash version number
@@ -110,7 +91,9 @@ typedef struct {
 #define VERSION_SETTINGS_DEF  \
   {                           \
   .boot_reserved = 0,         \
-  .h_version = __H_VERSION__, \
+  .h_type = __H_TYPE__,       \
+  .h_major = __H_MAJOR__,     \
+  .h_minor = __H_MINOR__,     \
   .f_major = __F_MAJOR__,     \
   .f_minor = __F_MINOR__,     \
   .f_hash = __F_HASH__,       \

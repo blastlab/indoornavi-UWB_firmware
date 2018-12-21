@@ -232,9 +232,8 @@ typedef struct {
 	                   ///< byte of CRC
 	uint8_t opcode;    ///< operation code, #FU_OPCODE_SOT
 	uint8_t hash;      ///< mix of hardware and software version in this packet
-	uint32_t fversion; ///< full version (device) or transfered firmware version
-	                   ///< (from host) [4b:hMajor, 4b:hMinor, 8b:fMajor,
-	                   ///< 16b:fMinor]
+	uint16_t hType;    ///< hardware type
+	uint16_t fMinor;	 ///< firmware minor
 	uint16_t firmwareCRC; ///< BigEndian
 	uint16_t blockSize; ///< Data block size in bytes in one data packet
 	uint32_t fileSize;    ///< BigEndian
