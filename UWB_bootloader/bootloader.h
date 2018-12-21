@@ -11,10 +11,8 @@
 #ifndef BOOTLOADER_H_
 #define BOOTLOADER_H_
 
-// mask most important hardware version bits
-#define H_VER_MASK				(0xF8)
-
 #define MAX_PASS_FAIL_COUNTER	4
+
 typedef struct {
 	const uint16_t hType;
 	const uint8_t hMajor, hMinor;

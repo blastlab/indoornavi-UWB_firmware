@@ -65,9 +65,14 @@ int UpdateAppPassFailCounter(int previous_app) {
 }
 
 void JumpApp(int index) {
-	char* str[] = { "jump to app 1", "jump to app 2" };
-	UNUSED(str);
-
+	if(index == 0) {
+		Bootloader_Led(LED_GREEN, LED_ON);
+	} else if(index == 1) {
+		Bootloader_Led(LED_RED, LED_ON);
+	} else {
+		Bootloader_Led(LED_GREEN, LED_ON);
+		Bootloader_Led(LED_RED, LED_ON);
+	}
 	Bootloader_BkpSave(index + 1); // add 1 to ommit zero index
 	if (index < sizeof(bl_apps_addr) / sizeof(*bl_apps_addr)) {
 		Bootloader_JumpToAddr((long)bl_apps_addr[index]);
@@ -174,7 +179,7 @@ void StartTest(int app) {
 	JumpApp(app);
 }
 
-void Start(uint32_t RCC_CSR) {
+void Start(uint32_t reset_src) {
 	int previous_app = *BOOTLOADER_BKP_REG - 1;
 	uint8_t change_cnt = 0;
 
@@ -187,7 +192,6 @@ void Start(uint32_t RCC_CSR) {
 
 	// wczytaj zapisane ustawienia z FLASH do RAM
 	memcpy(&settings, &_flash_settings, sizeof(settings));
-	__HAL_RCC_CLEAR_RESET_FLAGS(); // wyczysc rejestr RCC_CSR
 
 	// if test procedure has just finished, then check app as correct or failed
 	// (base on MAGIC_REG and MAGIC_NUMBER)
@@ -216,7 +220,7 @@ void Start(uint32_t RCC_CSR) {
 	}
 
 	// software reset - run last App
-	if (IsSoftResetFromApp(RCC_CSR)) {
+	if (IsSoftResetFromApp(reset_src)) {
 		JumpApp(previous_app);
 	}
 

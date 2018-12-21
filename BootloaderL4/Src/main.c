@@ -92,10 +92,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_RTC_Init();
+	//MX_RTC_Init();
 
   /* USER CODE BEGIN 2 */
   UNUSED(MX_IWDG_Init);
+	__HAL_RCC_CLEAR_RESET_FLAGS(); // wyczysc rejestr RCC_CSR
 	Start(last_RCC_flags);
   /* USER CODE END 2 */
 

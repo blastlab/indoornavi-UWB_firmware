@@ -23,14 +23,14 @@
 #define FSTATUS_WORK 0xFE
 #define FSTATUS_BROKEN_ONCE 0x7F
 
-typedef struct __attribute__((packed))
+typedef struct
 {
 	const uint32_t boot_reserved;
 	uint8_t hVersion;
 	uint8_t fMajor;
 	uint16_t fMinor;
 	uint64_t hash;
-} settings_edit_t;
+} __packed settings_edit_t;
 
 typedef struct
 {
