@@ -375,11 +375,11 @@ decaIrqStatus_t PORT_EnterCritical();
 void PORT_ExitCritical(decaIrqStatus_t s);
 
 #define CRITICAL(_CODE_)                                 \
-  {                                                      \
+  do {                                                   \
     decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
     _CODE_                                               \
     PORT_ExitCritical(_irq_primask);                     \
-  }
+  } while(0);
 
 // ========  SPI  ==========
 
@@ -435,7 +435,7 @@ int writetospi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t body
  * \param[in] cs_pin to assert when transmitting
  *
  */
-void PORT_SpiTx(const uint8_t* buf, uint32_t length, uint32_t cs_pin);
+void PORT_SpiTx(const uint8_t* buf, uint8_t length, uint32_t cs_pin);
 
 /**
  * \brief receive data over general-use spi instance
@@ -447,7 +447,7 @@ void PORT_SpiTx(const uint8_t* buf, uint32_t length, uint32_t cs_pin);
  * \param[in] cs_pin to assert when transmitting
  *
  */
-void PORT_SpiRx(uint8_t* buf, int length, int cs_pin);
+void PORT_SpiRx(uint8_t* buf, uint8_t length, uint32_t cs_pin);
 
 /**
  * \brief send and then receive data over general-use spi instance

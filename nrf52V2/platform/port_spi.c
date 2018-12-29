@@ -51,7 +51,7 @@ void PORT_SpiSpeedSlow(bool slow) {
 
 #if LOG_SPI_EN
 // from platfrom/logs.c
-void SpiSlaveRequest();
+extern void SpiSlaveRequest();
 static void EthSpiSlaveirq(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
 	if(pin == ETH_SPI_SLAVE_IRQ) {
 		SpiSlaveRequest();
@@ -72,7 +72,6 @@ void PORT_SpiInit(bool isSink) {
 #if LOG_SPI_EN && ETH_SPI_SS_PIN && ETH_SPI_SLAVE_IRQ
 	nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
 	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
-	nrf_gpio_cfg_input(ETH_SPI_STATE_PIN, NRF_GPIO_PIN_NOPULL);
 	if(isSink) {
     nrfx_gpiote_in_config_t spi_slave_irq_config = {
     		.is_watcher = false,
@@ -86,37 +85,37 @@ void PORT_SpiInit(bool isSink) {
 #endif
 }
 
-#pragma GCC optimize("O3")
-inline void PORT_SpiTx(const uint8_t* buf, uint32_t length, uint32_t cs_pin) {
+inline void PORT_SpiTx(const uint8_t* buf, uint8_t length, uint32_t cs_pin) {
 #if GEN_SPI_SCK_PIN
-	nrf_gpio_pin_clear(cs_pin);
-	nrf_delay_us(5);
+	if(cs_pin != 0)
+		nrf_gpio_pin_clear(cs_pin);
+	nrf_delay_us(1);
 	NRF_SPIM1->TXD.PTR = (uint32_t)buf;
 	NRF_SPIM1->TXD.MAXCNT = length;
 	NRF_SPIM1->RXD.MAXCNT = 0;
-	NRF_SPIM1->EVENTS_END = 0x0UL;
+	NRF_SPIM1->EVENTS_ENDTX = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
-	while(NRF_SPIM1->EVENTS_END == 0x0UL);
-	nrf_gpio_pin_set(cs_pin);
+	while(NRF_SPIM1->EVENTS_ENDTX == 0x0UL);
+	if(cs_pin != 0)
+		nrf_gpio_pin_set(cs_pin);
 #endif
 }
 
-#pragma GCC optimize("O3")
-inline void PORT_SpiRx(uint8_t* buf, int length, int cs_pin) {
+inline void PORT_SpiRx(uint8_t* buf, uint8_t length, uint32_t cs_pin) {
 #if GEN_SPI_SCK_PIN
-	nrf_gpio_pin_clear(cs_pin);
-	nrf_delay_us(5);
+	if(cs_pin != 0)
+		nrf_gpio_pin_clear(cs_pin);
 	NRF_SPIM1->RXD.PTR = (uint32_t)buf;
 	NRF_SPIM1->RXD.MAXCNT = length;
 	NRF_SPIM1->TXD.MAXCNT = 0;
-	NRF_SPIM1->EVENTS_END = 0x0UL;
+	NRF_SPIM1->EVENTS_ENDRX = 0x0UL;
 	NRF_SPIM1->TASKS_START = 0x1UL;
-	while(NRF_SPIM1->EVENTS_END == 0x0UL);
-	nrf_gpio_pin_set(cs_pin);
+	while(NRF_SPIM1->EVENTS_ENDRX == 0x0UL);
+	if(cs_pin != 0)
+		nrf_gpio_pin_set(cs_pin);
 #endif
 }
 
-#pragma GCC optimize("O3")
 inline void PORT_SpiTxRx(uint8_t* tx_buf, int tx_length, uint8_t* rx_buf, int rx_length, int cs_pin) {
 #if GEN_SPI_SCK_PIN
 	nrf_gpio_pin_clear(cs_pin);
@@ -138,7 +137,6 @@ inline void PORT_SpiTxRx(uint8_t* tx_buf, int tx_length, uint8_t* rx_buf, int rx
 #endif
 }
 
-#pragma GCC optimize("O3")
 inline static void dw_spiTx(uint32_t length, const uint8_t *buf) {
 	NRF_SPIM0->TXD.PTR = (uint32_t)buf;
 	NRF_SPIM0->TXD.MAXCNT = length;
@@ -147,7 +145,7 @@ inline static void dw_spiTx(uint32_t length, const uint8_t *buf) {
 	NRF_SPIM0->TASKS_START = 0x1UL;
 	while(NRF_SPIM0->EVENTS_END == 0x0UL);
 }
-#pragma GCC optimize("O3")
+
 inline static void dw_spiRx(uint32_t length, uint8_t *buf) {
 	NRF_SPIM0->RXD.PTR = (uint32_t)buf;
 	NRF_SPIM0->RXD.MAXCNT = length;
@@ -157,7 +155,6 @@ inline static void dw_spiRx(uint32_t length, uint8_t *buf) {
 	while(NRF_SPIM0->EVENTS_END == 0x0UL);
 }
 
-#pragma GCC optimize("O3")
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
                 uint32_t bodyLength, uint8_t *bodyBuffer) {
 	  decaIrqStatus_t en = decamutexon();
@@ -169,7 +166,6 @@ int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
 	  return 0;
 }
 
-#pragma GCC optimize("O3")
 int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
                uint32_t bodyLength, const uint8_t *bodyBuffer) {
 	  decaIrqStatus_t en = decamutexon();

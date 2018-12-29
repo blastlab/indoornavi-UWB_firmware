@@ -22,8 +22,8 @@ struct {
 	const int len;
 	volatile int head;
 	volatile int tail;
+	volatile bool overflow;
 	uint8_t data[CIRC_BUF_LEN];
-	bool overflow;
 } circBuf = {
 		.len = CIRC_BUF_LEN,
 		.head = 0,
@@ -55,20 +55,12 @@ static int BUF_GetHeadPacketLen() {
 	return circBuf.data[circBuf.head + 1];
 }
 
-static inline int BUF_GetHeadPacketDataLen() {
-	return BUF_GetHeadPacketLen() - FRAME_HEADER_SIZE - 2;
-}
-
 static inline LOG_PacketCodes_t BUF_GetHeadPacketOpcode() {
 	return circBuf.data[circBuf.head];
 }
 
 static inline uint8_t * BUF_GetHeadPacketPtr() {
 	return (uint8_t *)(&circBuf.data[circBuf.head]);
-}
-
-static inline uint8_t * BUF_GetHeadPacketDataPtr() {
-	return (uint8_t *)(&circBuf.data[circBuf.head] + FRAME_HEADER_SIZE);
 }
 
 static void BUF_WriteHeader(LOG_Frame_s *frame) {
@@ -179,9 +171,8 @@ int LOG_Bin(const void* bin, int size) {
 }
 
 void LOG_Control(bool isSink) {
-	int packet_len = BUF_GetHeadPacketLen();
 	// when buffer is empty
-	if(packet_len == 0) {
+	if(BUF_GetHeadPacketLen() == 0) {
 		return;
 	}
 	PORT_LogData(BUF_GetHeadPacketPtr(), BUF_GetHeadPacketLen(), BUF_GetHeadPacketOpcode(), isSink);

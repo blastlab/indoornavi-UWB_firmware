@@ -14,6 +14,7 @@
 #include "nrfx_rtc.h"
 #include "nrfx_clock.h"
 #include "nrf_gpio.h"
+#include "nrf_sdh.h"
 
 static const nrfx_timer_t TIMER_SLOT = NRFX_TIMER_INSTANCE(1);
 static const nrfx_rtc_t RTC = NRFX_RTC_INSTANCE(1);
@@ -40,8 +41,10 @@ static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_conte
 }
 
 void PORT_TimeInit() {
-	nrfx_clock_hfclk_start();																// gives good slot timer synchronization
-	nrfx_clock_lfclk_start();																// needed for RTC timer
+	if(nrf_sdh_is_enabled() == false) {
+		nrfx_clock_hfclk_start();																// gives good slot timer synchronization
+		nrfx_clock_lfclk_start();																// needed for RTC timer
+	}
 	nrfx_rtc_config_t rtc_config = NRFX_RTC_DEFAULT_CONFIG;
 	APP_ERROR_CHECK(nrfx_rtc_init(&RTC, &rtc_config, rtc_handler));
 	nrfx_rtc_tick_enable(&RTC, true);

@@ -57,7 +57,8 @@ typedef enum {
 	LOG_PC_Bin = 0x01,
 	LOG_PC_Txt = 0x02,
 	LOG_PC_Ack = 0x03,
-	LOG_PC_Nack = 0x04
+	LOG_PC_Nack = 0x04,
+	LOG_PC_Alive = 0x05
 } LOG_PacketCodes_t;
 
 typedef struct {
