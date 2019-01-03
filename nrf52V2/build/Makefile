@@ -205,7 +205,7 @@ flash_softdevice:
 	nrfjprog -f nrf52 --program $(SDK_ROOT)/components/softdevice/s132/hex/s132_nrf52_6.1.0_softdevice.hex --sectorerase --reset
 
 flash_all: $(OUTPUT_DIRECTORY)/nrf52832_xxaa.hex
-	mergehex -m $(SDK_ROOT)/components/softdevice/s132/hex/s132_nrf52_6.1.0_softdevice.hex ../bootloader/build/_build/nrf52832_xxaa.hex $< -o $(OUTPUT_DIRECTORY)/SD_BL_APP.hex
+	mergehex -m $(SDK_ROOT)/components/softdevice/s132/hex/s132_nrf52_6.1.0_softdevice.hex ../../BootloaderNrf/build/_build/nrf52832_xxaa.hex $< -o $(OUTPUT_DIRECTORY)/SD_BL_APP.hex
 	nrfjprog --program $(OUTPUT_DIRECTORY)/SD_BL_APP.hex --chiperase --reset -f NRF52
 	
 generate_bin:
