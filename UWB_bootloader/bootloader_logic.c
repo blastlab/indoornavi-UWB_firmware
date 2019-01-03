@@ -40,28 +40,30 @@ int CheckPointerToAppSettings(app_set_t* pset, const char* app_start_addr) {
 
 int UpdateAppPassFailCounter(int previous_app) {
 	app_set_t* pset = &settings.stat[0];
-
-//read magic number
+	int changes = 0;
+	//read magic number
 	if (Bootloader_ReadSpecialReg() == BOOTLOADER_MAGIC_NUMBER) {
 		// correct firmware version
 		if (pset[previous_app].pass_cnt < MAX_PASS_FAIL_COUNTER) {
 			++pset[previous_app].pass_cnt;
+			++changes;
 		}
 		if (pset[previous_app].fail_cnt > 0) {
 			--pset[previous_app].fail_cnt;
+			++changes;
 		}
-		return 1;
 	} else {
 		// bad firmware
 		if (pset[previous_app].pass_cnt > 0) {
 			--pset[previous_app].pass_cnt;
+			++changes;
 		}
 		if (pset[previous_app].fail_cnt < MAX_PASS_FAIL_COUNTER) {
 			++pset[previous_app].fail_cnt;
+			++changes;
 		}
-		return 1;
 	}
-	return 0;
+	return changes > 0;
 }
 
 void JumpApp(int index) {
@@ -89,8 +91,9 @@ static bool IsAnyApp(int app) {
 
 	if (badStackPonter || badResetHandlerAddr) {
 		return 0;
-	} else
+	} else {
 		return 1;
+	}
 }
 
 static bool IsMagicNumberInAppFlash(int app) {
@@ -105,11 +108,13 @@ static bool IsCorrectHardwareType(int app) {
 }
 
 int IsFirmwareNew(int app) {
-	bool new_ver = 0;
-	if (IsAnyApp(app) && !IsMagicNumberInAppFlash(app) && IsCorrectHardwareType(app)) {
-		new_ver = 1;
+	bool isAny = IsAnyApp(app);
+	bool isMagic = IsMagicNumberInAppFlash(app);
+	bool isHTypeCorrect = IsCorrectHardwareType(app);
+	if (isAny && !isMagic && isHTypeCorrect) {
+		return 1;
 	}
-	return new_ver;
+	return 0;
 }
 
 static int ScoreApplication(int i) {
@@ -117,11 +122,9 @@ static int ScoreApplication(int i) {
 	const app_set_t* pset = &settings.stat[i];
 
 	if (IsAnyApp(i) != 0) {
-		++score; // firmware is present
-
 		score = pset->pass_cnt - pset->fail_cnt;
-		score *= score > 0;
-		score += 1;
+		score *= score > 0; // trim lower bound to zero
+		score += 1; // firmware is present
 	}
 
 	return score;
@@ -195,34 +198,37 @@ void Start(uint32_t reset_src) {
 	// wczytaj zapisane ustawienia z FLASH do RAM
 	memcpy(&settings, &_flash_settings, sizeof(settings));
 
+	// set proper pointers in pset[i].settings
+	for (int i = 0; i < 2; ++i) {
+		change_cnt += CheckPointerToAppSettings(&settings.stat[i], bl_apps_addr[i]);
+	}
+
 	// if test procedure has just finished, then check app as correct or failed
 	// (base on MAGIC_REG and MAGIC_NUMBER)
 	// then mark them as old
-	if (IsTestProcJustFinished(previous_app)) {
+	if (SomeAppWasRunnig() && IsTestProcJustFinished(previous_app)) {
 		change_cnt += UpdateAppPassFailCounter(previous_app);
-		Bootloader_MarkFirmwareAsOld(previous_app);
+		Bootloader_MarkFirmwareAsOld(previous_app); // change only the flash data
 		Bootloader_BkpSave(0);
 	}
 
 	// when it is a first run, then you should save correct hardware type
 	change_cnt += CheckHardwareVersions();
 
-	// set proper pointers in pset[i].settings
+	if (change_cnt > 0) {
+		Bootloader_SaveSettings();
+	}
+
 	// and check if is new firmware, when it is true then settings will be saved and
 	// new firmware will be launched.
 	for (int i = 0; i < 2; ++i) {
-		change_cnt += CheckPointerToAppSettings(&settings.stat[i], bl_apps_addr[i]);
 		if (IsFirmwareNew(i)) {
 			StartTest(i); // will save the settings and jump to app
 		}
 	}
 
-	if (change_cnt > 0) {
-		Bootloader_SaveSettings();
-	}
-
 	// software reset - run last App
-	if (IsSoftResetFromApp(reset_src)) {
+	if (SomeAppWasRunnig() && IsSoftResetFromApp(reset_src)) {
 		JumpApp(previous_app);
 	}
 

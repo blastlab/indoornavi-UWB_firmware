@@ -155,6 +155,7 @@ void FC_VERSION_ASK_cb(const void* data, const prot_packet_info_t* info) {
 	packet.len = sizeof(packet);
 	packet.hMajor = settings_otp->h_major;
 	packet.hMinor = settings_otp->h_minor;
+	packet.hType = settings_otp->h_type;
 	packet.fMajor = settings.version.f_major;
 	packet.fMinor = settings.version.f_minor;
 	packet.hash = settings.version.f_hash;

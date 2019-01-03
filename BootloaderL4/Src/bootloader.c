@@ -93,6 +93,11 @@ void Bootloader_SaveSettings()
 	extern const bl_set_t* _flash_settings;
 	bl_set_t new_set = settings;
 
+	// where nothing has changed
+	if (memcmp(&settings, _flash_settings, sizeof(settings)) == 0) {
+		return;
+	}
+
 	// clear page
 	uint32_t erase_error;
 	FLASH_EraseInitTypeDef feitd;

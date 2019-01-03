@@ -50,10 +50,10 @@ ARG("To", "12-bits counter of timeout during transmitting or receiving frames, v
 ARG("Uptime", "device work time in format days.hours.minuts.seconds. It overflow ofter 49.7 days.")
 COMMENT("see :ref:`status`")
 
-ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%08X r:%s hV:%d.%d fV:%d.%d.%X%X")
+ADD_ITEM_M(1112, INF_VERSION, "version did:%X serial:%X%08X r:%s hV:%d.%d.%d fV:%d.%d.%X%X")
 ARG("serial", "64-bit device unique identificator number")
 ARG("r", "device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}")
-ARG("hV", "hardware version, major.minor")
+ARG("hV", "hardware version, major.minor.type")
 ARG("fV", "formware version major.minor.hash where source repository commit hash is in hexadecimal and is 32-bit value.")
 COMMENT("see :ref:`version`")
 

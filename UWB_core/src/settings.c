@@ -1,7 +1,8 @@
 #include "settings.h"
 #include "string.h"
 
-settings_otp_t _settings_otp = { .h_major = __H_MAJOR__, .h_minor = __H_MINOR__, .serial = 0, };
+settings_otp_t _settings_otp = { .h_major = __H_MAJOR__, .h_minor = __H_MINOR__, .h_type =
+    __H_TYPE__, .serial = 0, };
 
 static const settings_t _startup_settings __attribute__((section(".settings"))) = DEF_SETTINGS;
 
