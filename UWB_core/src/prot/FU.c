@@ -396,11 +396,16 @@ static void FU_EOT(const FU_prot* fup, const prot_packet_info_t* info) {
 	} else if (FU_IsNewFirmwareInBadPlace(((uint32_t*)FU_GetAddressToWrite()) + 1)) {
 		FU_SendError(info, FU_ERR_BAD_F_VERSION);
 	} else {  // dostalismy wersje z poprawna wersja firmwaru, konczymy transmisje
-		FU_Data(fup, info);  // zapisz ostatnio porcje danych we flashu
-		FU.fileSize = 0;
-		FU.newHash = 0;
-		LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
-		FU.eot_time = PORT_TickMs();
+		int oldPacCnt = FU.sesionPacketCounter; // aby sprawdzic czy odebrane dane sa prawidlowe
+		FU_Data(fup, info);  // zapisz ostatnio porcje danych we flashu i wyslij ACK
+
+		// gdy zaakceptowano ostatnia ramke z danymi
+		if (FU.sesionPacketCounter == oldPacCnt + 1) {
+			FU.fileSize = 0;
+			FU.newHash = 0;
+			//LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
+			FU.eot_time = PORT_TickMs();
+		}
 		return;
 	}
 	PORT_FlashErase(FU_GetAddressToWrite(), FU.fileSize);				// erasing bad firmware
