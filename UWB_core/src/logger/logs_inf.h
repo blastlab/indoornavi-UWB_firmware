@@ -188,3 +188,10 @@ ARG("enable", "when imu is enabled then tag go asleep after long time without mo
 
 ADD_ITEM_M(1502, INF_FU_SUCCESS, "Firmware upgrade success")
 COMMENT("only from target device (during SINK upgrade)")
+
+ADD_ITEM_M(1505, INF_LIST_SETTINGS, "listset [%s]")
+ARG("%s", "list of settings command to save separated by ';'")
+COMMENT("In list there will be omitted 'measure' an 'parent' commands, it should be realized separately")
+COMMENT("List of settings commands is generated from sink device, because he need to know how to process them. "
+		"It implies that list of commands of target device could be slightly different and here always will"
+		"be a chance to loose some settings")

@@ -728,6 +728,11 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 	_TXT_Finalize(&packet, info);
 }
 
+static void TXT_ListSettingsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
+	const char val[] = "rfset;txset;rangingtime;toatime;ble;imu;mac";
+	LOG_INF(INF_LIST_SETTINGS, val);
+}
+
 const txt_cb_t txt_cb_tab[] = {
     { "stat", TXT_StatCb },
     { "st", TXT_StatCb },
@@ -760,6 +765,7 @@ const txt_cb_t txt_cb_tab[] = {
     { "_role", TXT_RoleCb },
     { "route", TXT_RouteCb },
     { "mac", TXT_MacCb },
+    { "listset", TXT_ListSettingsCb },
 };
 
 const int txt_cb_len = sizeof(txt_cb_tab) / sizeof(*txt_cb_tab);
