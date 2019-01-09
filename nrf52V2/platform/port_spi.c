@@ -70,8 +70,8 @@ void PORT_SpiInit(bool isSink) {
 	APP_ERROR_CHECK(nrfx_spim_init(&spi1, &spi1_config, NULL, NULL));
 #endif
 #if LOG_SPI_EN && ETH_SPI_SS_PIN && ETH_SPI_SLAVE_IRQ
-	nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
 	nrf_gpio_pin_set(ETH_SPI_SS_PIN);
+	nrf_gpio_cfg_output(ETH_SPI_SS_PIN);
 	if(isSink) {
     nrfx_gpiote_in_config_t spi_slave_irq_config = {
     		.is_watcher = false,
@@ -157,23 +157,23 @@ inline static void dw_spiRx(uint32_t length, uint8_t *buf) {
 
 int readfromspi(uint16_t headerLength, const uint8_t *headerBuffer,
                 uint32_t bodyLength, uint8_t *bodyBuffer) {
-	  decaIrqStatus_t en = decamutexon();
+	CRITICAL(
 	  nrf_gpio_pin_clear(DW_SPI_SS_PIN);
 	  dw_spiTx(headerLength, headerBuffer);
 	  dw_spiRx(bodyLength, bodyBuffer);
 	  nrf_gpio_pin_set(DW_SPI_SS_PIN);
-	  decamutexoff(en);
+	  )
 	  return 0;
 }
 
 int writetospi(uint16_t headerLength, const uint8_t *headerBuffer,
                uint32_t bodyLength, const uint8_t *bodyBuffer) {
-	  decaIrqStatus_t en = decamutexon();
+	CRITICAL(
 	  nrf_gpio_pin_clear(DW_SPI_SS_PIN);
 	  dw_spiTx(headerLength, headerBuffer);
 	  dw_spiTx(bodyLength, bodyBuffer);
 	  nrf_gpio_pin_set(DW_SPI_SS_PIN);
-	  decamutexoff(en);
+	  )
 	  return 0;
 }
 

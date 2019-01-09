@@ -117,7 +117,7 @@ typedef enum {
 void LOG_Trace(TRACE_t);
 
 /**
- * @brief sending messages from circled buffer for logs
+ * @brief popping messages from circled buffer for logs
  *
  */
 void LOG_BufPop();

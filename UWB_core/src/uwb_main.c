@@ -77,7 +77,7 @@ void UwbMain() {
 	// CheckSleepMode();
 	SETTINGS_Init();
 	PORT_Init();
-	// base on device address
+	// based on device address
 	Desynchronize();
 
 	if (settings.mac.role == RTLS_DEFAULT) {
@@ -139,7 +139,7 @@ void UwbMain() {
 		TXT_Control();
 		FU_Control();
 		PORT_WatchdogRefresh();
-//		__WFI();
+		__WFI();
 	}
 }
 

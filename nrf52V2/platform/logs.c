@@ -83,18 +83,24 @@ void SpiSlaveRequest() {
 		case LOG_PC_Ack:
 			if(spiHandling.ifWaitingForAck) {
 				LOG_BufPop();
+				spiHandling.nackCount = 0;
 				spiHandling.ifWaitingForAck = false;
 			}
 			break;
 
 		case LOG_PC_Nack:
-		default:
 			if(spiHandling.ifWaitingForAck) {
-				spiHandling.ifWaitingForAck = false;
-				if(10 <= ++spiHandling.nackCount) {
+				if(5 <= ++spiHandling.nackCount) {
 					LOG_BufPop();
 					spiHandling.nackCount = 0;
 				}
+				spiHandling.ifWaitingForAck = false;
+			}
+			break;
+
+		default:
+			if(spiHandling.ifWaitingForAck) {
+				spiHandling.ifWaitingForAck = false;
 			}
 			break;
 	}

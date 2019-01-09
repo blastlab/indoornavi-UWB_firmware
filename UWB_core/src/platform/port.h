@@ -50,7 +50,7 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 0
+#define DBG 1
 #define USE_SLOT_TIMER 1
 
 /**
@@ -375,11 +375,9 @@ decaIrqStatus_t PORT_EnterCritical();
 void PORT_ExitCritical(decaIrqStatus_t s);
 
 #define CRITICAL(_CODE_)                                 \
-  do {                                                   \
     decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
     _CODE_                                               \
     PORT_ExitCritical(_irq_primask);                     \
-  } while(0);
 
 // ========  SPI  ==========
 
