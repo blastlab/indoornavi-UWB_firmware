@@ -458,6 +458,7 @@ int FC_TDOA_BEACON_TAG_cb(const void* data, const prot_packet_info_t* info) {
 	bool short_beacon = packet->len == sizeof(FC_TDOA_BEACON_TAG_s) - 8;
 	if (packet->len != sizeof(FC_TDOA_BEACON_TAG_s) && !short_beacon) {
 		LOG_ERR(ERR_MAC_BAD_OPCODE_LEN, "FC_TDOA_BEACON_TAG", packet->len, sizeof(FC_TDOA_BEACON_TAG_s));
+    TRANSCEIVER_DefaultRx();
 		return -1;
 	}
 	int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();

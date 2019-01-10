@@ -50,7 +50,7 @@
  * Especially difference is during assertion.
  * In debug mode assert lead to IC hang and in release mode to reset.
  */
-#define DBG 0
+#define DBG 1
 #define USE_SLOT_TIMER 1
 
 /**
@@ -375,11 +375,9 @@ decaIrqStatus_t PORT_EnterCritical();
 void PORT_ExitCritical(decaIrqStatus_t s);
 
 #define CRITICAL(_CODE_)                                 \
-  {                                                      \
     decaIrqStatus_t _irq_primask = PORT_EnterCritical(); \
     _CODE_                                               \
     PORT_ExitCritical(_irq_primask);                     \
-  }
 
 // ========  SPI  ==========
 
@@ -435,7 +433,19 @@ int writetospi(uint16_t headerLength, const uint8_t* headerBuffer, uint32_t body
  * \param[in] cs_pin to assert when transmitting
  *
  */
-void PORT_SpiTx(uint8_t* buf, int length, int cs_pin);
+void PORT_SpiTx(const uint8_t* buf, uint8_t length, uint32_t cs_pin);
+
+/**
+ * \brief receive data over general-use spi instance
+ *
+ * \note this function is used with different devices
+ *
+ * \param[in] buf pointer to rx data buffer
+ * \param[in] length of rx data in bytes
+ * \param[in] cs_pin to assert when transmitting
+ *
+ */
+void PORT_SpiRx(uint8_t* buf, uint8_t length, uint32_t cs_pin);
 
 /**
  * \brief send and then receive data over general-use spi instance
@@ -450,18 +460,6 @@ void PORT_SpiTx(uint8_t* buf, int length, int cs_pin);
  *
  */
 void PORT_SpiTxRx(uint8_t* tx_buf, int tx_length, uint8_t* rx_buf, int rx_length, int cs_pin);
-
-/**
- * \brief receive data over general-use spi instance
- *
- * \note this function is used with different devices
- *
- * \param[in] buf pointer to rx data buffer
- * \param[in] length of rx data in bytes
- * \param[in] cs_pin to assert when transmitting
- *
- */
-void PORT_SpiRx(uint8_t* rx_buf, int rx_length, int cs_pin);
 
 // ========  FLASH  ==========
 

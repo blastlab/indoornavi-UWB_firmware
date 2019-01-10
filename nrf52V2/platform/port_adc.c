@@ -88,6 +88,9 @@ int PORT_BatteryVoltage() { return _battery_mv; }
 
 
 rtls_role PORT_GetHwRole() {
+#if ETH_SINK_PCB
+	return RTLS_SINK;
+#endif
 #if HW_TYPE_PULL
 	int16_t voltage = 0;
 	nrf_gpio_cfg_input(HW_TYPE_PULL, NRF_GPIO_PIN_PULLUP);

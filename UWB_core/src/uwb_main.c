@@ -77,7 +77,8 @@ void UwbMain() {
 	// CheckSleepMode();
 	SETTINGS_Init();
 	PORT_Init();
-	Desynchronize();  // base on device address
+	// based on device address
+	Desynchronize();
 
 	if (settings.mac.role == RTLS_DEFAULT) {
 		settings.mac.role = PORT_GetHwRole();

@@ -14,11 +14,15 @@
 #include "nrfx_rtc.h"
 #include "nrfx_clock.h"
 #include "nrf_gpio.h"
+#include "nrf_sdh.h"
 
 static const nrfx_timer_t TIMER_SLOT = NRFX_TIMER_INSTANCE(1);
 static const nrfx_rtc_t RTC = NRFX_RTC_INSTANCE(1);
+static volatile uint32_t rtc_tick = 0;
 
-static void rtc_handler(nrfx_rtc_int_type_t int_type) { }
+static void rtc_handler(nrfx_rtc_int_type_t int_type) {
+	rtc_tick++;
+}
 
 struct {
 		volatile uint32_t period;		// current timer's period (in ticks)
@@ -37,10 +41,13 @@ static void timer_slot_event_handler(nrf_timer_event_t event_type, void* p_conte
 }
 
 void PORT_TimeInit() {
-	nrfx_clock_hfclk_start();																// gives good slot timer synchronization
-	nrfx_clock_lfclk_start();																// needed for RTC timer
+	if(nrf_sdh_is_enabled() == false) {
+		nrfx_clock_hfclk_start();																// gives good slot timer synchronization
+		nrfx_clock_lfclk_start();																// needed for RTC timer
+	}
 	nrfx_rtc_config_t rtc_config = NRFX_RTC_DEFAULT_CONFIG;
 	APP_ERROR_CHECK(nrfx_rtc_init(&RTC, &rtc_config, rtc_handler));
+	nrfx_rtc_tick_enable(&RTC, true);
 	nrfx_rtc_enable(&RTC);
 
 	nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
@@ -87,7 +94,7 @@ void PORT_SleepMs(time_ms_t time_ms) {
 	nrf_delay_ms(time_ms);
 }
 
-time_ms_t PORT_TickMs() { return RTC.p_reg->COUNTER; }
+time_ms_t PORT_TickMs() { return rtc_tick; }
 
 // get high resosolution clock tick
 unsigned int PORT_TickHr() { return DWT->CYCCNT; }
