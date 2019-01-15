@@ -59,7 +59,7 @@ typedef uint32_t time_ms_t;
 #define BLE_CODE(_CODE_)
 #endif
 
-#define ETH_SINK_PCB 1
+#define ETH_SINK_PCB 0
 #define ETH_MINI_SINK_PCB 0
 #define TAG_PCB 0
 

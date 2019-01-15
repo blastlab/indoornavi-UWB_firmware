@@ -16,6 +16,7 @@ ADD_ITEM_M(1105, WRN_MAC_UNSUPPORTED_ACK_FRAME, "MAC ack frame is not supported 
 ADD_ITEM_M(1108, WRN_FIRWARE_NOT_ACCEPTED_YET, "new firmware not accepted yet! did:%X")
 ADD_ITEM_M(1109, WRN_SINK_ACCEPT_SINK, "sink can't have any parent")
 ADD_ITEM_M(1110, WRN_CARRY_TOO_MUCH_TAGS_TO_TRACK, "there is too much tags to track (max:%d)")
+ADD_ITEM_M(1111, WRN_CARRY_CORRUPTED_FRAME, "CARRY corrupted frame")
 
 // radio 1200
 ADD_ITEM_M(1201, WRN_MAC_TX_ERROR, "Tx err")

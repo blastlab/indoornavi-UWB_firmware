@@ -150,15 +150,18 @@ static bool FU_IsCRCError(const FU_prot* fup) {
 
 // return 1 data in flash and packet with new version is correct
 static uint8_t FU_IsFlashCRCError(const FU_prot* fup) {
+	uint16_t fil_crc; // crc from new firmware file
 	// number of written bytes before this current frame
 	int sizeP = fup->extra * FU.blockSize;
 	// number of file data bytes in frame, -2 for CRC
 	int sizeFup = fup->frameLen - FU_PROT_HEAD_SIZE - 2;
+	int last_off = sizeP + sizeFup;
 	void* destination = FU_GetAddressToWrite();
+
 	PORT_CrcReset();
 	PORT_CrcFeed(destination, sizeP);
 	PORT_CrcFeed(fup->data, sizeFup);
-	PORT_CrcFeed((uint8_t*)destination + sizeP + sizeFup, FU.fileSize - sizeP - sizeFup);
+	PORT_CrcFeed((uint8_t*)destination + last_off, FU.fileSize - last_off);
 	return PORT_CrcFeed(&FU.newCrc, 2);  // 0: ok, else error
 }
 
@@ -282,6 +285,7 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 	// send ack
 	FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
 	FU_tx.frameLen = FU_PROT_HEAD_SIZE;
+	FU_tx.extra = 0xFFFF;
 	FU_SendResponse(&FU_tx, info);
 	LOG_DBG("FU_SOT ok");
 }
@@ -321,6 +325,7 @@ static void FU_Data(const FU_prot* fup, const prot_packet_info_t* info) {
 		FU.sesionPacketCounter += 1;
 		FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
 		FU_tx.frameLen = FU_PROT_HEAD_SIZE;
+		FU_tx.extra = fup->extra;
 		FU_SendResponse(&FU_tx, info);
 	}
 }
@@ -378,6 +383,7 @@ static void FU_ConstantData(const FU_prot* fup, const prot_packet_info_t* info) 
 	FU.sesionPacketCounter += 1;
 	FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
 	FU_tx.frameLen = FU_PROT_HEAD_SIZE;
+	FU_tx.extra = fup->extra;
 	FU_SendResponse(&FU_tx, info);
 }
 
