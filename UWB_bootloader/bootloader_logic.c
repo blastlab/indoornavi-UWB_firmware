@@ -96,11 +96,11 @@ static bool IsAnyApp(int app) {
 	}
 }
 
-static bool IsMagicNumberInAppFlash(int app) {
+static bool IsNewFirmwareNumberInFlash(int app) {
 	// check magic number at the end of a first page
 	uint32_t* ptr = (uint32_t*)(APP1_ADDR + APP_MAX_SIZE * app + APP_TO_SETTINGS_OFFSET);
 	uint32_t val = *ptr;
-	return (val == BOOTLOADER_MAGIC_NUMBER);
+	return (val == BOOTLOADER_NEW_FIRMWARE_NUMBER);
 }
 
 static bool IsCorrectHardwareType(int app) {
@@ -109,9 +109,9 @@ static bool IsCorrectHardwareType(int app) {
 
 int IsFirmwareNew(int app) {
 	bool isAny = IsAnyApp(app);
-	bool isMagic = IsMagicNumberInAppFlash(app);
+	bool isNewInFlash = IsNewFirmwareNumberInFlash(app);
 	bool isHTypeCorrect = IsCorrectHardwareType(app);
-	if (isAny && !isMagic && isHTypeCorrect) {
+	if (isAny && isNewInFlash && isHTypeCorrect) {
 		return 1;
 	}
 	return 0;
@@ -125,6 +125,8 @@ static int ScoreApplication(int i) {
 		score = pset->pass_cnt - pset->fail_cnt;
 		score *= score > 0; // trim lower bound to zero
 		score += 1; // firmware is present
+		score += pset->firmware_version->boot_reserved == BOOTLOADER_MAGIC_NUMBER;
+		score += pset->firmware_version->hType == settings.my_hType;
 	}
 
 	return score;
@@ -161,12 +163,16 @@ bool SomeAppWasRunnig() {
 	return some_app_was_run;
 }
 
-static bool IsTestProcJustFinished(int previous_app) {
+static bool IsTestProcJustFinished() {
+	int previous_app = *BOOTLOADER_BKP_REG - 1;
+	if (!SomeAppWasRunnig()) {
+		return false;
+	}
 	const settings_edit_t* pset = settings.stat[previous_app].firmware_version;
 	bool is_boot_reserved_clear = pset->boot_reserved != BOOTLOADER_MAGIC_NUMBER;
 	bool all_pass_are_zero = !settings.stat[0].pass_cnt && !settings.stat[1].pass_cnt;
 	bool all_fail_are_zero = !settings.stat[0].fail_cnt && !settings.stat[1].fail_cnt;
-	return is_boot_reserved_clear && all_pass_are_zero && all_fail_are_zero && SomeAppWasRunnig();
+	return is_boot_reserved_clear && all_pass_are_zero && all_fail_are_zero;
 }
 
 void StartTest(int app) {
@@ -206,7 +212,7 @@ void Start(uint32_t reset_src) {
 	// if test procedure has just finished, then check app as correct or failed
 	// (base on MAGIC_REG and MAGIC_NUMBER)
 	// then mark them as old
-	if (SomeAppWasRunnig() && IsTestProcJustFinished(previous_app)) {
+	if (IsTestProcJustFinished()) {
 		change_cnt += UpdateAppPassFailCounter(previous_app);
 		Bootloader_MarkFirmwareAsOld(previous_app); // change only the flash data
 		Bootloader_BkpSave(0);

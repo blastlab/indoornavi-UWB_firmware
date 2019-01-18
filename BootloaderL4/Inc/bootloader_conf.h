@@ -13,6 +13,9 @@
 /// when new firmware know this number then it is correct firmware
 #define BOOTLOADER_MAGIC_NUMBER	(0xBECA95)
 
+/// when it is new firmware
+#define BOOTLOADER_NEW_FIRMWARE_NUMBER (0xDEB12)
+
 /// place when BOOTLOADER_MAGIC_NUMBER should be stored, used by function Bootloader_WriteSpecialReg
 #define BOOTLOADER_MAGIC_REG	(RTC->BKP0R)
 #define BOOTLOADER_BKP_REG		((uint32_t*)(&RTC->BKP1R))

@@ -90,7 +90,7 @@ typedef struct {
  */
 #define VERSION_SETTINGS_DEF  \
   {                           \
-  .boot_reserved = 0,         \
+  .boot_reserved = BOOTLOADER_NEW_FIRMWARE_NUMBER,\
   .h_type = __H_TYPE__,       \
   .h_major = __H_MAJOR__,     \
   .h_minor = __H_MINOR__,     \

@@ -18,6 +18,6 @@ void PORT_CrcReset() {
 }
 
 uint16_t PORT_CrcFeed(const void* bytes, int nBytes) {
-  CRC_SUM = crc16_compute(bytes, nBytes, &CRC_SUM);
+	CRC_SUM = crc16_compute(bytes, nBytes, (uint16_t*)&CRC_SUM);
   return CRC_SUM;
 }
