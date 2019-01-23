@@ -95,3 +95,5 @@ ADD_ITEM_M(1503, ERR_BASE64_TOO_LONG_OUTPUT, "LOG_Bin too long base64 message, F
 ARG("FC", "hexadecimal function code which cause error")
 
 ADD_ITEM_M(1504, ERR_LOG_BUF_OVERFLOW, "Logger's buffer overflowed")
+
+ADD_ITEM_M(1505, ERR_LIST_SETTINGS_NEED_FLAG, "listset need one flag [-sink/-anchor/-tag]")

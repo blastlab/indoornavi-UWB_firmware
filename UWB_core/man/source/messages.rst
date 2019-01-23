@@ -37,7 +37,7 @@ Information
 
 *code:* 1103
 
-*descriptor:* "Beacon from did:%X mV:%d route:[%s] serial:%X%X "
+*descriptor:* "Beacon from did:%X mV:%d route:[%s] serial:%X%08X "
 
  arg *mV*: 
 	device voltage on accumulator connectors
@@ -153,7 +153,7 @@ Information
 
 *code:* 1112
 
-*descriptor:* "version did:%X serial:%X%X r:%s hV:%d.%d fV:%d.%d.%X%X"
+*descriptor:* "version did:%X serial:%X%08X r:%s hV:%d.%d.%d fV:%d.%d.%X%X"
 
  arg *serial*: 
 	64-bit device unique identificator number
@@ -162,7 +162,7 @@ Information
 	device role, possible values {SINK, ANCHOR, TAG, LISTENER, DEFAULT, OTHER}
 
  arg *hV*: 
-	hardware version, major.minor
+	hardware version, major.minor.type
 
  arg *fV*: 
 	formware version major.minor.hash where source repository commit hash is in hexadecimal and is 32-bit value.
@@ -485,6 +485,57 @@ Information
 	number of deleted tag
 
 *comment*: see :ref:`deletetags`
+
+.. _INF_TDOA_BEACON_FROM_TAG:
+
+*INF_TDOA_BEACON_FROM_TAG*
+------------------------------------------------------------
+
+*code:* 1350
+
+*descriptor:* "tdoa_tag did:%X anchor:%X mV:%d serial:%X%08X tsrg:%X%08X tsrl:%X%08X"
+
+ arg *did*: 
+	tag short identification number
+
+ arg *mV*: 
+	tag battery voltage
+
+ arg *serial*: 
+	Tag serial number - this parameter may be deleted in a future
+
+ arg *tsrg*: 
+	TimeSample of Receive packet in Global time domain (after clock synchronization)
+
+ arg *tsrl*: 
+	TimeSample of Receive packet in Local time domain (without clock synchronization)
+
+.. _INF_TDOA_BEACON_FROM_ANCHOR:
+
+*INF_TDOA_BEACON_FROM_ANCHOR*
+------------------------------------------------------------
+
+*code:* 1351
+
+*descriptor:* "tdoa_anchor at:%X ar:%X tstg:%X%08X tstl:%X%08X tsrg:%X%08X tsrl:%X%08X tof:%d"
+
+ arg *at*: 
+	identificator (DID) of anchor witch transmit beacon
+
+ arg *ar*: 
+	identificator (DID) of anchor witch received beacon
+
+ arg *tstg*: 
+	TimeSample of Transmission packet in Global time domain  in transmiting device (after clock synchronization)
+
+ arg *tstl*: 
+	TimeSample of Transmission packet in Local time domain in transmiting device (without clock synchronization)
+
+ arg *tsrg*: 
+	TimeSample of Receive packet in Global time domain in receiving device (after clock synchronization)
+
+ arg *tsrl*: 
+	TimeSample of Receive packet in Local time domain in receiving device (without clock synchronization)
 
 .. _INF_SETTINGS_SAVED:
 
@@ -856,12 +907,36 @@ Errors
 
 *comment*: BLE module is not included into this version of firmware
 
+.. _ERR_ITS_ONLY_LOCAL_COMMAND:
+
+*ERR_ITS_ONLY_LOCAL_COMMAND*
+------------------------------------------------------------
+
+*code:* 1300
+
+*descriptor:* "%s command is only for local usage"
+
+ arg *string*: 
+	command name
+
+.. _ERR_ITS_ONLY_SINK_COMMAND:
+
+*ERR_ITS_ONLY_SINK_COMMAND*
+------------------------------------------------------------
+
+*code:* 1301
+
+*descriptor:* "%s command is only for sink"
+
+ arg *string*: 
+	command name
+
 .. _ERR_MEASURE_ADD_ANCHOR_FAILED_DID:
 
 *ERR_MEASURE_ADD_ANCHOR_FAILED_DID*
 ------------------------------------------------------------
 
-*code:* 1301
+*code:* 1302
 
 *descriptor:* "measure add anchor failed with %X"
 
@@ -873,7 +948,7 @@ Errors
 *ERR_MEASURE_TARGET_WITH_ANC_FAILED*
 ------------------------------------------------------------
 
-*code:* 1302
+*code:* 1303
 
 *descriptor:* "measure target failed ancCnt:%d"
 
@@ -885,7 +960,7 @@ Errors
 *ERR_SETANCHORS_FAILED*
 ------------------------------------------------------------
 
-*code:* 1303
+*code:* 1305
 
 *descriptor:* "setanchors failed (%X)"
 
@@ -897,7 +972,7 @@ Errors
 *ERR_SETTAGS_NEED_SETANCHORS*
 ------------------------------------------------------------
 
-*code:* 1304
+*code:* 1306
 
 *descriptor:* "settags need setanchors"
 
@@ -906,7 +981,7 @@ Errors
 *ERR_SETTAGS_FAILED*
 ------------------------------------------------------------
 
-*code:* 1305
+*code:* 1307
 
 *descriptor:* "settags failed after %X"
 
@@ -918,7 +993,7 @@ Errors
 *ERR_MAC_RAAD_BAD_VALUE*
 ------------------------------------------------------------
 
-*code:* 1306
+*code:* 1310
 
 *descriptor:* "mac raad value must be 0 or 1 (enable)"
 
@@ -927,7 +1002,7 @@ Errors
 *ERR_MAC_ADDR_BAD_VALUE*
 ------------------------------------------------------------
 
-*code:* 1307
+*code:* 1311
 
 *descriptor:* "mac addr bad value"
 
@@ -936,7 +1011,7 @@ Errors
 *ERR_MAC_BEACON_TIMER_PERIOD_TOO_SHORT*
 ------------------------------------------------------------
 
-*code:* 1308
+*code:* 1312
 
 *descriptor:* "mac beacon period must be greater than %d"
 
@@ -999,6 +1074,15 @@ Errors
 
  arg *FC*: 
 	hexadecimal function code which cause error
+
+.. _ERR_LOG_BUF_OVERFLOW:
+
+*ERR_LOG_BUF_OVERFLOW*
+------------------------------------------------------------
+
+*code:* 1504
+
+*descriptor:* "Logger's buffer overflowed"
 
 
 .. _critical messages:

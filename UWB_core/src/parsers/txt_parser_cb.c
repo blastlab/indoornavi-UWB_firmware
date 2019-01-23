@@ -729,8 +729,34 @@ static void TXT_MacCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
 }
 
 static void TXT_ListSettingsCb(const txt_buf_t* buf, const prot_packet_info_t* info) {
-	const char val[] = "rfset;txset;rangingtime;toatime;ble;imu;mac";
-	LOG_INF(INF_LIST_SETTINGS, val);
+	const char tag[] = "rfset;txset;toatime;ble;imu;mac";
+	const char anchor[] = "rfset;txset;toatime;ble;mac";
+	const char sink[] = "rangingtime"; // +anchor
+	bool flag_found = false;
+
+	if (TXT_CheckFlag(buf, "-sink")) {
+		LOG_INF(INF_LIST_SETTINGS_SINK, anchor, sink);
+		flag_found = true;
+	}
+	if (TXT_CheckFlag("-anchor")) {
+		if (flag_found) {
+			LOG_ERR(ERR_LIST_SETTINGS_NEED_FLAG);
+		} else {
+			LOG_INF(INF_LIST_SETTINGS, anchor);
+			flag_found = true;
+		}
+	}
+	if (TXT_CheckFlag("-tag")) {
+		if (flag_found) {
+			LOG_ERR(ERR_LIST_SETTINGS_NEED_FLAG);
+		} else {
+			LOG_INF(INF_LIST_SETTINGS, anchor);
+			flag_found = true;
+		}
+	}
+	if (flag_found == false) {
+		LOG_ERR(ERR_LIST_SETTINGS_NEED_FLAG);
+	}
 }
 
 const txt_cb_t txt_cb_tab[] = {

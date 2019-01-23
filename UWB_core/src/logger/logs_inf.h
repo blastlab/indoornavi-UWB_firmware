@@ -195,3 +195,6 @@ COMMENT("In list there will be omitted 'measure' an 'parent' commands, it should
 COMMENT("List of settings commands is generated from sink device, because he need to know how to process them. "
 		"It implies that list of commands of target device could be slightly different and here always will"
 		"be a chance to loose some settings")
+
+ADD_ITEM_M(1505, INF_LIST_SETTINGS_SINK, "listset [%s;%s]")
+COMMENT("Work same as :ref:`INF_LIST_SETTINGS' but print values for anchor and for sink")

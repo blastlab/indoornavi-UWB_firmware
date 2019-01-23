@@ -503,3 +503,14 @@ mac
 Response is :ref:`INF_MAC`.
 
 note: *beacon* and *raad* are allowed for each user, but other parameters must be changes carefully - only for advanced users
+
+.. _listset:
+
+listlset
+===============
+
+*listset -role*
+
+* role: possible values {sink, anchor, tag, listener}
+
+Response is :ref:'INF_LIST
