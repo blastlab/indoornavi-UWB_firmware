@@ -150,7 +150,6 @@ static bool FU_IsCRCError(const FU_prot* fup) {
 
 // return 1 data in flash and packet with new version is correct
 static uint8_t FU_IsFlashCRCError(const FU_prot* fup) {
-	uint16_t fil_crc; // crc from new firmware file
 	// number of written bytes before this current frame
 	int sizeP = fup->extra * FU.blockSize;
 	// number of file data bytes in frame, -2 for CRC
@@ -283,7 +282,7 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 	}
 
 	// send ack
-	FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
+	 FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
 	FU_tx.frameLen = FU_PROT_HEAD_SIZE;
 	FU_tx.extra = 0xFFFF;
 	FU_SendResponse(&FU_tx, info);
@@ -409,7 +408,7 @@ static void FU_EOT(const FU_prot* fup, const prot_packet_info_t* info) {
 		if (FU.sesionPacketCounter == oldPacCnt + 1) {
 			FU.fileSize = 0;
 			FU.newHash = 0;
-			//LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
+			LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
 			FU.eot_time = PORT_TickMs();
 		}
 		return;
