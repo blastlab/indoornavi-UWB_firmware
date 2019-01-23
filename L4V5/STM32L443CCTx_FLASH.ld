@@ -181,6 +181,8 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
 	. = ALIGN(8);
+    CODE_SIZE = . - ISR_START + SIZEOF(.data);
+    ASSERT(CODE_SIZE < PROG_MAX_PROGRAM_SIZE, "Too big code");
   } >FLASH
 
   /* used by the startup to initialize data */
