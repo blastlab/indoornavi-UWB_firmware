@@ -239,12 +239,12 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 	if (fup->frameLen != sizeof(FU_SOT_prot)) {  // 2 for CRC, 4 for size
 		FU_SendError(info, FU_ERR_BAD_FRAME_LEN);
 		return;
-	}  // sprawdz czy ta wersja jest odpowiednia - nalezy do odpowiedniej partycji
-	else if (FU_AcceptFirmwareVersion(fup->fMinor) == 0) {
-		FU_SendError(info, FU_ERR_BAD_F_VERSION);
-		return;
 	} else if (FU_AcceptHardwareVersion(fup->hType) == 0) {
 		FU_SendError(info, FU_ERR_BAD_H_VERSION);
+		return;
+	} // sprawdz czy ta wersja jest odpowiednia - nalezy do odpowiedniej partycji
+	else if (FU_AcceptFirmwareVersion(fup->fMinor) == 0) {
+		FU_SendError(info, FU_ERR_BAD_F_VERSION);
 		return;
 	} else if (fup->fileSize > FU_MAX_PROGRAM_SIZE || fup->fileSize == 0) {
 		FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
