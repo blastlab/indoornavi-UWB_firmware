@@ -11,14 +11,16 @@ $(OUTPUT_DIRECTORY)/nrf52832_xxaa.out: \
 # Source files common to all targets
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52.S \
-  $(PROJ_DIR)/main.c \
   $(SDK_ROOT)/modules/nrfx/mdk/system_nrf52.c \
-  $(PROJ_DIR)/bootloader.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_timer.c \
+  $(PROJ_DIR)/../UWB_bootloader/bootloader_logic.c \
+  $(wildcard $(PROJ_DIR)/*.c) \
 
 # Include folders common to all targets
 INC_FOLDERS += \
   ../config \
+  $(PROJ_DIR) \
+  $(PROJ_DIR)/../UWB_bootloader \
   $(SDK_ROOT)/modules/nrfx \
   $(SDK_ROOT)/modules/nrfx/mdk \
   $(SDK_ROOT)/modules/nrfx/hal \
@@ -32,7 +34,7 @@ INC_FOLDERS += \
 LIB_FILES += \
 
 # Optimization flags
-OPT = -O3 -g3
+OPT = -Og -g3
 # Uncomment the line below to enable link time optimization
 #OPT += -flto
 

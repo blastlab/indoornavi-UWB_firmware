@@ -60,7 +60,7 @@ static inline uint8_t* FU_GetAddressToWrite() {
 
 // check
 int FU_AcceptFirmwareVersion(int Ver) {
-	uint16_t fMinor = (Ver) & 0xFFFF;
+	uint16_t fMinor = Ver;
 	if ((fMinor % 2) == (settings.version.f_minor % 2)) {
 		return 0;
 	} else {
@@ -69,8 +69,8 @@ int FU_AcceptFirmwareVersion(int Ver) {
 }
 
 int FU_AcceptHardwareVersion(int Ver) {
-	uint8_t hVer = Ver >> 24;
-	if (H_MAJOR_CALC(hVer) != H_MAJOR_CALC(settings.version.h_version)) {
+	uint16_t hType = Ver;
+	if (hType != settings.version.h_type) {
 		return 0;
 	} else {
 		return 1;
@@ -154,11 +154,13 @@ static uint8_t FU_IsFlashCRCError(const FU_prot* fup) {
 	int sizeP = fup->extra * FU.blockSize;
 	// number of file data bytes in frame, -2 for CRC
 	int sizeFup = fup->frameLen - FU_PROT_HEAD_SIZE - 2;
+	int last_off = sizeP + sizeFup;
 	void* destination = FU_GetAddressToWrite();
+
 	PORT_CrcReset();
 	PORT_CrcFeed(destination, sizeP);
 	PORT_CrcFeed(fup->data, sizeFup);
-	PORT_CrcFeed((uint8_t*)destination + sizeP + sizeFup, FU.fileSize - sizeP - sizeFup);
+	PORT_CrcFeed((uint8_t*)destination + last_off, FU.fileSize - last_off);
 	return PORT_CrcFeed(&FU.newCrc, 2);  // 0: ok, else error
 }
 
@@ -238,10 +240,10 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 		FU_SendError(info, FU_ERR_BAD_FRAME_LEN);
 		return;
 	}  // sprawdz czy ta wersja jest odpowiednia - nalezy do odpowiedniej partycji
-	else if (FU_AcceptFirmwareVersion(fup->fversion) == 0) {
+	else if (FU_AcceptFirmwareVersion(fup->fMinor) == 0) {
 		FU_SendError(info, FU_ERR_BAD_F_VERSION);
 		return;
-	} else if (FU_AcceptHardwareVersion(fup->fversion) == 0) {
+	} else if (FU_AcceptHardwareVersion(fup->hType) == 0) {
 		FU_SendError(info, FU_ERR_BAD_H_VERSION);
 		return;
 	} else if (fup->fileSize > FU_MAX_PROGRAM_SIZE || fup->fileSize == 0) {
@@ -257,7 +259,7 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 
 	// overwrite new firmware info
 	FU.newCrc = fup->firmwareCRC;  // zapis CRC calego pliku .bin
-	FU.newVer = fup->fversion;     // zapis numeru nowej wersji programu
+	FU.newVer = fup->fMinor;     // zapis numeru nowej wersji programu
 	FU.fileSize = fup->fileSize;
 	FU.blockSize = fup->blockSize;
 	FU.newHash = fup->hash;
@@ -280,10 +282,11 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 	}
 
 	// send ack
-	FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
+	 FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
 	FU_tx.frameLen = FU_PROT_HEAD_SIZE;
+	FU_tx.extra = 0xFFFF;
 	FU_SendResponse(&FU_tx, info);
-	LOG_DBG("FU_SOT ok");
+	LOG_DBG("FU_SOT ok fMinor:%d.%d", fup->fMinor);
 }
 
 /**
@@ -321,8 +324,66 @@ static void FU_Data(const FU_prot* fup, const prot_packet_info_t* info) {
 		FU.sesionPacketCounter += 1;
 		FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
 		FU_tx.frameLen = FU_PROT_HEAD_SIZE;
+		FU_tx.extra = fup->extra;
 		FU_SendResponse(&FU_tx, info);
 	}
+}
+
+/**
+ * @brief process CompressedDATA message as device
+ *
+ * @param fup message to process
+ * @param info extra informations about message
+ */
+static void FU_ConstantData(const FU_prot* fup, const prot_packet_info_t* info) {
+	if (fup->hash != (uint8_t)FU.newHash) {
+		// sprawdz czy zgadza sie wersja z ta z ramki SOT
+		FU_SendError(info, FU_ERR_BAD_FRAME_HASH);
+		return;
+	} else if (FU.fileSize == 0) {
+		FU_SendError(info, FU_ERR_BAD_FILE_SIZE);
+		return;
+	} else if (fup->extra * FU.blockSize >= FU.fileSize) {
+		FU_SendError(info, FU_ERR_BAD_OFFSET);
+		return;
+	} else if (FU_IsVersionInside(fup) && !FU_IsOpcode(fup->opcode, FU_OPCODE_EOT)) {
+		// gdy ta paczka zawiera version a nie jest typu EOT, to zglos blad
+		FU_SendError(info, FU_ERR_VERSION_IN_PACKAGE);
+	} else if (fup->frameLen - FU_PROT_HEAD_SIZE - 2 != 2) {
+		FU_SendError(info, FU_ERR_BAD_FRAME_LEN);
+		return;
+	} else if (FU.blockSize > MAC_BUF_LEN) {
+		FU_SendError(info, FU_ERR_BAD_DATA_BLOCK_SIZE);
+		return;
+	}
+	FU.active_time = PORT_TickMs();
+	// gdy nie ma wersji firmwaru w tej paczce lub jest, ale zgadza sie CRC
+	// to zaladuj program do flash
+	char value = fup->data[0]; // constant value
+	int dataSize = fup->data[1];
+	unsigned char* address = FU_GetAddressToWrite() + FU.blockSize * fup->extra;
+	mac_buf_t* buf = MAC_Buffer();
+	if (buf == 0) {
+		return; // wait for retransmission
+	}
+	memset(buf->buf, value, FU.blockSize);
+	while (dataSize > 0) {
+		PORT_WatchdogRefresh();
+		int ret = PORT_FlashSave(address, buf->buf, FU.blockSize);
+		if (ret != 0) {
+			FU_SendError(info, FU_ERR_FLASH_WRITING);
+			return;
+		}
+		address += FU.blockSize;
+		dataSize -= 1;
+	}
+	MAC_Free(buf);
+	// sukces
+	FU.sesionPacketCounter += 1;
+	FU_tx.opcode = FU_MakeOpcode(FU_OPCODE_ACK);
+	FU_tx.frameLen = FU_PROT_HEAD_SIZE;
+	FU_tx.extra = fup->extra;
+	FU_SendResponse(&FU_tx, info);
 }
 
 /**
@@ -340,11 +401,16 @@ static void FU_EOT(const FU_prot* fup, const prot_packet_info_t* info) {
 	} else if (FU_IsNewFirmwareInBadPlace(((uint32_t*)FU_GetAddressToWrite()) + 1)) {
 		FU_SendError(info, FU_ERR_BAD_F_VERSION);
 	} else {  // dostalismy wersje z poprawna wersja firmwaru, konczymy transmisje
-		FU_Data(fup, info);  // zapisz ostatnio porcje danych we flashu
-		FU.fileSize = 0;
-		FU.newHash = 0;
-		LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
-		FU.eot_time = PORT_TickMs();
+		int oldPacCnt = FU.sesionPacketCounter; // aby sprawdzic czy odebrane dane sa prawidlowe
+		FU_Data(fup, info);  // zapisz ostatnio porcje danych we flashu i wyslij ACK
+
+		// gdy zaakceptowano ostatnia ramke z danymi
+		if (FU.sesionPacketCounter == oldPacCnt + 1) {
+			FU.fileSize = 0;
+			FU.newHash = 0;
+			LOG_INF(INF_FU_SUCCESS, "FU successfully firmware uploaded");
+			FU.eot_time = PORT_TickMs();
+		}
 		return;
 	}
 	PORT_FlashErase(FU_GetAddressToWrite(), FU.fileSize);				// erasing bad firmware
@@ -364,6 +430,9 @@ void FU_HandleAsDevice(const void* data, const prot_packet_info_t* info) {
 	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_DATA)) {
 		// przeslanie paczki z danymi
 		FU_Data(fup, info);
+	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_CONST_DATA)) {
+		// przeslanie paczki z danymi
+		FU_ConstantData(fup, info);
 	} else if (FU_IsOpcode(fup->opcode, FU_OPCODE_SOT)) {
 		// rozpoczyna transmisje nowej paczki
 		FU_SOT(fup, info);

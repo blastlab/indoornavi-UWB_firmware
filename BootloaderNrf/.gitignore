@@ -1,0 +1,9 @@
+
+*.cproject
+*.project
+.settings/*
+
+# Build
+
+build/_build/*
+bootloader/build/_build/*

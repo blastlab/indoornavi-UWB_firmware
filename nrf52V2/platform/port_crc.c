@@ -7,7 +7,7 @@
 #include "port.h"
 #include "crc16.h"
 
-static uint16_t CRC_SUM;
+static volatile uint16_t CRC_SUM;
 
 void PORT_CrcInit() {
   CRC_SUM = 0xFFFF;
@@ -18,6 +18,6 @@ void PORT_CrcReset() {
 }
 
 uint16_t PORT_CrcFeed(const void* bytes, int nBytes) {
-  CRC_SUM = crc16_compute(bytes, nBytes, &CRC_SUM);
+	CRC_SUM = crc16_compute(bytes, nBytes, (uint16_t*)&CRC_SUM);
   return CRC_SUM;
 }

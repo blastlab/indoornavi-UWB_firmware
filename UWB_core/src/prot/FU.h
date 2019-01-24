@@ -232,9 +232,8 @@ typedef struct {
 	                   ///< byte of CRC
 	uint8_t opcode;    ///< operation code, #FU_OPCODE_SOT
 	uint8_t hash;      ///< mix of hardware and software version in this packet
-	uint32_t fversion; ///< full version (device) or transfered firmware version
-	                   ///< (from host) [4b:hMajor, 4b:hMinor, 8b:fMajor,
-	                   ///< 16b:fMinor]
+	uint16_t hType;    ///< hardware type
+	uint16_t fMinor;	 ///< firmware minor
 	uint16_t firmwareCRC; ///< BigEndian
 	uint16_t blockSize; ///< Data block size in bytes in one data packet
 	uint32_t fileSize;    ///< BigEndian
@@ -247,12 +246,14 @@ typedef struct {
 #define FU_OPCODE_ACK 4  ///< Data or SOT ACK
 #define FU_OPCODE_ABORT 5  ///< Error occurrence
 #define FU_OPCODE_EOT 6  ///< End Of Transmission
+#define FU_OPCODE_CONST_DATA 7 ///< Constant Data, data[0] is constant value, data[1] is const data
+///< size in FU.blockSize units
 
 #define FU_ERR_BAD_FRAME_CRC 1  ///< CRC in frame didn't match
 #define FU_ERR_FLASH_WRITING 2  ///< error during writing to flash
 #define FU_ERR_FLASH_ERASING 3  ///< error during erasing flash
 #define FU_ERR_BAD_FRAME_LEN 4  ///< frame length didn't math
-#define FU_ERR_BAD_FRAME_HASH 5  ///< incompatible frame hash
+#define FU_ERR_BAD_FRAME_HASH 5  ///< incompatible frame hash, session lost
 #define FU_ERR_BAD_OFFSET 6  ///< bad offset value in data frame
 #define FU_ERR_BAD_OPCODE_SET 7  ///< bad FU opcode in frame
 #define FU_ERR_FIR_NOT_ACCEPTED_YET 8  ///< firmware need to be accepted before

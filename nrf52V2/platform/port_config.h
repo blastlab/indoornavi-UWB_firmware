@@ -10,6 +10,7 @@
 #define HARDWARE_UID_64 (((uint64_t)NRF_FICR->DEVICEADDR[1] << 32) | NRF_FICR->DEVICEADDR[0])
 #define __H_MAJOR__ 2
 #define __H_MINOR__ 2
+#define __H_TYPE__  2
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
@@ -28,6 +29,7 @@ extern char PROG_BOOTLOADER_MAX_SIZE;
 #define PROG_BOOTLOADER_MAX_SIZE_m \
   (uint32_t)((void*)(&PROG_BOOTLOADER_MAX_SIZE))
 
+#define BOOTLOADER_NEW_FIRMWARE_NUMBER (0xDEB12)
 #define BOOTLOADER_MAGIC_NUMBER (0xBECA95)
 #define BOOTLOADER_MAGIC_REG_ADDR \
   (uint32_t)(FLASH_BASE + PROG_BOOTLOADER_MAX_SIZE_m - 2 * FLASH_PAGE_SIZE)
@@ -59,13 +61,17 @@ typedef uint32_t time_ms_t;
 #endif
 
 #define ETH_SINK_PCB 0
+#define ETH_MINI_SINK_PCB 0
 #define TAG_PCB 0
 
 #if ETH_SINK_PCB
 #undef LOG_SPI_EN
 #define LOG_SPI_EN 1
 
-#define ETH_SPI_SLAVE_IRQ 0
+#undef LOG_USB_EN
+#define LOG_USB_EN 0
+
+#define ETH_SPI_SLAVE_IRQ 14
 
 #define DW_RST_PIN 24
 #define DW_EXTI_IRQn 19
@@ -103,6 +109,29 @@ typedef uint32_t time_ms_t;
 #define IMU_SPI_SS_PIN 3
 #define IMU_EXTI_IRQ1 23
 #define IMU_EXTI_IRQ2 13
+
+#define USB_UART_RX_PIN 11
+#define USB_UART_TX_PIN 5
+
+#define BATT_ADC_TRIG_PIN 27
+#define HW_TYPE_PULL 26
+
+#define LED_G1 9
+#define LED_R1 12
+#elif ETH_MINI_SINK_PCB
+#define DW_RST_PIN 24
+#define DW_EXTI_IRQn 19
+#define DW_SPI_MISO_PIN 18
+#define DW_SPI_MOSI_PIN 20
+#define DW_SPI_SCK_PIN 16
+#define DW_SPI_SS_PIN 17
+
+#define GEN_SPI_MISO_PIN 7
+#define GEN_SPI_MOSI_PIN 6
+#define GEN_SPI_SCK_PIN 4
+
+#define ETH_SPI_SS_PIN 3
+#define ETH_SPI_SLAVE_IRQ 0 //14
 
 #define USB_UART_RX_PIN 11
 #define USB_UART_TX_PIN 5

@@ -316,7 +316,12 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 		dev_addr_t nextDid = pcarry->hops[hops_num - 1];
 		int lenPre = (int)((uint8_t*)&pcarry->hops[hops_num - 1] - (uint8_t*)data);
 		int lenPost = len - lenPre - sizeof(dev_addr_t);
+		int lenSum = lenPost + lenPre + sizeof(dev_addr_t);
 		mac_buf_t* tx_buf = MAC_BufferPrepare(nextDid, true);
+		if (lenPost < 0 || tx_buf->buf + MAC_BUF_LEN < tx_buf->dPtr + lenSum) {
+			LOG_WRN(WRN_CARRY_CORRUPTED_FRAME);
+			MAC_Free(tx_buf);
+		}
 		if (tx_buf != 0) {
 			tx_carry = (FC_CARRY_s*)tx_buf->dPtr;
 			MAC_Write(tx_buf, data, lenPre);

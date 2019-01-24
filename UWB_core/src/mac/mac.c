@@ -559,7 +559,7 @@ void MAC_Write(mac_buf_t* frame, const void* source, unsigned int len) {
 	MAC_ASSERT(frame != 0);
 	MAC_ASSERT(frame->dPtr >= (uint8_t* )frame);
 	MAC_ASSERT(source != 0);
-	MAC_ASSERT(0 <= len && len < MAC_BUF_LEN);
+	MAC_ASSERT(0 <= len && frame->dPtr + len < frame->buf + MAC_BUF_LEN);
 	const uint8_t* src = (uint8_t*)source;
 	while (len > 0) {
 		*frame->dPtr = *src;

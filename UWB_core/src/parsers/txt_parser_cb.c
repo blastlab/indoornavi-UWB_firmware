@@ -738,7 +738,7 @@ static void TXT_ListSettingsCb(const txt_buf_t* buf, const prot_packet_info_t* i
 		LOG_INF(INF_LIST_SETTINGS_SINK, anchor, sink);
 		flag_found = true;
 	}
-	if (TXT_CheckFlag("-anchor")) {
+	if (TXT_CheckFlag(buf, "-anchor")) {
 		if (flag_found) {
 			LOG_ERR(ERR_LIST_SETTINGS_NEED_FLAG);
 		} else {
@@ -746,11 +746,11 @@ static void TXT_ListSettingsCb(const txt_buf_t* buf, const prot_packet_info_t* i
 			flag_found = true;
 		}
 	}
-	if (TXT_CheckFlag("-tag")) {
+	if (TXT_CheckFlag(buf, "-tag")) {
 		if (flag_found) {
 			LOG_ERR(ERR_LIST_SETTINGS_NEED_FLAG);
 		} else {
-			LOG_INF(INF_LIST_SETTINGS, anchor);
+			LOG_INF(INF_LIST_SETTINGS, tag);
 			flag_found = true;
 		}
 	}

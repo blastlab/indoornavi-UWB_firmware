@@ -29,8 +29,8 @@ const char* RoleToString(rtls_role role) {
 void PRINT_Version(const FC_VERSION_s *data, dev_addr_t did) {
 	const char *str_role = RoleToString(data->role);
 	LOG_INF(INF_VERSION, did, (uint32_t)(data->serial >> 32), (uint32_t)data->serial, str_role,
-	        data->hMajor, data->hMinor, data->fMajor, data->fMinor, (uint32_t)(data->hash >> 32),
-		(uint32_t)(data->hash));
+	        data->hMajor, data->hMinor, data->hType, data->fMajor, data->fMinor,
+	        (uint32_t)(data->hash >> 32), (uint32_t)(data->hash));
 }
 
 void PRINT_Stat(const FC_STAT_s *data, dev_addr_t did) {
@@ -68,7 +68,7 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
 		snprintf(buf, MAC_BUF_LEN, "%X", did);
 	}
 	int mV = data->hop_cnt_batt & 0x0F;
-	mV = (mV << 8) + data->voltage; 
+	mV = (mV << 8) + data->voltage;
 	mV = mV < 100 ? 0 : mV + 2000; // 2000 is battery offset level to compress value into 12B field
 	LOG_INF(INF_BEACON, did, mV, buf, data->serial_hi, data->serial_lo);
 	MAC_Free(mbuf);

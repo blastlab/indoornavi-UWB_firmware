@@ -62,6 +62,7 @@ typedef struct {
 	uint16_t fMinor;  ///< firmware minor version
 	uint64_t serial;  ///< device serial number
 	uint64_t hash;  ///< firmware git hash commit
+	uint16_t hType; ///< hardware type enum
 }__packed FC_VERSION_s;
 
 /**

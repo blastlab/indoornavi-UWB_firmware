@@ -7,6 +7,7 @@
 
 #define __H_MAJOR__ 0
 #define __H_MINOR__ 1
+#define __H_TYPE__  1
 #define HARDWARE_UID_64 (*(uint64_t *)(0x1FFF7590))
 #define HARDWARE_OTP_ADDR 0x1FFF7000
 
@@ -17,6 +18,7 @@ typedef unsigned int time_ms_t;
 
 #define DW_EXTI_IRQn EXTI0_IRQn
 
+#define BOOTLOADER_NEW_FIRMWARE_NUMBER (0xDEB12)
 #define BOOTLOADER_MAGIC_NUMBER (0xBECA95)
 #define BOOTLOADER_MAGIC_REG (RTC->BKP0R)
 #define BOOTLOADER_MAGIC_REG_GO_SLEEP (0x12345678)
