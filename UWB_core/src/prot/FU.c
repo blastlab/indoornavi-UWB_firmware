@@ -286,7 +286,7 @@ static void FU_SOT(const FU_prot* fup_d, const prot_packet_info_t* info) {
 	FU_tx.frameLen = FU_PROT_HEAD_SIZE;
 	FU_tx.extra = 0xFFFF;
 	FU_SendResponse(&FU_tx, info);
-	LOG_DBG("FU_SOT ok");
+	LOG_DBG("FU_SOT ok fMinor:%d.%d", fup->fMinor);
 }
 
 /**

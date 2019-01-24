@@ -57,6 +57,23 @@ uint32_t PORT_BkpRegisterRead(uint32_t *reg)
 	return *BOOTLOADER_MAGIC_REG;
 }
 
+static uint32_t* ToPageStartAddr(const void* addr) {
+	uint32_t ad = (uint32_t)addr;
+	uint32_t* result = (uint32_t*)(ad - ad % FLASH_PAGE_SIZE);
+	return result;
+}
+
+static int ItIsEotPacket(uint32_t* addr) {
+	int result = addr == (FU_DESTINATION_1 + FLASH_PAGE_SIZE);
+	result |= addr == (FU_DESTINATION_2 + FLASH_PAGE_SIZE);
+	return result;
+}
+
+static int EotWillBeNextPacket(uint32_t* addr, int len) {
+	uint32_t* ad = (uint32_t*)((int)addr + len);
+	return ItIsEotPacket(ad);
+}
+
 // erasing area in a flash under given address
 int PORT_FlashErase(void *flash_addr, uint32_t length) {
 	uint32_t status = 0;
@@ -77,7 +94,7 @@ int PORT_FlashErase(void *flash_addr, uint32_t length) {
 		} while(!flash_operation_ready && nrf_sdh_is_enabled());
 	}
 
-	if (flash_addr != APP_SETTINGS_ADDR) {
+	if (flash_addr != APP_SETTINGS_ADDR && ItIsEotPacket(flash_addr) == false) {
 		_flash_page_addr = 0;
 		memset(fu_buf, 0xff, FLASH_PAGE_SIZE);
 	}
@@ -87,6 +104,7 @@ int PORT_FlashErase(void *flash_addr, uint32_t length) {
 static uint32_t save_to_flash(uint32_t * dst, uint32_t * src, uint32_t length) {
 	uint32_t status = 0;
 	int len = length;
+	LOG_DBG("FLASH save addr:%X len:%d", dst, length);
 	do {
 		flash_operation_ready = false;
 		int temp_len = (len >= FLASH_PAGE_SIZE) ? (FLASH_PAGE_SIZE / 4) : (len % FLASH_PAGE_SIZE / 4);
@@ -103,28 +121,12 @@ static uint32_t save_to_flash(uint32_t * dst, uint32_t * src, uint32_t length) {
 	return status;
 }
 
-static uint32_t* ToPageStartAddr(const void* addr) {
-	uint32_t ad = (uint32_t)addr;
-	uint32_t* result = (uint32_t*)(ad - ad % FLASH_PAGE_SIZE);
-	return result;
-}
-
-static int ItIsEotPacket(uint32_t* addr) {
-	int result = addr == (FU_DESTINATION_1 + FLASH_PAGE_SIZE);
-	result |= addr == (FU_DESTINATION_2 + FLASH_PAGE_SIZE);
-	return result;
-}
-
-static int EotWillBeNextPacket(uint32_t* addr, int len) {
-	uint32_t* ad = (uint32_t*)((int)addr + len);
-	return ItIsEotPacket(ad);
-}
-
 // saving given number of bytes under choosen address
 int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
 	uint32_t status = 0;
 	uint32_t *dst = (uint32_t *)destination;
 	uint32_t *dst_page = ToPageStartAddr(dst);
+	uint32_t *end_page_addr = ToPageStartAddr((uint32_t*)((int)dst + length));
 	uint32_t *src = (uint32_t *)p_source;
 	uint32_t buf_ind = (uint32_t)dst % FLASH_PAGE_SIZE;
 	PORT_ASSERT(((uint32_t)destination % 8) == 0);
@@ -134,8 +136,7 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
 	}
 
 	if (dst != APP_SETTINGS_ADDR) {							// if we are not saving current app's settings
-		if (_flash_page_addr != 0 && _flash_page_addr != dst_page
-		    && ToPageStartAddr((uint32_t*)((int)dst + length)) == dst_page) {	// if the addr_buffer changed
+		if (_flash_page_addr != 0 && _flash_page_addr != dst_page && end_page_addr == dst_page) {	// if the addr_buffer changed
 			status = save_to_flash(_flash_page_addr, (uint32_t *)fu_buf, FLASH_PAGE_SIZE);
 			memset(fu_buf, 0xFF, FLASH_PAGE_SIZE);
 			if (status != 0) {
@@ -144,16 +145,18 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
 		}
 
 		if (ItIsEotPacket(dst)) {		// if this is EOT packet from FU
-			memcpy(fu_buf, dst, FLASH_PAGE_SIZE);
+			memcpy(fu_buf, dst_page, FLASH_PAGE_SIZE);
 			memcpy(fu_buf, src, length);
+
 			status = PORT_FlashErase(dst, FLASH_PAGE_SIZE);
 			if(!status) {
 				status = save_to_flash(dst, (uint32_t *)fu_buf, FLASH_PAGE_SIZE);
+				LOG_DBG("FLASH EOT save addr:%X stat:%d", dst, status);
 			}
 			return status;
 		} else {
 			_flash_page_addr = dst_page;												// if this is another packet within page
-			if (ToPageStartAddr((uint32_t*)((int)dst + length)) != dst_page) {
+			if (end_page_addr != dst_page) {
 				// gdy paczka zaczyna sie w 1. stronie flash a konczy w innej
 				// lub jest ostatnia paczka w na tej stronie
 				// uzupelnij strone do konca, zapisz flash i
@@ -161,9 +164,11 @@ int PORT_FlashSave(void *destination, const void *p_source, uint32_t length) {
 				memcpy(&fu_buf[buf_ind], src, lenInFirst);
 				status = save_to_flash(dst_page, (uint32_t *)fu_buf, FLASH_PAGE_SIZE);
 				memset(fu_buf, 0xFF, FLASH_PAGE_SIZE);
+				LOG_DBG("FLASH addr:%X len:%d page changed %X => %X and cpy %d", dst, length, dst_page,
+				        end_page_addr, length - lenInFirst);
 				if (status == 0) {
 					memcpy(&fu_buf[0], (uint32_t*)((int)src + lenInFirst), length - lenInFirst);
-					_flash_page_addr = ToPageStartAddr(dst + length);
+					_flash_page_addr = end_page_addr;
 				}
 			} else {
 				memcpy(&fu_buf[buf_ind], src, length);
