@@ -358,7 +358,7 @@ int TOA_TxCb(int64_t TsDwTx) {
 			TOA_State(&toa.core, TOA_RESP_SENT);
 			toa.core.TsRespTx = TsDwTx;
 			int resp_us = (toa.core.TsRespTx - toa.core.TsPollRx) / UUS_TO_DWT_TIME;
-			TOA_TRACE("TOA RESP sent after %dus", resp_us);
+			TOA_TRACE("TOA RESP sent after %dus from POLL RX", resp_us);
 			ret = 1;
 			break;
 		case TOA_FIN_WAIT_TO_SEND:
@@ -366,7 +366,7 @@ int TOA_TxCb(int64_t TsDwTx) {
 			TOA_State(&toa.core, TOA_FIN_SENT);
 			toa.core.TsFinTx = TsDwTx;
 			int fin_us = ((TsDwTx - toa.core.TsPollTx) & MASK_40BIT) / UUS_TO_DWT_TIME;
-			TOA_TRACE("TOA FIN sent after %dus from POLL", fin_us);
+			TOA_TRACE("TOA FIN sent after %dus from POLL TX", fin_us);
 			ret = 0;  // to release transceiver
 			break;
 		default:

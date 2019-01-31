@@ -39,6 +39,12 @@ void BeaconSender() {
 	if (MAC_BeaconTimerGetMs() > settings.mac.beacon_period_ms) {
 		if (settings.mac.role != RTLS_LISTENER) {
 			MAC_BeaconSend();
+		} else {
+			decaIrqStatus_t en = decamutexon();
+			dwt_forcetrxoff();
+			TRANSCEIVER_DefaultRx();
+			MAC_BeaconTimerReset();
+			decamutexoff(en);
 		}
 	}
 }

@@ -71,7 +71,10 @@ void PRINT_Beacon(const FC_BEACON_s *data, dev_addr_t did, dev_addr_t hops[]) {
 	mV = (mV << 8) + data->voltage;
 	mV = mV < 100 ? 0 : mV + 2000; // 2000 is battery offset level to compress value into 12B field
 	LOG_INF(INF_BEACON, did, mV, buf, data->serial_hi, data->serial_lo);
-	MAC_Free(mbuf);
+	if (mbuf != 0) {
+		// bo moze tak byc, ze nie bylo wolnego bufora a i tak funckja sie wykona
+		MAC_Free(mbuf);
+	}
 }
 
 void PRINT_DeviceAccepted(const FC_DEV_ACCEPTED_s *data, dev_addr_t did) {

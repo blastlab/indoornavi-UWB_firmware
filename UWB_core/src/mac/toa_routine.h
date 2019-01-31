@@ -64,6 +64,11 @@ void TOA_InitDly();
  * Remote device after receiving this message should send Poll message
  * and start ranging procedure
  *
+ * When target is a ANCHOR or anchors[0] is your address then send message directly to dst.
+ * Otherwise destination address will be anchors[0]
+ *
+ * CARRY protocol is used as a transport layer
+ *
  * @param[in] dst destination device address (tag)
  * @param[in] anchors ist of anchor to measure
  * @param[in] anc_cnt counter of anchors to measure
@@ -71,7 +76,7 @@ void TOA_InitDly();
  */
 int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt);
 
-int TOA_SendRes(const measure_t* measure);
+
 /**
  * @brief Send Poll message to start SYNC process with a given anchor
  *
@@ -80,6 +85,15 @@ int TOA_SendRes(const measure_t* measure);
  * @return int 0 if succeed error code otherwise
  */
 int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt);
+
+/**
+ * @brief send ranging result to your sink
+ *
+ * CARRY protocol is used as a transport layer
+ *
+ * @param[in] measure is a pointer to ranging data to send
+ */
+int TOA_SendRes(const measure_t* measure);
 
 /**
  * @brief Init message callback routine

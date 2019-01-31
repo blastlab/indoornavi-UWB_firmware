@@ -39,11 +39,6 @@
   MAC_Free(#name);               \
   }
 
-
-#if DBG
-#define TRACE_CNT 16
-#endif
-
 /**
  * @brief Trace function is usefull to track IRQ's behavior
  *

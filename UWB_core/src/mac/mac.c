@@ -184,7 +184,7 @@ static void MAC_RxToCb(const dwt_cb_data_t* data) {
 	LOG_Trace(TRACE_DW_IRQ_TO);
 	PORT_LedOn(LED_ERR);
 	int ret = SYNC_RxToCb();
-	if (ret != 0) {
+	if (ret == 0) {
 		ret = TOA_RxToCb();
 	}
 	if (ret == 0) {
@@ -199,7 +199,9 @@ static void MAC_RxErrCb(const dwt_cb_data_t* data) {
 	LOG_Trace(TRACE_DW_IRQ_ERR);
 	// mayby some log?
 	PORT_LedOn(LED_ERR);
-	//LOG_DBG("Rx error status:%X", data->status);
+	if (settings.mac.role == RTLS_LISTENER) {
+		LOG_DBG("Rx error status:%X", data->status);
+	}
 	TRANSCEIVER_DefaultRx();
 }
 

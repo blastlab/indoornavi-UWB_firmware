@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "../platform/port.h" // DBG macro
+
 #undef ADD_ITEM
 #undef ADD_ITEM_M
 #undef COMMENT
@@ -84,6 +86,12 @@ typedef struct {
  * @param[in] isSink specifies if the device's role equals SINK
  */
 void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink);
+
+
+
+#if DBG
+#define TRACE_CNT 16
+#endif
 
 /**
  * \brief This is a trace enums, useful to track application behavior
