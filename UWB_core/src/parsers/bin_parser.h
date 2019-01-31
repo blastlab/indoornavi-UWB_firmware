@@ -41,7 +41,7 @@ typedef struct {
 
 /// macro used to fill prot_cb_tab
 /// then it will be easier to change text formating
-#define ADD_FC(FC, CB) { FC, CB }
+#define ADD_FC(FC, CB) [FC] = { FC, CB }
 
 /**
  * @brief parse single message
