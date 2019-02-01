@@ -70,8 +70,8 @@ void listener_parse(mac_buf_t *buf) {
 			descriptor = "OTHER";
 	}
 
-	LOG_DBG("%4X-%4X %3d %8d %2X %s %c", buf->frame.src, buf->frame.dst, buf->frame.seq_num, dt, code,
-	        descriptor, prot);
+	LOG_DBG("%4X:>%4X %3d %8d %2X %c %s", buf->frame.src, buf->frame.dst, buf->frame.seq_num, dt, code,
+	        prot, descriptor);
 }
 
 void listener_isr(const dwt_cb_data_t *data) {

@@ -20,7 +20,7 @@
 #define __H_MINOR__ 5
 #define __H_TYPE__  1
 #define HARDWARE_UID_64 (*(uint64_t*)(UID_BASE_ADDRESS))
-#define HARDWARE_OTP_ADDR 0x1FFF7000
+//define HARDWARE_OTP_ADDR 0x1FFF7000
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)

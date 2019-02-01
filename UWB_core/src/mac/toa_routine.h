@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
 	uint8_t FC;
 	uint8_t len;
-	uint8_t slot_num;
+	uint8_t slot_num;       ///< device mac slot number
 	uint8_t TsFinTxBuf[5];  ///< 40b fin transmit timestamp in dw time units
 	uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
 	uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
