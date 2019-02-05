@@ -42,6 +42,13 @@ bool RANGING_MeasureAdd(dev_addr_t tagDid, dev_addr_t ancDid[], int ancCnt);
 int RANGING_MeasureCounter();
 
 /**
+ * @brief find measure info in settings. Don't care about order of parameters.
+ *
+ * @return address to measure info in settings or 0
+ */
+measure_init_info_t* RANGING_MeasureFind(dev_addr_t did1, dev_addr_t did2);
+
+/**
  * @brief delete each measure from list with same specified tag
  *
  * @param tagDid tag identifier to delete each trace too
