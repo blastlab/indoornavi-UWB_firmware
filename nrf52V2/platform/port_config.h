@@ -119,6 +119,14 @@ typedef uint32_t time_ms_t;
 #define LED_G1 9
 #define LED_R1 12
 #elif ETH_MINI_SINK_PCB
+#undef LOG_SPI_EN
+#define LOG_SPI_EN 1
+
+#undef LOG_USB_EN
+#define LOG_USB_EN 0
+
+#define ETH_SPI_SLAVE_IRQ 14
+
 #define DW_RST_PIN 24
 #define DW_EXTI_IRQn 19
 #define DW_SPI_MISO_PIN 18
@@ -131,7 +139,7 @@ typedef uint32_t time_ms_t;
 #define GEN_SPI_SCK_PIN 4
 
 #define ETH_SPI_SS_PIN 3
-#define ETH_SPI_SLAVE_IRQ 0 //14
+#define ETH_SPI_SLAVE_IRQ 14
 
 #define USB_UART_RX_PIN 11
 #define USB_UART_TX_PIN 5
@@ -141,7 +149,9 @@ typedef uint32_t time_ms_t;
 
 #define LED_G1 9
 #define LED_R1 12
+
 #else
+
 #define DW_RST_PIN 24
 #define DW_EXTI_IRQn 19
 #define DW_SPI_MISO_PIN 18
