@@ -8,6 +8,14 @@
 TEST_FILE("logs_common.c")
 TEST_FILE("iassert.c")
 
+typedef int decaIrqStatus_t ;
+decaIrqStatus_t PORT_EnterCritical(){
+  // mock 
+}
+void PORT_ExitCritical(decaIrqStatus_t en){
+  // mock
+}
+
 typedef const txt_buf_t * cp_txt_buf_t;
 typedef const prot_packet_info_t * cp_prot_packet_info_t;
 

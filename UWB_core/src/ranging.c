@@ -40,6 +40,29 @@ int RANGING_MeasureCounter() {
 	return settings.ranging.measureCnt;
 }
 
+measure_init_info_t* RANGING_MeasureFind(dev_addr_t did1, dev_addr_t did2) {
+	measure_init_info_t* meas = &settings.ranging.measure[0];
+	for (int i = 0; i < settings.ranging.measureCnt; ++i, ++meas) {
+		// gdy did1 to target a did2 to anchor
+		if (meas->tagDid == did1) {
+			for (int j = 0; j < meas->numberOfAnchors; ++j) {
+				if (meas->ancDid[j] == did2) {
+					return meas;
+				}
+			}
+		}
+		// oraz sytuacja odwrotna
+		if (meas->tagDid == did2) {
+			for (int j = 0; j < meas->numberOfAnchors; ++j) {
+				if (meas->ancDid[j] == did1) {
+					return meas;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 bool RANGING_MeasureDeleteTag(dev_addr_t tagDid) {
 	bool result = false;
 	// for each measure, begginning from the end
@@ -90,17 +113,36 @@ int RANGING_TempAnchorsCounter() {
 }
 
 bool RANGING_AddTagWithTempAnchors(dev_addr_t did, int maxAncInMeasure) {
-	for (int i = 0; i < ranging.tempAncListCnt; i += maxAncInMeasure) {
-		int cnt = MIN(maxAncInMeasure, ranging.tempAncListCnt);
-		if (did != ranging.tempAncList[i]) {
-			if (!RANGING_MeasureAdd(did, &ranging.tempAncList[i], cnt)) {
-				if (i >= maxAncInMeasure) {
-					RANGING_MeasureDeleteLast(i - maxAncInMeasure);
-					return false;
-				}
-			}
+	// wpisz do bufra adresy urzadzen z ktorymi jeszcze nie wykonujesz pomiarow
+	// oraz nie zawieraj tam swojego adresu
+	dev_addr_t* buf = (dev_addr_t*)MAC_Buffer();
+	int adr_cnt = 0;
+	if (buf == 0) {
+		return false;
+	}
+	for (int i = 0; i < ranging.tempAncListCnt; ++i) {
+		if (did != ranging.tempAncList[i] && RANGING_MeasureFind(did, ranging.tempAncList[i]) == 0) {
+			buf[adr_cnt] = ranging.tempAncList[i];
+			++adr_cnt;
 		}
 	}
+	// dodaj pomiary pomiedzy anchorami z bufora i zadanym urzadzeniam
+	int cnt = MIN(maxAncInMeasure, adr_cnt);
+	int meas_cnt = 0;
+	for (int i = 0; cnt != 0;) {
+		if (!RANGING_MeasureAdd(did, &buf[i], cnt)) {
+			// gdy cos poszlo zle, to usun wszystkie dodane pomiary do tego tag'a
+			if (i > 0) {
+				RANGING_MeasureDeleteLast(meas_cnt);
+				return false;
+			}
+		}
+		++meas_cnt;
+		i += cnt;
+		cnt = MIN(maxAncInMeasure, adr_cnt - i);
+	}
+	// sprawdz czy wystarczy czasu na wykonanie wszystkich pomiarow
+	// gdy nie wystarczy, to zwieksz okres pomiarow i wyswietl ostrzezenie
 	int meas_count = RANGING_MeasureCounter();
 	if (meas_count > settings.ranging.rangingPeriodMs / settings.ranging.rangingDelayMs) {
 		settings.ranging.rangingPeriodMs = meas_count * settings.ranging.rangingDelayMs;

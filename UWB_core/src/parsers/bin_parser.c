@@ -4,17 +4,12 @@
 uint8_t BIN_ParseSingle(const uint8_t* buf, const prot_packet_info_t* info) {
 	IASSERT(buf != 0);
 	extern const prot_cb_t prot_cb_tab[];
-	extern const int prot_cb_len;
 	uint8_t FC = buf[0];
 	uint8_t len = buf[1];
-	const prot_cb_t* pcb = &prot_cb_tab[0];
 
-	for (int i = 0; i < prot_cb_len; ++i, ++pcb) {
-		if (FC == pcb->FC) {
-			IASSERT(pcb->cb != 0);
-			pcb->cb(buf, info);
-			return len;
-		}
+	if (prot_cb_tab[FC].FC == FC && prot_cb_tab[FC].cb != 0) {
+		prot_cb_tab[FC].cb(buf, info);
+		return len;
 	}
 	return 0;
 }

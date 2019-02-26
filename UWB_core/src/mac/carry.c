@@ -76,14 +76,6 @@ int CARRY_TrackTag(dev_addr_t tag_did, dev_addr_t parent) {
 		ret = tag->anchor == parent ? 2 : 1; // 1 when parent will change, 2 otherwise
 		tag->anchor = parent;
 	}
-#ifdef DBG
-	if (ret == 1) {
-		LOG_DBG("trace tag %X new parent (%X)", tag_did, parent);
-	}
-	if (ret == 2) {
-		LOG_DBG("trace tag %X old parent %X", tag_did, parent);
-	}
-#endif
 	return ret;
 }
 

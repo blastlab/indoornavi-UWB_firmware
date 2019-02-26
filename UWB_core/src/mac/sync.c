@@ -655,7 +655,17 @@ int SYNC_RxToCb() {
 	int ret = 0;
 	switch (sync.toa.state) {
 		case TOA_POLL_SENT:
+			ret = 2;
+			break;
 		case TOA_RESP_REC:
+			ret = 1;
+			break;
+			// ponizszy fragment kodu jest potrzebny dla multipolingu
+			// ale niestety nie jest dopracowany, w przypadku unipollingu
+			// zdaza sie (podczas pomiarow co najmniej 2 urzadzen z jednym achorem)
+			// ze urzadzenie odpowiada wiadomoscia FIN w nieodpowiednim czasie,
+			// tak ze w rezultacie obliczona odleglosc jest bledna (np ujemna)
+			// ze wzgledu na posiadanie niesponych stopek czasowych podczas obliczen
 			sync.toa.TsRespRx[sync.toa.resp_ind++] = 0;
 			if (sync.toa.resp_ind >= sync.toa.anc_in_poll_cnt) {
 				SYNC_SendFinal();

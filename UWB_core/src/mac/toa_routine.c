@@ -4,6 +4,65 @@
  * @file toa_routine.c
  * @author Karol Trzcinski
  * @date 2018-07-20
+ *
+ * Firsly, from sink send Init or Poll message.
+ *   a) poll is sent if sink is a measurement target (to anchors from measurement list)
+ *   b) otherwise send Init message via Carry protocol
+ * (It is done by ranging module).
+ * Then in Init send routine we need to distinguish two situations:
+ *   a) target is TAG, then send Init to main anchor in poll (first in the poll anchor array),
+ *      add target TAG address after anchors array, increment anchors counter
+ *   b) target isn't TAG, then send Init to target anchor
+ * Save ranging info in toa.core
+ *
+ * Init callback:
+ *   set your mac parrent, then
+ *   a) you are a main anchor (first in the poll anchor array), then remove TAG address from anchors
+ *      array and decrement anchors array counter, send Init to target TAG
+ *   b) otherwise you are a measurement target so send Poll message (to anchors from measurement
+ *      list)
+ *
+ * Send Poll routine:
+ *   Save ranging info in toa.core
+ *   Send MAC message directly on via broadcast message (when is more than 1 anchor to measure)
+ *
+ * Poll callback:
+ *   Save ranging info in toa.core: core.TsPollRx (40b), core.initiator, core.anc_in_poll_cnt,
+ *   anchors array.
+ *   Zero core.resp_ind, set your core.resp_ind
+ *   It it was poll to you, then send RESP in a predicted tx time
+ *
+ * Send Poll completed interrupt:
+ *   Save PollTxTs (40b) in toa.core
+ *
+ * Send Resp:
+ *   Calculate tx time (from input PollDwRxTs) and save to core.TsRespTx and transceiver
+ *   Send response to core.initiator (core.TsPollRx and core.TsRespTx is in packet)
+ *   Calculate tx_to_rx_dly_us to turn on receiver just before FIN message
+ *   Set rx timeout to 1 guard time after start of transmitting FIN message, base on DwPollRxTs
+ *
+ * Send Resp completed interrupt:
+ *   Save RespTxTs (40b) in toa.core
+ *
+ * Resp callback:
+ *   Save rx ts to core.TsRespRx[toa.core.resp_ind++]
+ *   if you received all RESP then send FIN
+ *   else enable rx just before ext RESP or FIN
+ *
+ * Receive Resp Time out:
+ *   increment toa.core.resp_int
+ *   if it is greater or equal to toa.core.anc_in_poll_cnt then send final
+ *   else forcetrxoff, turn on receiver, TOA_State(TOA_IDLE)
+ *
+ * Send Fin completed interrupt:
+ *   Save FinTxTs (40b) in toa.core
+ *   Turn on receiver
+ *
+ * Fin callback:
+ *   Save toa.core.TsFinTx, toa.core.TsPollTx, toa.core.TsFinRx
+ *   calculate distance and push it to database
+ *   forcetrxoff, turn on receiver
+ *
  */
 
 #include "toa_routine.h"
@@ -59,6 +118,9 @@ void TOA_InitDly() {
 	tset->fin_dly_us += 1e6 * len / spi_speed;
 	tset->fin_dly_us += rx_to_tx_delay + tset->guard_time_us;
 	tset->fin_dly_us += TRANSCEIVER_EstimateTxTimeUs(respLen);
+
+	tset->poll_frame_duration_us = TRANSCEIVER_EstimateTxTimeUs(basePollLen);
+	tset->fin_frame_duration_us = TRANSCEIVER_EstimateTxTimeUs(baseFinLen);
 }
 
 int TOA_SendInit(dev_addr_t dst, const dev_addr_t anchors[], int anc_cnt) {
@@ -124,11 +186,11 @@ int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt) {
 	buf->isRangingFrame = true;
 	TOA_State(&toa.core, TOA_POLL_WAIT_TO_SEND);
 	MAC_SetFrameType(buf, FR_CR_MAC);
-	MAC_Send(buf, false);
+	 MAC_Send(buf, false);
 	return 0;
 }
 
-int TOA_SendResp(int64_t PollDwRxTs) {
+static int TOA_SendResp(int64_t PollDwRxTs) {
 	toa_settings_t* tset = &settings.mac.toa_dly;
 	int resp_dly_us = tset->resp_dly_us[toa.core.resp_ind];
 
@@ -146,16 +208,18 @@ int TOA_SendResp(int64_t PollDwRxTs) {
 	int tx_to_rx_dly_us = tset->resp_dly_us[toa.core.anc_in_poll_cnt - 1];
 	tx_to_rx_dly_us += tset->fin_dly_us - resp_dly_us;  // == delay to tx fin
 	tx_to_rx_dly_us -= tset->rx_after_tx_offset_us;     // substract preamble time
+	int rx_time_us = tset->rx_after_tx_offset_us;		// receiver extra time before fin tx
+	rx_time_us += settings.mac.toa_dly.guard_time_us + tset->fin_frame_duration_us;
 	TOA_ASSERT(tx_to_rx_dly_us > 0);
 	dwt_setrxaftertxdelay(tx_to_rx_dly_us);
-	dwt_setrxtimeout(settings.mac.toa_dly.guard_time_us + tset->rx_after_tx_offset_us);
+	dwt_setrxtimeout(rx_time_us); // 1 is 1.0256 us
 
 	TOA_State(&toa.core, TOA_RESP_WAIT_TO_SEND);
 	const int tx_flags = DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED;
 	return MAC_SendRanging(buf, tx_flags);
 }
 
-int TOA_SendFinal() {
+static int TOA_SendFinal() {
 	toa_settings_t* tset = &settings.mac.toa_dly;
 	int fin_dly_us = tset->resp_dly_us[toa.core.anc_in_poll_cnt - 1];
 	fin_dly_us += tset->fin_dly_us;
@@ -215,7 +279,7 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	}
 }
 
-int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
+static int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&toa.core, TOA_POLL_REC);
 	FC_TOA_POLL_s* packet = (FC_TOA_POLL_s*)data;
 	TOA_ASSERT(packet->FC == FC_TOA_POLL);
@@ -249,14 +313,20 @@ int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
+static int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&toa.core, TOA_RESP_REC);
 	FC_TOA_RESP_s* packet = (FC_TOA_RESP_s*)data;
 	TOA_ASSERT(packet->FC == FC_TOA_RESP);
 	PROT_CHECK_LEN(FC_TOA_RESP, packet->len, sizeof(FC_TOA_RESP_s));
 	int64_t rx_ts = TRANSCEIVER_GetRxTimestamp();
 
-	if (toa.core.resp_ind < TOA_MAX_DEV_IN_POLL) {
+	if (toa.core.resp_ind >= toa.core.anc_in_poll_cnt) {
+		// to jest sytuacja patologiczna
+		// nie powina miec miejsca
+		dwt_forcetrxoff();
+		TRANSCEIVER_DefaultRx();
+		return 0;
+	} else {
 		toa.core.TsRespRx[toa.core.resp_ind++] = rx_ts;
 	}
 	if (toa.core.resp_ind >= toa.core.anc_in_poll_cnt) {
@@ -280,7 +350,7 @@ int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
+static int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&toa.core, TOA_FIN_REC);
 	FC_TOA_FIN_s* packet = (FC_TOA_FIN_s*)data;
 	int ts_len = toa.core.anc_in_poll_cnt * sizeof(*packet->TsRespRx);
@@ -288,6 +358,11 @@ int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
 	PROT_CHECK_LEN(FC_TOA_FIN, packet->len, sizeof(FC_TOA_FIN_s) + ts_len);
 	TOA_ASSERT(sizeof(*packet->TsRespRx) == sizeof(*toa.core.TsRespRx));
 	TOA_ASSERT(sizeof(packet->TsFinTxBuf) == 5);
+
+	if (toa.core.prev_state != TOA_RESP_SENT) {
+		TOA_TRACE("TOA FIN rx in bad state: %d", toa.core.prev_state);
+		return 0;
+	}
 
 	// read timestamps
 	int64_t TsFinRx40b = TRANSCEIVER_GetRxTimestamp();
@@ -357,7 +432,7 @@ int TOA_TxCb(int64_t TsDwTx) {
 		case TOA_RESP_WAIT_TO_SEND:
 			TOA_State(&toa.core, TOA_RESP_SENT);
 			toa.core.TsRespTx = TsDwTx;
-			int resp_us = (toa.core.TsRespTx - toa.core.TsPollRx) / UUS_TO_DWT_TIME;
+			int resp_us = (toa.core.TsRespTx - (uint32_t)toa.core.TsPollRx) / UUS_TO_DWT_TIME;
 			TOA_TRACE("TOA RESP sent after %dus from POLL RX", resp_us);
 			ret = 1;
 			break;
@@ -377,17 +452,27 @@ int TOA_TxCb(int64_t TsDwTx) {
 }
 
 int TOA_RxToCb() {
-	// 2 - temp - to sync module - error - change to 1
-	// 1 - to sync module
-	// 0 - not to sync module
+	// 2 - temp - to toa module - error - change to 1
+	// 1 - to toa module
+	// 0 - not to toa module
 	int ret = 0;
 	switch (toa.core.state) {
 		case TOA_POLL_SENT:
+			ret = 2;
+			break;
 		case TOA_RESP_REC:
+			ret = 2;
+			break;
+			// ponizszy fragment kodu jest potrzebny dla multipolingu
+			// ale niestety nie jest dopracowany, w przypadku unipollingu
+			// zdaza sie (podczas pomiarow co najmniej 2 urzadzen z jednym achorem)
+			// ze urzadzenie odpowiada wiadomoscia FIN w nieodpowiednim czasie,
+			// tak ze w rezultacie obliczona odleglosc jest bledna (np ujemna)
+			// ze wzgledu na posiadanie niesponych stopek czasowych podczas obliczen
 			toa.core.TsRespRx[toa.core.resp_ind++] = 0;
 			if (toa.core.resp_ind >= toa.core.anc_in_poll_cnt) {
 				TOA_SendFinal();
-				ret = 1;  // it was timeout to syn module
+				ret = 1;  // it was timeout to toa module
 			} else {
 				ret = 2;  // default rx to catch next resp
 			}

@@ -63,6 +63,7 @@ int TOA_FindAddrIndexInResp(toa_core_t* toa, dev_addr_t addr) {
 	return TOA_MAX_DEV_IN_POLL;
 }
 
+#define FRM_TS(X) ((int)(X>>8))
 // calculate TimeOfFlight in DecaWave TimeUnits or 0
 int TOA_CalcTofDwTu(const toa_core_t* toa, int resp_ind) {
 	const uint32_t TsErr = 0;
@@ -77,6 +78,12 @@ int TOA_CalcTofDwTu(const toa_core_t* toa, int resp_ind) {
 	Db = (float)((uint32_t)(toa->TsRespTx - toa->TsPollRx));
 	den = (Ra + Rb + Da + Db);
 	t = ((Ra * Rb - Da * Db) / den);
+
+	if (t < 0 || t * DWT_TIME_UNITS * SPEED_OF_LIGHT * 100 > 1000) {
+		LOG_DBG("ERR TOA  tt:%8X %8X %8X   ta:%8X %8X %8X", FRM_TS(toa->TsPollTx),
+		        FRM_TS(toa->TsRespRx[resp_ind]), FRM_TS(toa->TsFinTx), FRM_TS(toa->TsPollRx),
+		        FRM_TS(toa->TsRespTx), FRM_TS(toa->TsFinRx));
+	}
 	return t;
 }
 
@@ -117,7 +124,7 @@ int TOA_EnableRxBeforeFin(const toa_core_t* toa, const toa_settings_t* tset, uin
 	}
 	rx_start = rx_start * DWT_TIME_UNITS + DwPollRxTs;
 	dwt_setdelayedtrxtime(rx_start & MASK_40BIT);
-	dwt_setrxtimeout(2 * settings.mac.sync_dly.guard_time_us);
+	dwt_setrxtimeout(2 * settings.mac.sync_dly.guard_time_us + tset->fin_frame_duration_us);
 	return dwt_rxenable(DWT_START_RX_DELAYED);
 }
 

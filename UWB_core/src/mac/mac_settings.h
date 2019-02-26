@@ -16,6 +16,8 @@ typedef struct {
 	int resp_dly_us[TOA_MAX_DEV_IN_POLL];  ///< tx delay after poll receive
 	int guard_time_us;                     ///< time margin during receive
 	int rx_after_tx_offset_us;             ///< time to send preambule
+	int poll_frame_duration_us;            ///< poll frame on air duration
+	int fin_frame_duration_us;             ///< final frame on air duration
 } toa_settings_t;
 
 typedef struct {

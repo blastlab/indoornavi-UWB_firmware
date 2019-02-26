@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
 	uint8_t FC;
 	uint8_t len;
-	uint8_t slot_num;
+	uint8_t slot_num;       ///< device mac slot number
 	uint8_t TsFinTxBuf[5];  ///< 40b fin transmit timestamp in dw time units
 	uint32_t TsPollTx;      ///< poll transmit timestamp in dw time units
 	uint32_t TsRespRx[0];   ///< list of response receive timestamps in dtu
@@ -105,6 +105,14 @@ int TOA_SendRes(const measure_t* measure);
  */
 void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info);
 
+/**
+ * @brief Result message callback routine
+ *
+ * Add received distance to local TOA measures buffer
+ *
+ * @param[in] data pointer to data to parse
+ * @param[in] info extra packet info
+ */
 void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info);
 
 /**
