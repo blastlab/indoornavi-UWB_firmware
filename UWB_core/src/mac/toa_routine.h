@@ -105,6 +105,14 @@ int TOA_SendRes(const measure_t* measure);
  */
 void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info);
 
+/**
+ * @brief Result message callback routine
+ *
+ * Add received distance to local TOA measures buffer
+ *
+ * @param[in] data pointer to data to parse
+ * @param[in] info extra packet info
+ */
 void FC_TOA_RES_cb(const void* data, const prot_packet_info_t* info);
 
 /**

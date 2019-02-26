@@ -190,7 +190,7 @@ int TOA_SendPoll(const dev_addr_t anchors[], int anc_cnt) {
 	return 0;
 }
 
-int TOA_SendResp(int64_t PollDwRxTs) {
+static int TOA_SendResp(int64_t PollDwRxTs) {
 	toa_settings_t* tset = &settings.mac.toa_dly;
 	int resp_dly_us = tset->resp_dly_us[toa.core.resp_ind];
 
@@ -219,7 +219,7 @@ int TOA_SendResp(int64_t PollDwRxTs) {
 	return MAC_SendRanging(buf, tx_flags);
 }
 
-int TOA_SendFinal() {
+static int TOA_SendFinal() {
 	toa_settings_t* tset = &settings.mac.toa_dly;
 	int fin_dly_us = tset->resp_dly_us[toa.core.anc_in_poll_cnt - 1];
 	fin_dly_us += tset->fin_dly_us;
@@ -279,7 +279,7 @@ void FC_TOA_INIT_cb(const void* data, const prot_packet_info_t* info) {
 	}
 }
 
-int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
+static int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&toa.core, TOA_POLL_REC);
 	FC_TOA_POLL_s* packet = (FC_TOA_POLL_s*)data;
 	TOA_ASSERT(packet->FC == FC_TOA_POLL);
@@ -313,7 +313,7 @@ int FC_TOA_POLL_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
+static int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&toa.core, TOA_RESP_REC);
 	FC_TOA_RESP_s* packet = (FC_TOA_RESP_s*)data;
 	TOA_ASSERT(packet->FC == FC_TOA_RESP);
@@ -350,7 +350,7 @@ int FC_TOA_RESP_cb(const void* data, const prot_packet_info_t* info) {
 	return 0;
 }
 
-int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
+static int FC_TOA_FIN_cb(const void* data, const prot_packet_info_t* info) {
 	TOA_State(&toa.core, TOA_FIN_REC);
 	FC_TOA_FIN_s* packet = (FC_TOA_FIN_s*)data;
 	int ts_len = toa.core.anc_in_poll_cnt * sizeof(*packet->TsRespRx);
@@ -458,11 +458,21 @@ int TOA_RxToCb() {
 	int ret = 0;
 	switch (toa.core.state) {
 		case TOA_POLL_SENT:
+			ret = 2;
+			break;
 		case TOA_RESP_REC:
+			ret = 2;
+			break;
+			// ponizszy fragment kodu jest potrzebny dla multipolingu
+			// ale niestety nie jest dopracowany, w przypadku unipollingu
+			// zdaza sie (podczas pomiarow co najmniej 2 urzadzen z jednym achorem)
+			// ze urzadzenie odpowiada wiadomoscia FIN w nieodpowiednim czasie,
+			// tak ze w rezultacie obliczona odleglosc jest bledna (np ujemna)
+			// ze wzgledu na posiadanie niesponych stopek czasowych podczas obliczen
 			toa.core.TsRespRx[toa.core.resp_ind++] = 0;
 			if (toa.core.resp_ind >= toa.core.anc_in_poll_cnt) {
 				TOA_SendFinal();
-				ret = 1;  // it was timeout to syn module
+				ret = 1;  // it was timeout to toa module
 			} else {
 				ret = 2;  // default rx to catch next resp
 			}
