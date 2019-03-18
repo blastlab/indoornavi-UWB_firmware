@@ -493,10 +493,13 @@ Information
 
 *code:* 1350
 
-*descriptor:* "tdoa_tag did:%X anchor:%X mV:%d serial:%X%08X tsrg:%X%08X tsrl:%X%08X"
+*descriptor:* "tdoa_tag did:%X seq:%d anchor:%X mV:%d serial:%X%08X tsrg:%X%08X tsrl:%X%08X"
 
  arg *did*: 
 	tag short identification number
+
+ arg *seq*: 
+	measurement sequence number
 
  arg *mV*: 
 	tag battery voltage
@@ -517,10 +520,13 @@ Information
 
 *code:* 1351
 
-*descriptor:* "tdoa_anchor at:%X ar:%X tstg:%X%08X tstl:%X%08X tsrg:%X%08X tsrl:%X%08X tof:%d"
+*descriptor:* "tdoa_anchor at:%X seq:%d ar:%X tstg:%X%08X tstl:%X%08X tsrg:%X%08X tsrl:%X%08X tof:%d"
 
  arg *at*: 
 	identificator (DID) of anchor witch transmit beacon
+
+ arg *seq*: 
+	measurement sequence number
 
  arg *ar*: 
 	identificator (DID) of anchor witch received beacon
@@ -584,6 +590,33 @@ Information
 *descriptor:* "Firmware upgrade success"
 
 *comment*: only from target device (during SINK upgrade)
+
+.. _INF_LIST_SETTINGS:
+
+*INF_LIST_SETTINGS*
+------------------------------------------------------------
+
+*code:* 1505
+
+*descriptor:* "listset [%s]"
+
+ arg *%s*: 
+	list of settings command to save separated by ';'
+
+*comment*: In list there will be omitted 'measure' an 'parent' commands, it should be realized separately
+
+*comment*: 
+
+.. _INF_LIST_SETTINGS_SINK:
+
+*INF_LIST_SETTINGS_SINK*
+------------------------------------------------------------
+
+*code:* 1505
+
+*descriptor:* "listset [%s;%s]"
+
+*comment*: Work same as :ref:`INF_LIST_SETTINGS' but print values for anchor and for sink
 
 
 .. _warning messages:
@@ -662,6 +695,15 @@ Warnings
 *code:* 1110
 
 *descriptor:* "there is too much tags to track (max:%d)"
+
+.. _WRN_CARRY_CORRUPTED_FRAME:
+
+*WRN_CARRY_CORRUPTED_FRAME*
+------------------------------------------------------------
+
+*code:* 1111
+
+*descriptor:* "CARRY corrupted frame"
 
 .. _WRN_MAC_TX_ERROR:
 
@@ -782,6 +824,15 @@ Errors
 
  arg *%d*: 
 	maximum number of beaacon hops
+
+.. _ERR_MAC_BUFFER_OVERFLOW:
+
+*ERR_MAC_BUFFER_OVERFLOW*
+------------------------------------------------------------
+
+*code:* 1101
+
+*descriptor:* "MAC buffer overflow"
 
 .. _ERR_RF_BAD_CHANNEL:
 
@@ -1083,6 +1134,15 @@ Errors
 *code:* 1504
 
 *descriptor:* "Logger's buffer overflowed"
+
+.. _ERR_LIST_SETTINGS_NEED_FLAG:
+
+*ERR_LIST_SETTINGS_NEED_FLAG*
+------------------------------------------------------------
+
+*code:* 1505
+
+*descriptor:* "listset need one flag [-sink/-anchor/-tag]"
 
 
 .. _critical messages:

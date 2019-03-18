@@ -225,6 +225,9 @@ mac_buf_t* CARRY_PrepareBufTo(dev_addr_t target, FC_CARRY_s** out_pcarry) {
 }
 
 void CARRY_Send(mac_buf_t* buf, bool ack_req) {
+	if (buf->state != BUSY) {
+		return;
+	}
 	if (buf->isServerFrame) {
 		buf->isServerFrame = false;
 		LOG_Bin(buf->buf, MAC_BufLen(buf));

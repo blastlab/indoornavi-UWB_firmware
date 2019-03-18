@@ -84,7 +84,7 @@ typedef struct {
 	uint16_t batt_voltage; ///< battery voltage in millivolts
 	uint16_t px, py, pz; ///< current device position vector in cm
 	uint8_t orientation; ///< hi nibble is vertical orientation, low nibble is horizontal orientation
-	uint8_t padding; ///< dummy byte
+	uint8_t seq; ///< TDOA sent tag beacon counter (used as packet identifier)
 	uint32_t serial_hi; ///< device serial number from settings.version.serial
 	uint32_t serial_lo; ///< device serial number from settings.version.serial
 }__packed FC_TDOA_BEACON_TAG_s;
@@ -99,7 +99,7 @@ typedef struct {
 	uint16_t batt_voltage; ///< battery voltage in millivolts
 	uint16_t px, py, pz; ///< current device position vector in cm
 	uint8_t orientation; ///< hi nibble is vertical orientation, low nibble is horizontal orientation
-	uint8_t padding; ///< dummy byte - It may be last readed message counter in next generation
+	uint8_t seq; ///< TDOA sent tag beacon counter (used as packet identifier)
 	uint32_t serial_hi; ///< device serial number from settings.version.serial
 	uint32_t serial_lo; ///< device serial number from settings.version.serial
 	dev_addr_t tag_addr; ///< tag address
@@ -114,6 +114,8 @@ typedef struct {
  */
 typedef struct {
 	uint8_t FC, len;
+	uint8_t seq; ///< TDOA sent tag beacon counter (used as packet identifier)
+	uint8_t padding; ///< dummy byte
 	uint8_t ts_glo[5]; ///< global tx timestamp from device
 	uint8_t ts_loc[5]; ///< local tx timestamp from device
 }__packed FC_TDOA_BEACON_ANCHOR_s;
@@ -128,7 +130,7 @@ typedef struct {
 	dev_addr_t anchor_tx_addr; ///< anchor1 address
 	dev_addr_t anchor_rx_addr; ///< anchor2 address
 	uint8_t tof;					///< time of flight in dwt time units or zero
-	uint8_t padding;
+	uint8_t seq; ///< TDOA sent anchor beacon counter (used as packet identifier)
 	uint8_t tx_ts_glo[5]; ///< beacon receive timestamp in global time units from anchor device
 	uint8_t rx_ts_glo[5]; ///< beacon receive timestamp in global time units from anchor device
 	uint8_t tx_ts_loc[5]; ///< *optional, beacon receive timestamp in local time units from anchor device

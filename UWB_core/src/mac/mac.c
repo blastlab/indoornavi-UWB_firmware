@@ -505,6 +505,10 @@ void MAC_Free(mac_buf_t* buff) {
 void MAC_Send(mac_buf_t* buf, bool ack_require) {
 	MAC_ASSERT(buf != 0);
 	MAC_ASSERT((buf->frame.dst == ADDR_BROADCAST && ack_require == true) == false);
+	if (buf->state != BUSY) {
+		return;
+	}
+
 	if (ack_require) {
 		buf->state = WAIT_FOR_TX_ACK;
 	} else {
@@ -539,6 +543,14 @@ unsigned char MAC_Read8(mac_buf_t* frame) {
 void MAC_Write8(mac_buf_t* frame, unsigned char value) {
 	MAC_ASSERT(frame != 0);
 	MAC_ASSERT(frame->dPtr >= (uint8_t* )frame);
+	if (frame->state != BUSY) {
+		return;
+	}
+	if (frame->dPtr + 1 > frame->buf + MAC_BUF_LEN) {
+		LOG_ERR(ERR_MAC_BUFFER_OVERFLOW);
+		frame->state = FREE;
+		return;
+	}
 	*frame->dPtr = value;
 	++frame->dPtr;
 }
@@ -561,7 +573,15 @@ void MAC_Write(mac_buf_t* frame, const void* source, unsigned int len) {
 	MAC_ASSERT(frame != 0);
 	MAC_ASSERT(frame->dPtr >= (uint8_t* )frame);
 	MAC_ASSERT(source != 0);
-	MAC_ASSERT(0 <= len && frame->dPtr + len < frame->buf + MAC_BUF_LEN);
+	MAC_ASSERT(0 <= len);
+	if (frame->state != BUSY) {
+		return;
+	}
+	if (frame->dPtr + len > frame->buf + MAC_BUF_LEN) {
+		LOG_ERR(ERR_MAC_BUFFER_OVERFLOW);
+		frame->state = FREE;
+		return;
+	}
 	const uint8_t* src = (uint8_t*)source;
 	while (len > 0) {
 		*frame->dPtr = *src;

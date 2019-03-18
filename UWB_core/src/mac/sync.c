@@ -294,10 +294,12 @@ int SYNC_SendFinal() {
 }
 
 void SYNC_SendBeaconAsAnchor() {
+	static uint8_t seq = 0;
 	uint64_t tx_ts = TOA_SetTxTime(TRANSCEIVER_GetTime(), 100);
 	FC_TDOA_BEACON_ANCHOR_s packet;
 	packet.FC = FC_TDOA_BEACON_ANCHOR;
 	packet.len = sizeof(packet);
+	packet.seq = ++seq;
 	TOA_Write40bValue(&packet.ts_glo[0], SYNC_GlobTime(tx_ts));
 	TOA_Write40bValue(&packet.ts_loc[0], tx_ts);
 
@@ -313,6 +315,7 @@ void SYNC_SendBeaconAsAnchor() {
 }
 
 void SYNC_SendBeaconAsTag() {
+	static uint8_t seq = 0;
 	FC_TDOA_BEACON_TAG_s packet;
 	packet.FC = FC_TDOA_BEACON_TAG;
 	packet.len = sizeof(packet);
@@ -323,6 +326,7 @@ void SYNC_SendBeaconAsTag() {
 	packet.batt_voltage = PORT_BatteryVoltage();
 	packet.serial_hi = settings_otp->serial >> 32;
 	packet.serial_lo = settings_otp->serial & UINT32_MAX;
+	packet.seq = ++seq;
 
 	// can't append to save power
 	// send as ranging message to do it immediately
@@ -470,6 +474,7 @@ int FC_TDOA_BEACON_TAG_cb(const void* data, const prot_packet_info_t* info) {
 	tx_packet.py = packet->py;
 	tx_packet.pz = packet->pz;
 	tx_packet.orientation = packet->orientation;
+	tx_packet.seq = packet->seq;
 	tx_packet.serial_hi = short_beacon ? 0 : packet->serial_hi;
 	tx_packet.serial_lo = short_beacon ? 0 : packet->serial_lo;
 	tx_packet.tag_addr = info->last_src;
@@ -499,9 +504,9 @@ void FC_TDOA_BEACON_TAG_INFO_cb(const void* data, const prot_packet_info_t* info
 	uint32_t rx_ts_loc_lo = (uint32_t)rx_ts_loc;
 	uint32_t rx_ts_loc_hi = (uint32_t)(rx_ts_loc >> 32);
 
-	LOG_INF(INF_TDOA_BEACON_FROM_TAG, packet.tag_addr,
-	        packet.anchor_addr, packet.batt_voltage, packet.serial_hi, packet.serial_lo, rx_ts_hi,
-	        rx_ts_lo, rx_ts_loc_hi, rx_ts_loc_lo);
+	LOG_INF(INF_TDOA_BEACON_FROM_TAG, packet.tag_addr, packet.seq, packet.anchor_addr,
+	        packet.batt_voltage, packet.serial_hi, packet.serial_lo, rx_ts_hi, rx_ts_lo, rx_ts_loc_hi,
+	        rx_ts_loc_lo);
 }
 
 int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
@@ -518,6 +523,7 @@ int FC_TDOA_BEACON_ANCHOR_cb(const void* data, const prot_packet_info_t* info) {
 	tx_packet.len = sizeof(tx_packet);
 	tx_packet.anchor_tx_addr = info->original_src;
 	tx_packet.anchor_rx_addr = settings.mac.addr;
+	tx_packet.seq = packet->seq;
 	tx_packet.tof = 0; // to calculate in host
 	memcpy(&packet->ts_loc[0], &tx_packet.tx_ts_loc[0], sizeof(packet->ts_loc));
 	memcpy(&packet->ts_glo[0], &tx_packet.tx_ts_glo[0], sizeof(packet->ts_loc));
@@ -553,9 +559,9 @@ void FC_TDOA_BEACON_ANCHOR_INFO_cb(const void* data, const prot_packet_info_t* i
 	uint32_t tx_ts_loc_lo = (uint32_t)tx_ts_loc;
 	uint32_t tx_ts_loc_hi = (uint32_t)(tx_ts_loc >> 32);
 
-	LOG_INF(INF_TDOA_BEACON_FROM_ANCHOR,
-	        packet.anchor_tx_addr, packet.anchor_rx_addr, tx_ts_glo_hi, tx_ts_glo_lo, tx_ts_loc_hi,
-	        tx_ts_loc_lo, rx_ts_glo_hi, rx_ts_glo_lo, rx_ts_loc_hi, rx_ts_loc_lo, packet.tof);
+	LOG_INF(INF_TDOA_BEACON_FROM_ANCHOR, packet.anchor_tx_addr, packet.seq, packet.anchor_rx_addr,
+	        tx_ts_glo_hi, tx_ts_glo_lo, tx_ts_loc_hi, tx_ts_loc_lo, rx_ts_glo_hi, rx_ts_glo_lo,
+	        rx_ts_loc_hi, rx_ts_loc_lo, packet.tof);
 	return;
 }
 

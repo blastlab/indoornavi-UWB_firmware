@@ -29,6 +29,8 @@ ARG("%X", "address of incorrect device")
 ADD_ITEM_M(1107, ERR_BEACON_TOO_MANY_HOPS, "beacon make too many hops (%d)")
 ARG("%d", "maximum number of beaacon hops")
 
+ADD_ITEM_M(1101, ERR_MAC_BUFFER_OVERFLOW, "MAC buffer overflow")
+
 // radio 1200
 ADD_ITEM_M(1201, ERR_RF_BAD_CHANNEL, "rfset ch 1..7 (without 6)")
 ADD_ITEM_M(1202, ERR_RF_BAD_BAUDRATE, "rfset br 110/850/6800")
