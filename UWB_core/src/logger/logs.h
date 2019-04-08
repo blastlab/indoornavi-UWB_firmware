@@ -12,7 +12,10 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
+#include "logs_buffer.h"
 #include "../platform/port.h" // DBG macro
 
 #undef ADD_ITEM
@@ -54,26 +57,6 @@ typedef enum {
 #undef ADD_ITEM_M
 #undef COMMENT
 #undef ARG
-
-typedef enum {
-	LOG_PC_Bin = 0x01,
-	LOG_PC_Txt = 0x02,
-	LOG_PC_Ack = 0x03,
-	LOG_PC_Nack = 0x04,
-	LOG_PC_Alive = 0x05
-} LOG_PacketCodes_t;
-
-typedef struct {
-		uint8_t packetCode;
-		uint8_t len;
-} LOG_FrameHeader_s;
-#define FRAME_HEADER_SIZE sizeof(LOG_FrameHeader_s)
-
-typedef struct {
-		LOG_FrameHeader_s header;
-		uint8_t *data;
-		uint16_t crc;
-}	LOG_Frame_s;
 
 /**
  * @brief log data from logger's buffer
@@ -123,12 +106,6 @@ typedef enum {
  *
  */
 void LOG_Trace(TRACE_t);
-
-/**
- * @brief popping messages from circled buffer for logs
- *
- */
-void LOG_BufPop();
 
 /**
  * @brief pull messages from logger's buffer

@@ -50,6 +50,14 @@ static LOG_CODE_t LOG_CodeTest[TEST_codes_N] = {
 #undef COMMENT
 #undef ARG
 
+#define LOG_BUF_LEN 1024
+static char buf[LOG_BUF_LEN + 1];
+circular_buff_s logs_buf = {
+		.head = 0,
+		.tail = 1,
+		.overflow = false
+};
+
 int LOG_CheckUniqInArray(LOG_CODE_t target[], int len)
 {
 	int repeats = 0;
@@ -159,4 +167,46 @@ void LOG_TEST(TEST_codes code, ...) {
 	va_start(arg, code);
 	LOG_Text('T', (int)code_num, frm, arg);
 	va_end(arg);
+}
+
+int LOG_Text(char type, int num, const char* frm, va_list arg) {
+	int n, f;
+	CRITICAL(
+  // prefix np. "E101 "
+  snprintf(buf, LOG_BUF_LEN, "%c%d ", type, num);
+  f = strlen(buf);
+  // zawartosc
+  n = vsnprintf(buf + f, LOG_BUF_LEN - f, frm, arg) + f;
+  if (n > 0 && n < LOG_BUF_LEN) {
+  	buf[n++] = '\r';
+    buf[n++] = '\n';
+    buf[n] = 0;
+    BUF_WritePacket(&logs_buf, (uint8_t*)buf, LOG_PC_Txt, n);
+  }
+)
+  return n;
+}
+
+int LOG_Bin(const void* bin, int size) {
+  int n;
+	CRITICAL(
+	n = BUF_WritePacket(&logs_buf, (uint8_t*)bin, LOG_PC_Bin, size);
+	)
+  return n;
+}
+
+void LOG_Control(bool isSink) {
+	CRITICAL(
+		int packet_len = BUF_GetHeadPacketLen(&logs_buf);
+		// when buffer is empty
+		if(packet_len == 0) {
+			goto exit;
+		} else {
+			uint8_t *data_ptr = BUF_GetHeadPacketPtr(&logs_buf);
+			LOG_PacketCodes_t code = BUF_GetHeadPacketOpcode(&logs_buf);
+			PORT_LogData(data_ptr, packet_len, code, isSink);
+		}
+exit:
+	)
+	return;
 }

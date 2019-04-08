@@ -9,7 +9,6 @@ void PORT_TimeInit();
 void PORT_GpioInit();
 void PORT_SpiInit(bool isSink);
 void PORT_BatteryInit();
-void PORT_CrcInit();
 void PORT_ExtiInit(bool isTag);
 void PORT_UsbUartInit();
 void ImuIrqHandler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
@@ -24,7 +23,6 @@ void PORT_Init() {
 	PORT_GpioInit();
 	PORT_TimeInit();
 	PORT_UsbUartInit();
-	PORT_CrcInit();
 	PORT_SpiInit(role == RTLS_SINK);
 	PORT_ImuInit(role == RTLS_TAG);
 	PORT_ExtiInit(role == RTLS_TAG);

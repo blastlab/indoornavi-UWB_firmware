@@ -144,8 +144,8 @@ static inline int FU_GetLocalHash() {
  * @return false CRC correct
  */
 static bool FU_IsCRCError(const FU_prot* fup) {
-	PORT_CrcReset();
-	return PORT_CrcFeed(fup, fup->frameLen) != 0;
+	uint16_t crc = 0xffff;
+	return PORT_CrcFeed(&crc, fup, fup->frameLen) != 0;
 }
 
 // return 1 data in flash and packet with new version is correct
@@ -157,17 +157,17 @@ static uint8_t FU_IsFlashCRCError(const FU_prot* fup) {
 	int last_off = sizeP + sizeFup;
 	void* destination = FU_GetAddressToWrite();
 
-	PORT_CrcReset();
-	PORT_CrcFeed(destination, sizeP);
-	PORT_CrcFeed(fup->data, sizeFup);
-	PORT_CrcFeed((uint8_t*)destination + last_off, FU.fileSize - last_off);
-	return PORT_CrcFeed(&FU.newCrc, 2);  // 0: ok, else error
+	uint16_t crc = 0xffff;
+	PORT_CrcFeed(&crc, destination, sizeP);
+	PORT_CrcFeed(&crc, fup->data, sizeFup);
+	PORT_CrcFeed(&crc, (uint8_t*)destination + last_off, FU.fileSize - last_off);
+	return PORT_CrcFeed(&crc, &FU.newCrc, 2);  // 0: ok, else error
 }
 
 // calculate CRC and add it at position fup[frameLen-2] and fup[frameLen-1]
 static void FU_FillCRC(const FU_prot* fup) {
-	PORT_CrcReset();
-	uint16_t txCrc = PORT_CrcFeed(fup, fup->frameLen - 2);
+	uint16_t crc = 0xffff;
+	uint16_t txCrc = PORT_CrcFeed(&crc, fup, fup->frameLen - 2);
 	((uint8_t*)(fup))[fup->frameLen - 2] = (uint8_t)(txCrc >> 8);  // add 2 CRC bytes
 	((uint8_t*)(fup))[fup->frameLen - 1] = (uint8_t)(txCrc);
 }

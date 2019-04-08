@@ -322,21 +322,12 @@ void PORT_SetBeaconTimerPeriodMs(int time_ms);
 // ========  CRC  ==========
 
 /**
- * \brief set inital value to the crc calculator
- *
- * \note initial value for IndoorNavi is 0xFFFF
- *
- * \return void
- */
-void PORT_CrcReset();
-
-/**
  * \brief feed crc calculator with new data and return result
  *
  * \note return value should be automatically set as initial
  *    value during next iteration.
  */
-uint16_t PORT_CrcFeed(const void* data, int size);
+uint16_t PORT_CrcFeed(uint16_t * crc, const void* bytes, int nBytes);
 
 // ========  MUTEX  ==========
 

@@ -7,6 +7,7 @@
 
 #define LOG_BUF_LEN 1024
 static char buf[LOG_BUF_LEN + 1];
+extern circular_buff_s logs_buf;
 
 void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) {
 	#if LOG_USB_EN
@@ -26,5 +27,7 @@ void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) 
 	#endif
 	#if LOG_SD_EN
 	#endif
-	LOG_BufPop();
+	CRITICAL(
+	BUF_Pop(&logs_buf);
+	)
 }

@@ -11,6 +11,7 @@
 
 #define LOG_BUF_LEN 1024
 static char tx_buf[LOG_BUF_LEN + 1];
+extern circular_buff_s logs_buf;
 
 uint8_t PORT_UsbUartTransmit(uint8_t *buf, uint16_t len);
 
@@ -28,7 +29,6 @@ struct spiHandling {
 #if LOG_SPI_EN
 static uint8_t ack_msg[4] = { LOG_PC_Ack, 4, 8, 216 };
 static uint8_t nack_msg[4] = { LOG_PC_Nack, 4, 145, 79 };
-static uint8_t alive_msg[4] = { LOG_PC_Alive, 4, 162, 126 };
 static prot_packet_info_t bin_packet = {
 		.original_src = CARRY_ADDR_SERVER,
 		.last_src = CARRY_ADDR_SERVER,
@@ -39,14 +39,6 @@ static inline void sendAckToEthSlave(bool isAck) {
 #if ETH_SPI_SS_PIN
 	CRITICAL(
 	PORT_SpiTx((uint8_t *)((isAck) ? ack_msg : nack_msg), sizeof(ack_msg), ETH_SPI_SS_PIN);
-	)
-#endif
-}
-
-static inline void sendKeepAlive() {
-#if ETH_SPI_SS_PIN
-	CRITICAL(
-	PORT_SpiTx((uint8_t *)alive_msg, sizeof(alive_msg), ETH_SPI_SS_PIN);
 	)
 #endif
 }
@@ -65,14 +57,15 @@ void SpiSlaveRequest() {
 	)
 	int packet_len = spiHandling.rx_buf[1];
 	int data_len = packet_len - FRAME_HEADER_SIZE - 2;
+	uint16_t crc = 0xffff;
 	switch(spiHandling.rx_buf[0]) {
 		case LOG_PC_Bin:
 			BIN_Parse(&spiHandling.rx_buf[FRAME_HEADER_SIZE], &bin_packet, data_len);
 			break;
 
 		case LOG_PC_Txt:
-			PORT_CrcReset();
-			if(PORT_CrcFeed(spiHandling.rx_buf, packet_len) == 0) {
+			crc = 0xffff;
+			if(PORT_CrcFeed(&crc, spiHandling.rx_buf, packet_len) == 0) {
 				sendAckToEthSlave(true);
 				TXT_Input((char *)&spiHandling.rx_buf[FRAME_HEADER_SIZE], data_len);
 			} else {
@@ -82,7 +75,9 @@ void SpiSlaveRequest() {
 
 		case LOG_PC_Ack:
 			if(spiHandling.ifWaitingForAck) {
-				LOG_BufPop();
+				CRITICAL(
+				BUF_Pop(&logs_buf);
+				)
 				spiHandling.nackCount = 0;
 				spiHandling.ifWaitingForAck = false;
 			}
@@ -91,7 +86,9 @@ void SpiSlaveRequest() {
 		case LOG_PC_Nack:
 			if(spiHandling.ifWaitingForAck) {
 				if(5 <= ++spiHandling.nackCount) {
-					LOG_BufPop();
+					CRITICAL(
+					BUF_Pop(&logs_buf);
+					)
 					spiHandling.nackCount = 0;
 				}
 				spiHandling.ifWaitingForAck = false;
@@ -112,12 +109,12 @@ void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) 
 	#if LOG_SPI_EN
 	if(isSink) {
 		// when the device is not waiting for previous message ack or when waiting timed out
-		if((spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 10) < PORT_TickMs()) && nrf_gpio_pin_read(ETH_SPI_SLAVE_IRQ) == 1) {
-			CRITICAL(
+		if((spiHandling.ifWaitingForAck == false || (spiHandling.txTick + 10) < PORT_TickMs())
+																							&& nrf_gpio_pin_read(ETH_SPI_SLAVE_IRQ) == 1) {
 			spiHandling.ifWaitingForAck = true;
 			spiHandling.txTick = PORT_TickMs();
-				PORT_SpiTx((uint8_t *)bin, size, ETH_SPI_SS_PIN);
-			)
+			/* PORT_LogData is already called in critical section */
+			PORT_SpiTx((uint8_t *)bin, size, ETH_SPI_SS_PIN);
 		} else {
 			return;
 		}
@@ -139,6 +136,8 @@ void PORT_LogData(const void *bin, int size, LOG_PacketCodes_t pc, bool isSink) 
 	}
 	#endif
 #if !LOG_SPI_EN
-	LOG_BufPop();
+	CRITICAL(
+	BUF_Pop(&logs_buf);
+	)
 #endif
 }
