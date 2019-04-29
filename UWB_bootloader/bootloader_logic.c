@@ -19,7 +19,11 @@ const void* bl_apps_addr[] = { (void*)APP1_ADDR, (void*)APP2_ADDR };
 int settings_offset = 9;
 
 int CheckHardwareVersions() {
-	if (settings.my_hType == 0) { // situation from first run
+	bool isHTypeEmpty = settings.my_hType == 0 || settings.my_hType == 0xFFFF
+	    || settings.my_hType == -1;
+	bool isFirstFirmwareTypeOk = settings.stat[0].firmware_version->hType != 0xFFFF
+	    && settings.stat[0].firmware_version->hType != 0;
+	if (isHTypeEmpty && isFirstFirmwareTypeOk) { // situation from first run
 		settings.my_hType = settings.stat[0].firmware_version->hType;
 		return 1;
 	}
@@ -123,39 +127,12 @@ static int ScoreApplication(int i) {
 
 	if (IsAnyApp(i) != 0) {
 		score = pset->pass_cnt - pset->fail_cnt;
-		score *= score > 0; // trim lower bound to zero
 		score += 1; // firmware is present
 		score += pset->firmware_version->boot_reserved == BOOTLOADER_MAGIC_NUMBER;
 		score += pset->firmware_version->hType == settings.my_hType;
 	}
 
 	return score;
-}
-
-void JumpToApi() {
-	int score1, score2;
-
-	score1 = ScoreApplication(0);
-	score2 = ScoreApplication(1);
-
-	if (score1 > score2) {
-		JumpApp(0);
-	} else if (score1 < score2) {
-		JumpApp(1);
-	} else if (score1 == 0 && score2 == 0) { // there is any api
-		Bootloader_Led(LED_GREEN, LED_ON);
-		Bootloader_Led(LED_RED, LED_ON);
-		Bootloader_JumpToSystem();
-	} else if (score1 == score2) {
-		int app = settings.app_to_choose_when_equal;
-		settings.app_to_choose_when_equal = (settings.app_to_choose_when_equal + 1) % 2;
-		Bootloader_SaveSettings();
-		Bootloader_StartIWDG();
-		JumpApp(app);
-	} else {
-		Bootloader_Led(LED_GREEN, LED_ON);
-		JumpApp(0);
-	}
 }
 
 bool SomeAppWasRunnig() {
@@ -188,6 +165,31 @@ void StartTest(int app) {
 	// start IWDG
 	Bootloader_StartIWDG();
 	JumpApp(app);
+}
+
+void JumpToApi() {
+	int score1, score2;
+
+	score1 = ScoreApplication(0);
+	score2 = ScoreApplication(1);
+
+	if (score1 > score2) {
+		JumpApp(0);
+	} else if (score1 < score2) {
+		JumpApp(1);
+	} else if (score1 == 0 && score2 == 0) { // there is any api
+		Bootloader_Led(LED_GREEN, LED_ON);
+		Bootloader_Led(LED_RED, LED_ON);
+		Bootloader_JumpToSystem();
+	} else if (score1 == score2) {
+		int app = settings.app_to_choose_when_equal; // stara
+		settings.app_to_choose_when_equal = (settings.app_to_choose_when_equal + 1) % 2;
+		Bootloader_SaveSettings();
+		StartTest(app);
+	} else {
+		Bootloader_Led(LED_GREEN, LED_ON);
+		JumpApp(0);
+	}
 }
 
 void Start(uint32_t reset_src) {
