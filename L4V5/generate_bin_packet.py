@@ -23,37 +23,37 @@ def replece_after(wd, fileends, fieldname, value):
     if not file_fond:
         print('Brak plikow z koncowka ' + fileends + ' w ' + os.getcwd() + wd)
 
+if __name__=="__main__":
+    # lista opcji - łączymy wszystko z wszystkim
+    role = [['RTLS_SINK,', 'S'], ['RTLS_ANCHOR,', 'A'], ['RTLS_TAG,', 'T']]
+    fminors = [['1', '1'], ['2', '2']]
+    compilations = [['1;', 'A'], ['2;', 'B']]
 
-# lista opcji - łączymy wszystko z wszystkim
-role = [['RTLS_SINK,', 'S'], ['RTLS_ANCHOR,', 'A'], ['RTLS_TAG,', 'T']]
-fminors = [['1', '1'], ['2', '2']]
-compilations = [['1;', 'A'], ['2;', 'B']]
+    for r in role:
+        for m in fminors:
+            for c in compilations:
+                replece_after('.', '.ld', 'COMPILE ', c[0])
+                replece_after('.', 'updateHash.py', 'firmwareMinor ', m[0])
+                replece_after('../UWB', 'settings.c', '.role ', r[0])
 
-for r in role:
-    for m in fminors:
-        for c in compilations:
-            replece_after('.', '.ld', 'COMPILE ', c[0])
-            replece_after('.', 'updateHash.py', 'firmwareMinor ', m[0])
-            replece_after('../UWB', 'settings.c', '.role ', r[0])
+                os.chdir('./Debug')
+                os.system('python ../updateHash.py')
+                os.system('make all')
+                name = r[1]+c[1]+'G'+m[1]+'.bin'
+                if os.path.isfile(name):
+                    os.remove(name)
+                os.rename('L4v1.bin', name)
+                os.chdir('../')
 
-            os.chdir('./Debug')
-            os.system('python ../updateHash.py')
-            os.system('make all')
-            name = r[1]+c[1]+'G'+m[1]+'.bin'
-            if os.path.isfile(name):
-                os.remove(name)
-            os.rename('L4v1.bin', name)
-            os.chdir('../')
+    # przywroc ustawienia domyslne
+    replece_after('.', '.ld', 'COMPILE ', c[0][0])
+    replece_after('.', 'updateHash.py', 'firmwareMinor ', m[0][0])
+    replece_after('../UWB', 'settings.c', '.role ', r[0][0])
 
-# przywroc ustawienia domyslne
-replece_after('.', '.ld', 'COMPILE ', c[0][0])
-replece_after('.', 'updateHash.py', 'firmwareMinor ', m[0][0])
-replece_after('../UWB', 'settings.c', '.role ', r[0][0])
-
-print('  _____ ')
-print('/@@@@@@@\\')
-print('| *   * |')
-print('    |   ')
-print('  \___/ ')
-print('\   ||   /')
-print(' `------` ')
+    print('  _____ ')
+    print('/@@@@@@@\\')
+    print('| *   * |')
+    print('    |   ')
+    print('  \___/ ')
+    print('\   ||   /')
+    print(' `------` ')
