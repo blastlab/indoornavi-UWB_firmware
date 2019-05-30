@@ -11,7 +11,7 @@ This manual describe firmare in version::
 
   Major:   0
   Minor:   8 / 9
-  Hash:    0x92f4071c
+  Hash:    0x536680a5
 
 Check version
 =================

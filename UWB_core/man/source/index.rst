@@ -12,6 +12,8 @@ UWB_core documentation!
 
    first_steps.rst
    commands.rst
+   architecture.rst
    messages.rst
    constants.rst
+   radio.rst
    version.rst

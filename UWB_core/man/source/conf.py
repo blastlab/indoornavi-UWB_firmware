@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'UWB_core'
-copyright = '2018, Karol Trzcinski'
+copyright = '2019, Karol Trzcinski'
 author = 'Karol Trzcinski'
 
 # The short X.Y version

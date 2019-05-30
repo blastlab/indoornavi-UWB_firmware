@@ -38,8 +38,8 @@ typedef struct {
 	dev_addr_t addr;
 	dev_addr_t parents[CARRY_MAX_PARENTS];
 	int16_t parentsScore[CARRY_MAX_PARENTS];
-	int16_t level;
-	time_ms_t lastUpdateTime;
+	int16_t level;                  ///< number of hops between this device and sink, for sink it is 0
+	time_ms_t lastUpdateTime;       ///< last time when received carry message from this device
 } carry_target_t;
 
 /**
@@ -50,7 +50,7 @@ typedef struct {
 	time_ms_t traceMaxInactiveTime;  ///< max time from last message to be kept
 	int traceMaxFailCnt;       ///< trace retransmit/delete threshold
 	int targetCounter;
-	bool autoRoute;
+	bool autoRoute;                  ///< should automatic routing traces builder should be enabled
 	int minParentLiveTimeMs;
 	int tagMaxInactiveTime; ///< max time before deleting tag from memory
 	carry_target_t target[CARRY_MAX_TARGETS];

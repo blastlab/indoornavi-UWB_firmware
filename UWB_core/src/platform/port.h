@@ -1,7 +1,7 @@
 /**
  * \file
  * \brief Portable module, strictly hardware dependent.
- * \author Karol Trzcimski
+ * \author Karol Trzcinski
  * \date 06-2018
  *
  * Each function from this module has to be implemented

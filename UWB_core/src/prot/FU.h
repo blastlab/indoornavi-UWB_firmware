@@ -45,8 +45,8 @@
  *
  * Verification process start bootloader watchdog (with 8s period) and start
  * new firmware execution. After Watchdog reset, value of special register
- * to check if this version run without problems. If this register value
- * is correct then mark firmware as verified, save this as last running app
+ * is read to check if this version run without problems. If this register value
+ * is correct then mark firmware as verified (in flash), save this as last running app
  * and start this application without bootloader watchdog. When application
  * doesn't set correct value to special register then downscore it and set app
  * to run in a standard way.
@@ -56,11 +56,22 @@
  *
  * At the begin SOT frame should be transmitted from Host to Device
  * and Device should response ACK frame.
- * Then is series of Data/ACK frames. ACK is required after each data frame
- * On last data frame, Device response with EOT frame instead of ACK.
- * It's extra information that firmware upgrade was fully successful.
- * To start firmware upgrade
+ * 
+ * First frame with data will have address of data block just after
+ * settings.version.boot_reserved field. It is needed to change this
+ * value only if whole firmware transmission will end with success.
+ * Otherwise corrupted firmware can be tested.
+ * 
+ * Then is series of Data/ACK frames. ACK is required after each data frame.
+ * EOT will be send as a last data frame. This is a moment to validate
+ * received firmware compatibility via firmware CRC. When it is ok then
+ * data from last frame can be saved in flash (with settings.version.boot_reserved).
+ * This lead to mark received firmware as a new one to test via bootloader.
+ * But before device response with ACK to host to confirm reception of EOT.
+ * Then throught reset go to bootloader when new firmware test will be called.
  *
+ * 
+ * ### Frames description
  *
  * #### SOT -- Start Of Transmission -- Host->Device
  *
@@ -70,12 +81,12 @@
  *
  * Construction:
  *
- * [FC:1][frameLen:1][opcode:1][version:4][firmwareCRC:2][size:4][frameCRC:2]
+ * [FC:1][frameLen:1][opcode:1][hash:4][firmwareCRC:2][size:4][frameCRC:2]
  *
  * - frameLen 		- length of while frame, from address of frameLen
  * 									to the end of frame CRC, equal to 12.
  * - opcode 			- set to FU_OPCODE_SOT
- * - version			- [lowest::older] byte of new firmware version
+ * - hash					- mix of hardware and software version for this FU session packet
  * - firmwareCRC 	- CRC calculated only from complete raw firmware data
  * 									calculated in this same way as for each frame
  * - size 				- big endian, size in bytes of complete raw firmware data
@@ -85,24 +96,42 @@
  *
  * #### Default/Data frame -- Host->Device
  *
- * Frame with firmware file data
+ * Frame with firmware file data to save
  *
  * Construction:
  *
- * [frameLen:1][opcode:1][version:1][offset:2][data:n][frameCRC:2]
+ * [frameLen:1][opcode:1][hash:1][offset:2][data:n][frameCRC:2]
  *
  * - frameLen 		- length of while frame, from address of frameLen
  * 									to the end of frame CRC
  * - opcode 			- set to FU_OPCODE_DATA
- * - version			- version of new firmware
- * - offset			- offset in memory for transmitted data.
+ * - hash					- mix of hardware and software version for this FU session packet
+ * - offset				- offset in memory for transmitted data.
  *  								Offset is expressed in FU_BLOCK_SIZE unit
- * - data				- raw byte data, number of them can be readed as
+ * - data					- raw byte data, number of them can be readed as
  *                  frameLen-FU_PROT_HEAD_SIZE-2 (for CRC), number of data
  *                  should be  multiple of FU_BLOCK_SIZE
- * - frameCRC		-	16 bit of CRC calculated on data from frameLen
+ * - frameCRC			-	16 bit of CRC calculated on data from frameLen
  * 									to the end of offset, based on FU_CRC_POLY
  *
+ * 
+ * #### CONST_DATA -- block of constant data -- Device->Host
+ * 
+ * Frame with constant value to save and number of data blocks to fill with this value.
+ * 
+ * Construction:
+ * 
+ * [frameLen:1][opcode:1][hash:1][offset:2][value:1][size:1][frameCRC:2]
+ * - frameLen 		- length of while frame, from address of frameLen
+ * 									to the end of frame CRC
+ * - opcode 			- set to FU_OPCODE_CONST_DATA
+ * - hash					- mix of hardware and software version for this FU session packet
+ * - offset				- offset in memory for transmitted data.
+ *  								Offset is expressed in FU_BLOCK_SIZE unit
+ * - value				- constant byte value, to be used as a memory fill
+ * - size					- length of constant value fill expressed in number of FU_BLOCK_SIZE
+ * - frameCRC			-	16 bit of CRC calculated on data from frameLen
+ * 									to the end of offset, based on FU_CRC_POLY
  *
  * #### ACK -- Device->Host
  *
@@ -110,12 +139,13 @@
  *
  * Construction:
  *
- * [frameLen:1][opcode:1][version:1][extra:2][frameCRC:2]
+ * [frameLen:1][opcode:1][hash:1][extra:2][frameCRC:2]
  * - frameLen 		- length of while frame, from address of frameLen
  * 									to the end of frame CRC. Equal to 6
  * - opcode 			- set to FU_OPCODE_ACK
- * - version			- lowest byte of current firmware version
- * - extra				- this field shouldn't be modified in ACK frame
+ * - hash					- mix of hardware and software version for this FU session packet
+ * - extra				- this field shouldn't be modified in ACK frame, should be same as in
+ * 									received frame
  *
  *
  * #### EOT -- End Of Transmission -- Host->Device
@@ -126,12 +156,12 @@
  *
  * Construction:
  *
- * [frameLen:1][opcode:1][version:1][extra:2][frameCRC:2]
+ * [frameLen:1][opcode:1][hash:1][extra:2][frameCRC:2]
  *
  * - frameLen 		- length of while frame, from address of frameLen
  * 									to the end of frame CRC. Equal to 6
  * - opcode 			- set to FU_OPCODE_EOT
- * - version			- lowest byte of current firmware version
+ * - hash					- mix of hardware and software version for this FU session packet
  * - extra				- this field shouldn't be modified in
  * 									EOT frame
  *
@@ -142,27 +172,13 @@
  *
  * Construction:
  *
- * [frameLen:1][opcode:1][version:1][errorCode:2][frameCRC:2]
+ * [frameLen:1][opcode:1][hash:1][errorCode:2][*lastWrittenAddress:4][frameCRC:2]
  *
  * - frameLen 		- length of while frame, from address of frameLen
  * 									to the end of frame CRC. Equal to 8
  * - opcode 			- set to FU_OPCODE_ABORT
- * - version			- lowest byte of current firmware version
+ * - hash					- mix of hardware and software version for this FU session packet
  * - errorCode   - FU_ERR_code enumerate
- *
- *
- * #### ASK_VER -- Host->Device
- *
- * Ask about response ACK frame with current version of software
- *
- * Construction:
- *
- * [frameLen:1][opcode:1][version:4][frameCRC:2]
- * - frameLen 		- length of while frame, from address of frameLen
- * 									to the end of frame CRC. Equal to 6
- * - opcode 			- set to FU_OPCODE_ASK_VER
- * - version			- BigEndian, lowest byte of current firmware version
- *
  */
 
 #ifndef FU_H_

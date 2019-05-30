@@ -506,7 +506,7 @@ note: *beacon* and *raad* are allowed for each user, but other parameters must b
 
 .. _listset:
 
-listlset
+listset
 ===============
 
 *listset -role*

@@ -6,7 +6,75 @@
  * @file carry.h
  * @author Karol Trzcinski
  * @date 2018-07-02
+ * 
+ * 
+ * # CARRY protocol
+ * 
+ * ## Goal
+ * 
+ * This layer is responsible for smoothly sending messages between
+ * anchors, tags, sink and server (via USB/UART/ETH). Messages between
+ * device diffrent from sink to another device is forbidden, it must be 
+ * passed through sink or even server. Also it is responsible
+ * for routing messages between devices. So it is a network layer in ISO/OSI.
+ * 
+ * 
+ * ## Details
+ * 
+ * 
+ * ### Overview
+ * 
+ * There are two meta addresses CARRY_ADDR_SINK and CARRY_ADDR_SERVER.
+ * Server is defined as device connected to sink gateway.
+ * 
+ * 
+ * ### Routing organisation 
+ * 
+ * Devices are organized in a little modified star topology. Sink is in center,
+ * each device can send message to sink and sink can send message to any device.
+ * Also through hops in both directions.
+ * 
+ * Each device remember his parent. Parent is change after receiving frame with 
+ * flag CARRY_FLAG_REFRESH_PARENT. Such a messages are sent as usual with 
+ * Firmware Upgrade, device accept frames and frames sent from server.
+ * 
+ * In opposite direction there is need to remember whole route in sink memory.
+ * Carry settings has list of anchors to remember and them parent. Modification
+ * of this list can be made from text command or when in carry settings autoRoute
+ * is set to true then parent is set after receiving BEACON message from target
+ * device. Before new parent is set, number of hops between old and new parent
+ * are check and time parent inactive time. 
+ * 
+ * /todo: update carry target lastUpdateTime
+ * 
+ * For tag's it is similar than for anchors, there are no any condition during
+ * assignment to anchor. Tracking is involved during parsing measurements
+ * in program main loop and during parsing beacon message.
+ * 
+ * 
+ * ### Lower layers
+ * 
+ * CARRY use MAC module as an UWB tranport layer and LOG_Bin to send message to
+ * gateway.
+ * 
+ * 
+ * ### Messages 
+ * 
+ * 
+ * #### CARRY -- CARRY protocol -- Sink/Server->Device Device->Sink/Server
+ * 
+ * [FC:1][frameLen:1][flags:1][verHopsNum:4][src_addr:2][hops:n]
+ *
+ * - FC						- FC_CARRY constant
+ * - frameLen 		- length a whole carry message, including content
+ * - flags				- flags with CARRY_FLAG_ prefix
+ * - verHopsNum		- hi nibble is a protocol version and lower nibble is a hops number
+ * 									(number of addresses in hops array)
+ * - src_addr			- address of source device
+ * - hops					- array of device addresses for hops
+ * 
  */
+
 #ifndef _CARRY_H
 #define _CARRY_H
 
