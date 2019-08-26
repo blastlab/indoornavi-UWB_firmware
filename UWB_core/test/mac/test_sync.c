@@ -11,7 +11,7 @@
 #include "toa.h"
 
 TEST_FILE("iassert.c")
-TEST_FILE("logs_common.c")
+//TEST_FILE("logs_common.c")
 //TEST_FILE("mac.c")
 
 settings_otp_t _settings_otp;
@@ -29,7 +29,12 @@ FAKE_VALUE_FUNC(int, dwt_rxenable, int);
 FAKE_VOID_FUNC(listener_isr, const dwt_cb_data_t *)
 FAKE_VOID_FUNC(FU_AcceptFirmware);
 
-
+FAKE_VALUE_FUNC(int, LOG_Bin, const void*, int);
+FAKE_VOID_FUNC_VARARG(LOG_WRN, WRN_codes, ...);
+FAKE_VOID_FUNC_VARARG(LOG_ERR, ERR_codes, ...);
+FAKE_VOID_FUNC_VARARG(LOG_INF, INF_codes, ...);
+FAKE_VOID_FUNC_VARARG(LOG_DBG, const char *, ...);
+FAKE_VOID_FUNC(LOG_Trace, TRACE_t);
 
 settings_t settings = DEF_SETTINGS;
 sync_instance_t sync;

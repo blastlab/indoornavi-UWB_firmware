@@ -11,8 +11,14 @@
 
 // include this files to test
 TEST_FILE("iassert.c")
-TEST_FILE("logs_common.c")
+//TEST_FILE("logs_common.c")
 TEST_FILE("mac.c")
+
+FAKE_VALUE_FUNC(int, LOG_Bin, const void*, int);
+FAKE_VOID_FUNC_VARARG(LOG_WRN, WRN_codes, ...);
+FAKE_VOID_FUNC_VARARG(LOG_ERR, ERR_codes, ...);
+FAKE_VOID_FUNC_VARARG(LOG_DBG, const char *, ...);
+FAKE_VOID_FUNC(LOG_Trace, TRACE_t);
 
 settings_t settings = DEF_SETTINGS;
 settings_otp_t _settings_otp;

@@ -164,7 +164,7 @@ void SYNC_UpdateNeighbour(sync_neighbour_t* neig, int64_t ext_time, int64_t loc_
 		neig->drift[0] = drift;
 		neig->time_coeffP_raw[0] =
 		    neig_dt != 0.0 ? ((float)drift) / ((float)neig_dt) : neig->time_coeffP_raw[1];
-		neig->time_coeffP_raw[0] = isnanf(neig->time_coeffP_raw[0]) ? 0 : neig->time_coeffP_raw[0];
+		neig->time_coeffP_raw[0] = isnan(neig->time_coeffP_raw[0]) ? 0 : neig->time_coeffP_raw[0];
 		neig->time_coeffP[0] = SYNC_CalcTimeCoeff(neig);
 		// neig->timeDriftSum += drift;
 	} else {

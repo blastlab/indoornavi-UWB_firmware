@@ -1,15 +1,17 @@
 #include "mac/carry.h"
 #include "unity.h"
 
-
+#include "mock_mac.h"
 #include "mock_port.h"
 #include "mock_transceiver.h"
-#include "mock_mac.h"
+#include "mock_sync.h"
+#include "mock_toa.h"
+#include "mock_toa_routine.h"
 
 #include "logs.h"
 
 TEST_FILE("iassert.c")
-TEST_FILE("logs_common.c")
+
 
 #ifndef TEST_ASSERT_M
 #define TEST_ASSERT_M(EXPR) TEST_ASSERT_MESSAGE(EXPR, #EXPR);
@@ -20,16 +22,15 @@ carry_instance_t carry;
 settings_t settings = DEF_SETTINGS;
 
 FAKE_VALUE_FUNC(int, LOG_Bin, const void*, int);
+FAKE_VOID_FUNC_VARARG(LOG_WRN, WRN_codes, ...);
 FAKE_VALUE_FUNC(const uint8_t*, BIN_Parse, const uint8_t *, const prot_packet_info_t*, int);
-
-// FAKE_VALUE_FUNC(unsigned int, HAL_GetTick);
-// FAKE_VALUE_FUNC(mac_buff_time_t, mac_port_buff_time);
 
 mac_buf_t* MAC_BufferPrepare_custom_fake(dev_addr_t target, bool can_append) {
   static mac_buf_t buf;
   memset(&buf, 0, sizeof(buf));
   buf.frame.dst = target;
   buf.dPtr = &buf.frame.data[0];
+  buf.state = BUSY;
   return &buf;
 }
 
@@ -37,6 +38,7 @@ mac_buf_t* MAC_Buffer_custom_fake() {
   static mac_buf_t buf;
   memset(&buf, 0, sizeof(buf));
   buf.dPtr = &buf.buf[0];
+  buf.state = BUSY;
   return &buf;
 }
 
@@ -82,7 +84,7 @@ void test_carry_PrepareBufTo_sink_from_anchor() {
   mac_buf_t* buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &carry);
 
   TEST_ASSERT_CALLED(MAC_BufferPrepare);
-  TEST_ASSERT_M(buf->frame.dst == parent);
+  TEST_ASSERT_M(MAC_BufferPrepare_fake.arg0_history[0] == parent);
   TEST_ASSERT_M(carry != 0);
   TEST_ASSERT_M((carry->flags & CARRY_FLAG_TARGET_MASK) == CARRY_FLAG_TARGET_SINK);
 

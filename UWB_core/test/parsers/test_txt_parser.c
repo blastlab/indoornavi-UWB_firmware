@@ -5,8 +5,12 @@
 
 #define TEST_ASSERT_M(EXPR) TEST_ASSERT_MESSAGE(EXPR, #EXPR)
 
+#include "mock_logs_buffer.h"
+
 TEST_FILE("logs_common.c")
 TEST_FILE("iassert.c")
+FAKE_VOID_FUNC(PORT_LogData, const void *, int, LOG_PacketCodes_t, bool);
+
 
 typedef int decaIrqStatus_t ;
 decaIrqStatus_t PORT_EnterCritical(){
