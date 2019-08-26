@@ -80,6 +80,8 @@ void PORT_BatteryMeasure() {
 		PORT_ASSERT(0.f <= a && a < 1.f);
 		_battery_mv = a * sum + (1 - a) * _battery_mv;
 	}
+#else
+	_battery_mv = 0;
 #endif
 }
 

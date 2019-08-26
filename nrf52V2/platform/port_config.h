@@ -8,9 +8,6 @@
 #include "nrf_error.h"
 
 #define HARDWARE_UID_64 (((uint64_t)NRF_FICR->DEVICEADDR[1] << 32) | NRF_FICR->DEVICEADDR[0])
-#define __H_MAJOR__ 2
-#define __H_MINOR__ 2
-#define __H_TYPE__  2
 
 #include "iassert.h"
 #define PORT_ASSERT(expr) IASSERT(expr)
@@ -60,11 +57,18 @@ typedef uint32_t time_ms_t;
 #define BLE_CODE(_CODE_)
 #endif
 
+#define PROTO_PCB 0
 #define ETH_SINK_PCB 0
-#define ETH_MINI_SINK_PCB 0
-#define TAG_PCB 0
+#define PEDESTRIAN_TAG_PCB 0
+#define MACHINE_TAG_PCB 0
+#define ETH_MINI_SINK_PCB 1
 
 #if ETH_SINK_PCB
+
+#define __H_MAJOR__ 1
+#define __H_MINOR__ 1
+#define __H_TYPE__  2
+
 #undef LOG_SPI_EN
 #define LOG_SPI_EN 1
 
@@ -94,7 +98,20 @@ typedef uint32_t time_ms_t;
 
 #define LED_G1 0
 #define LED_R1 0
-#elif TAG_PCB
+
+#elif MACHINE_TAG_PCB || PEDESTRIAN_TAG_PCB
+
+#if MACHINE_TAG_PCB
+#define __H_MAJOR__ 1
+#define __H_MINOR__ 1
+#define __H_TYPE__  3
+#endif
+#if PEDESTRIAN_TAG_PCB
+#define __H_MAJOR__ 1
+#define __H_MINOR__ 1
+#define __H_TYPE__  4
+#endif
+
 #define DW_RST_PIN 24
 #define DW_EXTI_IRQn 19
 #define DW_SPI_MISO_PIN 18
@@ -118,7 +135,13 @@ typedef uint32_t time_ms_t;
 
 #define LED_G1 9
 #define LED_R1 12
+
 #elif ETH_MINI_SINK_PCB
+
+#define __H_MAJOR__ 1
+#define __H_MINOR__ 1
+#define __H_TYPE__  5
+
 #undef LOG_SPI_EN
 #define LOG_SPI_EN 1
 
@@ -144,13 +167,19 @@ typedef uint32_t time_ms_t;
 #define USB_UART_RX_PIN 11
 #define USB_UART_TX_PIN 5
 
+#if __H_MINOR__ != 1 || __H_MAJOR__ != 1
 #define BATT_ADC_TRIG_PIN 27
+#endif
 #define HW_TYPE_PULL 26
 
 #define LED_G1 9
 #define LED_R1 12
 
-#else
+#elif PROTO_PCB
+
+#define __H_MAJOR__ 1
+#define __H_MINOR__ 1
+#define __H_TYPE__  1
 
 #define DW_RST_PIN 24
 #define DW_EXTI_IRQn 19
@@ -175,6 +204,9 @@ typedef uint32_t time_ms_t;
 
 #define LED_G1 2
 #define LED_R1 15
+
+#else
+#error "You need to specify one of PCB version"
 #endif
 
 #define LED_STAT LED_G1
