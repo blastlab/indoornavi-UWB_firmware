@@ -252,7 +252,7 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 	mac_buf_t* tx_buf;
 	uint8_t* dataPointer;
 	uint8_t dataSize;
-	bool toSink, toMe, toServer, ackReq;
+	bool toSink, toMe, toServer, toReroute, ackReq;
 
 	// broadcast without carry header
 	// or standard data message with carry header
@@ -269,6 +269,8 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 	toMe |= target == CARRY_FLAG_TARGET_DEV && pcarry->hops[0] == settings.mac.addr;
 	toMe |= target == CARRY_FLAG_TARGET_SINK && settings.mac.role == RTLS_SINK;
 	toMe |= (pcarry->flags & CARRY_FLAG_REROUTE) && pcarry->hops[0] == settings.mac.addr;
+	toReroute = (target == CARRY_FLAG_TARGET_DEV) && (pcarry->flags & CARRY_FLAG_REROUTE)
+	    && settings.mac.role == RTLS_SINK && hops_num == 1;
 	toServer = target == CARRY_FLAG_TARGET_SERVER;
 	ackReq = pcarry->flags & CARRY_FLAG_ACK_REQ;
 	// fill new info fields
@@ -303,6 +305,14 @@ void CARRY_ParseMessage(const void* data, const prot_packet_info_t* info) {
 		// change header - source and destination address
 		// and send frame
 		tx_buf = CARRY_PrepareBufTo(CARRY_ADDR_SINK, &tx_carry);
+		if (tx_buf != 0) {
+			CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
+			CARRY_Send(tx_buf, ackReq);
+		}
+	} else if (toReroute) {
+		// change header - source and destination address
+		// and send frame
+		tx_buf = CARRY_PrepareBufTo(pcarry->hops[0], &tx_carry);
 		if (tx_buf != 0) {
 			CARRY_Write(tx_carry, tx_buf, dataPointer, dataSize);
 			CARRY_Send(tx_buf, ackReq);
