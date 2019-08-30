@@ -141,7 +141,7 @@ void UwbMain() {
 		RANGING_Control();
 		RangingReader();
 		BeaconSender();
-		LOG_Control(settings.mac.role == RTLS_SINK);
+		LOG_Control(true);
 		TXT_Control();
 		FU_Control();
 		PORT_WatchdogRefresh();
@@ -161,6 +161,10 @@ void SendTurnOnMessage() {
 			MAC_Write(buf, &packet, packet.len);
 			MAC_Send(buf, false);
 			LOG_DBG("I send turn on - %X %c", settings.mac.addr, (char )settings.mac.role);
+		}
+
+		if (settings.mac.role == RTLS_SINK) {
+			PRINT_TurnOn(&packet, settings.mac.addr);
 		}
 	}
 }
